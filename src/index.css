@@ -135,16 +135,6 @@ label { cursor: inherit; }
 .menu-btn, .menu-btn.icon-btn, .drawer-close, .scrim { display: none; }
 .scroll-x { overflow-x: auto; }
 
-.flyout {
-  display: none; position: absolute; left: calc(100% + 2px); top: 0; background: var(--panel); border: 1px solid var(--line);
-  box-shadow: var(--shadow-lg); min-width: 230px; border-radius: 14px; overflow: hidden; transform-origin: left top;
-}
-.flyout.show { display: block; animation: pop .18s var(--ease) both; }
-.flyout-head { background: linear-gradient(135deg, var(--brand), var(--brand-dark)); color: #fff; padding: 10px 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.flyout-cols { display: flex; gap: 28px; padding: 12px 16px 14px; }
-.flyout-cols a { display: block; padding: 5px 8px; margin: 0 -8px; color: var(--ink); border-radius: 7px; transition: background-color .15s, color .15s, padding-left .15s; }
-.flyout-cols a:hover { background: var(--brand-soft); color: var(--link); text-decoration: none; padding-left: 12px; }
-.flyout-sub { font-size: .7rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
 
 .main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .topbar {
@@ -202,6 +192,23 @@ label { cursor: inherit; }
 .crumbs span span:last-child, .crumbs > span:last-child > span { color: var(--ink); font-weight: 500; }
 .page { padding: 12px 28px 56px; max-width: 1500px; width: 100%; margin: 0 auto; }
 .page-anim { animation: page-in .38s var(--ease) both; }
+
+/* Sidebar dropdown sections */
+button.rail-item { width: 100%; border: 0; background: transparent; box-shadow: none; text-align: left; font-weight: 500; }
+button.rail-item:hover:not(:disabled) { background: rgba(255, 255, 255, .07); color: #fff; transform: none; box-shadow: none; border-color: transparent; }
+button.rail-item:active:not(:disabled) { transform: none; }
+.rail-item .chev { margin-left: auto; display: grid; opacity: .7; transition: transform .25s var(--ease); }
+.shell:not(.expanded) .rail-item .chev { display: none; }
+.rail-item.open .chev { transform: rotate(180deg); opacity: 1; }
+.sub { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s var(--ease); }
+.sub.open { grid-template-rows: 1fr; }
+.sub-inner { overflow: hidden; min-height: 0; margin: 0 0 0 21px; padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, .1); }
+.shell:not(.expanded) .sub { display: none; }
+.sub-group { padding: 4px 0 2px; }
+.sub-link { display: block; padding: 7px 12px; margin: 1px 0; border-radius: 8px; color: var(--rail-ink); font-size: .88rem; white-space: nowrap; transition: background-color .15s, color .15s, padding-left .18s var(--ease); }
+.sub-link:hover { background: rgba(255, 255, 255, .07); color: #fff; text-decoration: none; padding-left: 16px; }
+.sub-link.active { color: #5eead4; background: rgba(45, 212, 191, .1); font-weight: 600; }
+.flyout-sub { font-size: .66rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6f8693; margin: 8px 0 2px 12px; }
 
 /* ---------- Tables ---------- */
 table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
@@ -385,13 +392,9 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
   .drawer-close { display: block; align-self: flex-end; margin: 0 12px 4px; background: transparent; color: var(--rail-ink); border: 0; font-size: 1.6rem; line-height: 1; }
   .shell .rail-item .label { display: inline; }
   .logo-text { display: inline; }
-  .flyout { display: block; position: static; background: transparent; border: 0; box-shadow: none; min-width: 0; border-radius: 0; animation: none !important; }
-  .flyout-head { display: none; }
-  .flyout-cols { flex-direction: column; gap: 4px; padding: 0 0 8px 52px; }
-  .flyout-cols a { color: var(--rail-ink); padding: 6px 0; }
-  .flyout-cols a:hover { background: transparent; color: #fff; padding-left: 0; }
-  .flyout-sub { color: #6f8693; margin-top: 4px; }
-
+  .shell:not(.expanded) .sub { display: grid; }
+  .shell:not(.expanded) .rail-item .chev { display: grid; }
+            
   .topbar { position: sticky; flex-wrap: wrap; row-gap: 8px; padding: 8px 12px; }
   .tenant { max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .tabs { order: 10; flex: 1 1 100%; }
