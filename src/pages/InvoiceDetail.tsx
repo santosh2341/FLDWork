@@ -55,6 +55,7 @@ export default function InvoiceDetail() {
       <div className="row between">
         <h1>Invoice #{inv.id}</h1>
         <div className="row">
+          <Link className="btn" to={`/invoices/${inv.id}/print`}>Print / PDF</Link>
           <span className="pill">Total: {money(t.total)}</span>
           <span className="pill">Balance due: {money(t.balance)}</span>
           {inv.stage === 'draft' && !inv.voided && (

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { computeCosting, money, sellFromCost, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 import { today } from '../lib/dates'
@@ -124,6 +124,7 @@ export default function QuoteDetail() {
               {db.jobs.some((j) => j.quoteId === draft.id) ? 'View job' : 'Create job'}
             </button>
           )}
+          <Link className="btn" to={`/quotes/${draft.id}/print`}>Print / PDF</Link>
           <button className="primary" disabled={!dirty} onClick={save}>Save</button>
         </div>
       </div>

@@ -11,14 +11,16 @@ export interface AddressValue {
 }
 
 // Australian address entry with a "find on map" step. The pin can be dragged (or the map clicked) to fine-tune the location.
-export default function AddressFields({ value, onChange, label = 'Address', allowPoBox = false }: {
+export default function AddressFields({ value, onChange, label = 'Address', allowPoBox = false, showMap = true }: {
   value: AddressValue
   onChange: (v: AddressValue) => void
   label?: string
+  showMap?: boolean // false for addresses that don't need a pin (e.g. the company's own letterhead)
   allowPoBox?: boolean // billing addresses may be a PO Box; sites must be a physical street address
 }) {
   const { parts, point } = value
   const po = parts.kind === 'po_box'
+  const noMap = po || !showMap
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
   const el = useRef<HTMLDivElement>(null)
@@ -63,8 +65,8 @@ export default function AddressFields({ value, onChange, label = 'Address', allo
   }, [])
 
   useEffect(() => {
-    if (!po) setTimeout(() => map.current?.invalidateSize(), 0)
-  }, [po])
+    if (!noMap) setTimeout(() => map.current?.invalidateSize(), 0)
+  }, [noMap])
 
   useEffect(() => {
     const m = map.current
@@ -118,12 +120,12 @@ export default function AddressFields({ value, onChange, label = 'Address', allo
         <label className="addr-wide">Country<input value="Australia" readOnly disabled /></label>
       </div>
       <div className="row wrap">
-        {!po && <button type="button" onClick={find} disabled={busy}>{busy ? 'Looking up…' : 'Find on map'}</button>}
+        {!noMap && <button type="button" onClick={find} disabled={busy}>{busy ? 'Looking up…' : 'Find on map'}</button>}
         <span className="muted">{formatAddress(parts).replace(/ • /g, "  •  ")}</span>
       </div>
       {status && <p className="muted">{status}</p>}
-      <div ref={el} className="map small" style={po ? { display: 'none' } : undefined} />
-      {!po && point && <p className="muted">Location saved as {point.lat.toFixed(5)}, {point.lng.toFixed(5)}.</p>}
+      <div ref={el} className="map small" style={noMap ? { display: 'none' } : undefined} />
+      {!noMap && point && <p className="muted">Location saved as {point.lat.toFixed(5)}, {point.lng.toFixed(5)}.</p>}
     </fieldset>
   )
 }

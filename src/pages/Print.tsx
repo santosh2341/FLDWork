@@ -1,0 +1,177 @@
+import { Link, useParams } from 'react-router-dom'
+import { useStore } from '../store'
+import { computeCosting, money } from '../lib/costing'
+import { invoiceTotals } from '../lib/invoicing'
+import { shortAddress } from '../lib/address'
+import { emptyCompany } from '../lib/company'
+import type { CompanyProfile, CostCenter } from '../types'
+
+const auDate = (iso: string) => (iso ? new Date(iso.length === 10 ? iso + 'T00:00:00' : iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
+
+// Address lines for a letterhead: "Street: ... • City/Suburb: ..." becomes two readable lines.
+function addressLines(address: string): string[] {
+  const m = /(?:Street|Postal):\s*(.*?)\s*•\s*City\/Suburb:\s*(.*?)\s*•\s*State:\s*.*?\((\w+)\)\s*•\s*Postcode:\s*(\d+)/.exec(address)
+  return m ? [m[1], `${m[2]} ${m[3]} ${m[4]}`] : address ? [address] : []
+}
+
+function Letterhead({ company, fallbackName, title, number, rows }: {
+  company: CompanyProfile; fallbackName: string; title: string; number: number; rows: [string, string][]
+}) {
+  return (
+    <header className="doc-head">
+      <div>
+        <h2>{company.tradingName || fallbackName}</h2>
+        {company.abn && <div>ABN {company.abn}</div>}
+        {company.licence && <div>Licence {company.licence}</div>}
+        {addressLines(company.address).map((l) => <div key={l}>{l}</div>)}
+        {company.phone && <div>{company.phone}</div>}
+        {company.email && <div>{company.email}</div>}
+        {company.website && <div>{company.website}</div>}
+      </div>
+      <div className="doc-title">
+        <h1>{title}</h1>
+        <div className="doc-no">#{number}</div>
+        <table className="doc-meta"><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table>
+      </div>
+    </header>
+  )
+}
+
+function Lines({ sections }: { sections: CostCenter[] }) {
+  return (
+    <table className="doc-table">
+      <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
+      <tbody>
+        {sections.map((cc) => (
+          <>
+            {sections.length > 1 && <tr key={cc.id} className="doc-section"><td colSpan={4}>{cc.name}</td></tr>}
+            {cc.items.map((i) => (
+              <tr key={i.id}>
+                <td>{i.description}</td>
+                <td className="num">{i.quantity}{i.kind === 'labour' ? ' h' : ''}</td>
+                <td className="num">{money(i.unitSell)}</td>
+                <td className="num">{money(i.quantity * i.unitSell)}</td>
+              </tr>
+            ))}
+          </>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+function Toolbar({ back, mailto }: { back: string; mailto?: string }) {
+  return (
+    <div className="no-print row" style={{ marginBottom: 12 }}>
+      <Link to={back}>← Back</Link>
+      <button className="primary" onClick={() => window.print()}>Print / Save as PDF</button>
+      {mailto && <a className="btn" href={mailto}>Email to customer</a>}
+      <span className="muted">In the print window, choose "Save as PDF" as the destination.</span>
+    </div>
+  )
+}
+
+function Parties({ customerName, contact, address, siteName, siteAddress }: { customerName?: string; contact?: string; address?: string; siteName?: string; siteAddress?: string }) {
+  return (
+    <div className="doc-parties">
+      <div>
+        <h4>Bill to</h4>
+        <b>{customerName}</b>
+        {contact && <div>Attn: {contact}</div>}
+        {addressLines(address ?? '').map((l) => <div key={l}>{l}</div>)}
+      </div>
+      <div>
+        <h4>Job site</h4>
+        <b>{siteName}</b>
+        {addressLines(siteAddress ?? '').map((l) => <div key={l}>{l}</div>)}
+      </div>
+    </div>
+  )
+}
+
+export function QuotePrint() {
+  const { id } = useParams()
+  const { db } = useStore()
+  const q = db.quotes.find((x) => x.id === Number(id))
+  if (!q) return <p>Quote not found.</p>
+  const c = computeCosting(q)
+  const customer = db.customers.find((x) => x.id === q.customerId)
+  const site = db.sites.find((x) => x.id === q.siteId)
+  const company = { ...emptyCompany, ...db.settings.company }
+  const created = q.timeline[q.timeline.length - 1]?.at ?? q.updatedAt
+  const valid = new Date(created); valid.setDate(valid.getDate() + 30)
+  const subject = `Quote #${q.id} – ${q.name}`
+  const body = `Hi ${customer?.contactName || customer?.name || ''},\n\nPlease find our quote #${q.id} (${q.name}) for ${money(c.total)} including GST. It is valid until ${auDate(valid.toISOString())}.\n\nKind regards,\n${company.tradingName || db.settings.companyName}${company.phone ? '\n' + company.phone : ''}`
+  const mailto = customer?.email ? `mailto:${customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : undefined
+  return (
+    <>
+      <Toolbar back={`/quotes/${q.id}`} mailto={mailto} />
+      <article className="doc">
+        <Letterhead company={company} fallbackName={db.settings.companyName} title="QUOTE" number={q.id}
+          rows={[['Date', auDate(created)], ['Valid until', auDate(valid.toISOString())]]} />
+        <Parties customerName={customer?.name} contact={customer?.contactName} address={customer?.address} siteName={site?.name} siteAddress={site?.address} />
+        <h3 className="doc-job">{q.name}</h3>
+        {q.description && <p className="doc-scope">{q.description}</p>}
+        <Lines sections={q.costCenters} />
+        <table className="doc-totals"><tbody>
+          <tr><td>Subtotal (ex GST)</td><td>{money(c.subTotal + q.discount)}</td></tr>
+          {q.discount > 0 && <tr><td>Discount</td><td>-{money(q.discount)}</td></tr>}
+          <tr><td>GST ({q.taxRate}%)</td><td>{money(c.tax)}</td></tr>
+          <tr className="doc-grand"><td>Total (inc GST)</td><td>{money(c.total)}</td></tr>
+        </tbody></table>
+        {q.notes && <><h4>Notes</h4><p className="doc-scope">{q.notes}</p></>}
+        <p className="doc-foot">To accept this quote, reply to this document or contact us. Prices are in Australian dollars and valid for 30 days.</p>
+      </article>
+    </>
+  )
+}
+
+export function InvoicePrint() {
+  const { id } = useParams()
+  const { db } = useStore()
+  const inv = db.invoices.find((x) => x.id === Number(id))
+  if (!inv) return <p>Invoice not found.</p>
+  const t = invoiceTotals(inv)
+  const customer = db.customers.find((x) => x.id === inv.customerId)
+  const site = db.sites.find((x) => x.id === inv.siteId)
+  const job = db.jobs.find((j) => j.id === inv.jobId)
+  const company = { ...emptyCompany, ...db.settings.company }
+  const hasGst = inv.taxRate > 0
+  const title = hasGst && company.abn ? 'TAX INVOICE' : 'INVOICE'
+  const subject = `${title === 'TAX INVOICE' ? 'Tax invoice' : 'Invoice'} #${inv.id}${job ? ' – ' + job.name : ''}`
+  const body = `Hi ${customer?.contactName || customer?.name || ''},\n\nPlease find invoice #${inv.id} for ${money(t.balance)} due ${auDate(inv.dueAt)}.${company.bsb ? `\n\nPay by bank transfer to BSB ${company.bsb}, account ${company.accountNumber}, reference ${inv.id}.` : ''}\n\nThank you,\n${company.tradingName || db.settings.companyName}${company.phone ? '\n' + company.phone : ''}`
+  const mailto = customer?.email ? `mailto:${customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : undefined
+  return (
+    <>
+      <Toolbar back={`/invoices/${inv.id}`} mailto={mailto} />
+      <article className="doc">
+        <Letterhead company={company} fallbackName={db.settings.companyName} title={title} number={inv.id}
+          rows={[['Issued', auDate(inv.issuedAt)], ['Due', auDate(inv.dueAt)], ...(job ? [['Job', `#${job.id}`] as [string, string]] : [])]} />
+        {inv.voided && <div className="doc-void">VOID</div>}
+        <Parties customerName={customer?.name} contact={customer?.contactName} address={customer?.address} siteName={site?.name} siteAddress={site?.address} />
+        <h3 className="doc-job">{job?.name}</h3>
+        <Lines sections={inv.sections} />
+        <table className="doc-totals"><tbody>
+          <tr><td>Subtotal (ex GST)</td><td>{money(t.subTotal + inv.discount)}</td></tr>
+          {inv.discount > 0 && <tr><td>Discount</td><td>-{money(inv.discount)}</td></tr>}
+          <tr><td>GST ({inv.taxRate}%)</td><td>{money(t.tax)}</td></tr>
+          <tr className="doc-grand"><td>Total (inc GST)</td><td>{money(t.total)}</td></tr>
+          {t.paid > 0 && <tr><td>Paid</td><td>-{money(t.paid)}</td></tr>}
+          {t.credited > 0 && <tr><td>Credits</td><td>-{money(t.credited)}</td></tr>}
+          <tr className="doc-grand"><td>Balance due</td><td>{money(t.balance)}</td></tr>
+        </tbody></table>
+        {(company.bsb || company.accountNumber) && (
+          <div className="doc-pay">
+            <h4>Pay by bank transfer</h4>
+            <div>{[company.accountName, company.bankName].filter(Boolean).join(' · ')}</div>
+            <div>BSB {company.bsb} · Account {company.accountNumber} · Reference {inv.id}</div>
+          </div>
+        )}
+        {inv.notes && <><h4>Notes</h4><p className="doc-scope">{inv.notes}</p></>}
+        {db.settings.invoiceFooter && <p className="doc-foot">{db.settings.invoiceFooter}</p>}
+        {hasGst && !company.abn && <p className="doc-foot">Add your ABN under Settings to issue a valid tax invoice.</p>}
+        <p className="doc-foot">{shortAddress(site?.address, site?.addressParts) && `Work carried out at ${shortAddress(site?.address, site?.addressParts)}.`}</p>
+      </article>
+    </>
+  )
+}

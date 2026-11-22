@@ -287,8 +287,24 @@ export interface InventoryCount {
   lines: { partId: string; expected: number; counted: number }[]
 }
 
+export interface CompanyProfile {
+  tradingName: string
+  abn: string
+  phone: string
+  email: string
+  website: string
+  licence: string // trade licence number shown on documents
+  address: string // one-line address in the app's standard format
+  addressParts?: AddressParts
+  bankName: string
+  accountName: string
+  bsb: string
+  accountNumber: string
+}
+
 export interface AppSettings {
   companyName: string
+  company?: CompanyProfile
   defaultTaxRate: number // percent, used on new quotes
   paymentTermsDays: number // used to set the due date on new invoices
   requireAuditsToComplete: boolean

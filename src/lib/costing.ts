@@ -63,7 +63,7 @@ export function computeCosting(q: Quote): Costing {
 }
 
 export const money = (n: number) =>
-  n.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
+  n.toLocaleString('en-AU', { style: 'currency', currency: 'AUD' })
 
 export const STATUS_LABEL: Record<string, string> = {
   to_be_completed: 'To Be Completed',

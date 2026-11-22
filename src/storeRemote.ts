@@ -210,7 +210,7 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
         await write(() =>
           sb.from('companies').update({
             name: s.companyName, default_tax_rate: s.defaultTaxRate, payment_terms_days: s.paymentTermsDays,
-            require_audits_to_complete: s.requireAuditsToComplete, invoice_footer: s.invoiceFooter, job_status_labels: s.jobStatusLabels,
+            require_audits_to_complete: s.requireAuditsToComplete, invoice_footer: s.invoiceFooter, job_status_labels: s.jobStatusLabels, profile: s.company ?? {},
           }).eq('id', cid),
         )
       })()

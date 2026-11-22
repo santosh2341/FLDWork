@@ -18,6 +18,7 @@ import Leads from './pages/Leads'
 import Recurring from './pages/Recurring'
 import { WorkOrderDetail, WorkOrders } from './pages/WorkOrders'
 import { DayView, MonthView, RunSheets, WeekView } from './pages/ScheduleViews'
+import { InvoicePrint, QuotePrint } from './pages/Print'
 import { CustomerDetail, Customers, Sites, Soon } from './pages/Simple'
 
 export default function App() {
@@ -48,6 +49,7 @@ function AppRoutes() {
             <Route path="sites" element={<Sites />} />
             <Route path="quotes" element={<Quotes />} />
             <Route path="quotes/:id" element={<QuoteDetail />} />
+            <Route path="quotes/:id/print" element={<QuotePrint />} />
             <Route path="jobs" element={<Jobs />} />
             <Route path="invoices" element={<Invoices key="unpaid" initial="unpaid" />} />
             <Route path="invoices/paid" element={<Invoices key="paid" initial="paid" />} />
@@ -56,6 +58,7 @@ function AppRoutes() {
             <Route path="invoices/retainages" element={<Invoices key="retainages" initial="retainages" />} />
             <Route path="invoices/credits" element={<Invoices key="credits" initial="credits" />} />
             <Route path="invoices/:id" element={<InvoiceDetail />} />
+            <Route path="invoices/:id/print" element={<InvoicePrint />} />
             <Route path="schedules/timesheets" element={<Timesheets />} />
             <Route path="schedules/day" element={<DayView />} />
             <Route path="schedules/week" element={<WeekView />} />

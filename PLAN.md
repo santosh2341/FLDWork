@@ -10,9 +10,9 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 - [x] Role-aware buttons, delete customer/site, Vercel SPA rewrite
 
 ## Phase 1: Company details and printable documents
-- [ ] Company profile in Settings: ABN, phone, email, address, bank details, invoice footer
-- [ ] Print-ready Quote and Tax Invoice (ABN, GST breakdown, bank details), save as PDF via the browser
-- [ ] "Email" button that opens a ready-written email to the customer
+- [x] Company profile in Settings: ABN, phone, email, address, bank details, invoice footer
+- [x] Print-ready Quote and Tax Invoice (ABN, GST breakdown, bank details), save as PDF via the browser
+- [x] "Email" button that opens a ready-written email to the customer
 
 ## Phase 2: Accounts and team
 - [ ] Forgot / reset password
