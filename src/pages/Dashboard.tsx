@@ -8,6 +8,7 @@ import { daysOverdue, isUnpaid } from '../lib/invoicing'
 import Icon from '../components/Icon'
 import type { IconName } from '../components/Icon'
 import CountUp from '../components/CountUp'
+import { shortAddress } from '../lib/address'
 
 const ANNOUNCEMENTS = [
   { title: 'Welcome to Fieldwork', body: 'Quotes, jobs, scheduling, invoicing, inventory and reports are all live in this build.' },
@@ -20,12 +21,13 @@ export default function Dashboard() {
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
   const [text, setText] = useState('')
 
-  const alerts: { label: string; n: number; to: string; icon: IconName }[] = [
-    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers', icon: 'users' },
-    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices', icon: 'receipt' },
-    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory', icon: 'box' },
-    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs', icon: 'wrench' },
-    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes', icon: 'quote' },
+  // tone: red only for things that cost money or need action now, amber for warnings, brand teal for everyday counts
+  const alerts: { label: string; n: number; to: string; icon: IconName; tone: 'danger' | 'warn' | 'brand' }[] = [
+    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers', icon: 'users', tone: 'warn' },
+    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices', icon: 'receipt', tone: 'danger' },
+    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory', icon: 'box', tone: 'warn' },
+    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs', icon: 'wrench', tone: 'brand' },
+    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes', icon: 'quote', tone: 'brand' },
   ]
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
@@ -73,7 +75,7 @@ export default function Dashboard() {
 
       <div className="cards">
         {alerts.map((c) => (
-          <Link key={c.label} to={c.to} className={`card alert ${c.n === 0 ? 'zero' : ''}`}>
+          <Link key={c.label} to={c.to} className={`card alert tone-${c.tone} ${c.n === 0 ? 'zero' : ''}`}>
             <span className="alert-icon"><Icon name={c.icon} size={18} /></span>
             <div className="big"><CountUp value={c.n} /></div>
             <div className="alert-label">{c.label}<Icon name="arrow" size={15} /></div>
@@ -84,21 +86,25 @@ export default function Dashboard() {
       <div className="grid2">
         <div className="card">
           <h3>Announcements</h3>
-          {ANNOUNCEMENTS.map((a) => (
-            <p key={a.title}><b>{a.title}</b><br /><span className="muted">{a.body}</span></p>
-          ))}
+          <div className="scroll-list">
+            {ANNOUNCEMENTS.map((a) => (
+              <p key={a.title}><b>{a.title}</b><br /><span className="muted">{a.body}</span></p>
+            ))}
+          </div>
         </div>
         <div className="card">
           <h3>Reminders</h3>
           {reminders.length === 0 && <p className="muted">No reminders found.</p>}
-          <ul className="plain">
-            {reminders.map((r) => (
-              <li key={r.id} className="row between">
-                <label><input type="checkbox" checked={r.done} onChange={() => toggleReminder(r.id)} /> {r.text}</label>
-                <button onClick={() => snoozeReminder(r.id, addDays(today(), 1))}>Snooze 1 day</button>
-              </li>
-            ))}
-          </ul>
+          <div className="scroll-list">
+            <ul className="plain">
+              {reminders.map((r) => (
+                <li key={r.id} className="row between">
+                  <label><input type="checkbox" checked={r.done} onChange={() => toggleReminder(r.id)} /> {r.text}</label>
+                  <button onClick={() => snoozeReminder(r.id, addDays(today(), 1))}>Snooze 1 day</button>
+                </li>
+              ))}
+            </ul>
+          </div>
           <form className="row" onSubmit={(e) => { e.preventDefault(); if (text.trim()) { addReminder(text.trim()); setText('') } }}>
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Add a reminder…" />
             <button>Add</button>
@@ -107,12 +113,12 @@ export default function Dashboard() {
       </div>
 
       <div className="grid2">
-        <div className="card">
+        <div className="card fill">
           <h3>Map</h3>
           <MapView pins={pins} />
           {pins.length === 0 && <p className="muted">No visible jobs with a mapped site for this day.</p>}
         </div>
-        <div className="card">
+        <div className="card fill">
           <div className="row between">
             <h3>Schedule</h3>
             <div className="row">
@@ -122,12 +128,13 @@ export default function Dashboard() {
             </div>
           </div>
           {dayEntries.length === 0 && <p className="muted">Nothing scheduled on this day.</p>}
+          <div className="scroll-list grow">
           {db.employees.map((emp) => {
             const mine = dayEntries.filter((e) => e.employeeId === emp.id).sort((a, b) => a.start.localeCompare(b.start))
             if (mine.length === 0) return null
             return (
               <div key={emp.id}>
-                <b>{emp.name}</b>
+                <b className="sched-emp">{emp.name}</b>
                 <table>
                   <thead><tr><th>Map</th><th>Job</th><th>Scheduled</th><th>Customer</th><th>Site</th></tr></thead>
                   <tbody>
@@ -140,7 +147,7 @@ export default function Dashboard() {
                           <td><Link to="/jobs">{job?.id} – {job?.name}</Link></td>
                           <td>{e.start}–{e.end}</td>
                           <td>{db.customers.find((c) => c.id === job?.customerId)?.name}</td>
-                          <td>{site?.address}</td>
+                          <td title={site?.address}>{shortAddress(site?.address, site?.addressParts)}</td>
                         </tr>
                       )
                     })}
@@ -149,6 +156,7 @@ export default function Dashboard() {
               </div>
             )
           })}
+          </div>
         </div>
       </div>
     </>
