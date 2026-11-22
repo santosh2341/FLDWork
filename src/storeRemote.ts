@@ -60,12 +60,31 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
   const num = (v: number | null) => (v == null ? 0 : Number(v))
 
   return {
-    addCustomer: (c) => {
-      void write(() => sb.from('customers').insert({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold }))
+    addCustomer: async (c) => {
+      try {
+        const { data, error } = await sb
+          .from('customers')
+          .insert({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold })
+          .select('id')
+          .single()
+        if (error) {
+          fail(error.message)
+          return null
+        }
+        await reload()
+        return data.id as string
+      } catch (e) {
+        fail(errMsg(e))
+        return null
+      }
     },
     updateCustomer: (c) => {
       setDb((d) => ({ ...d, customers: d.customers.map((x) => (x.id === c.id ? c : x)) }))
       void write(() => sb.from('customers').update({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold }).eq('id', c.id))
+    },
+    updateSite: (s) => {
+      setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) }))
+      void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, lat: s.lat ?? null, lng: s.lng ?? null }).eq('id', s.id))
     },
     addSite: (s) => {
       void write(() => sb.from('sites').insert({ customer_id: s.customerId, name: s.name, address: s.address, lat: s.lat ?? null, lng: s.lng ?? null }))

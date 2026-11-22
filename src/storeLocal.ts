@@ -8,9 +8,14 @@ import type { CatalogPart, Db, InventoryCount, Invoice, Job, Quote, Receipt, Ven
 // Browser-only store: used when no Supabase keys are set. Data lives in the Db state (saved to localStorage by the provider).
 export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): Actions {
   return {
-    addCustomer: (c) => setDb((d) => ({ ...d, customers: [...d.customers, { ...c, id: uid() }] })),
+    addCustomer: async (c) => {
+      const id = uid()
+      setDb((d) => ({ ...d, customers: [...d.customers, { ...c, id }] }))
+      return id
+    },
     updateCustomer: (c) => setDb((d) => ({ ...d, customers: d.customers.map((x) => (x.id === c.id ? c : x)) })),
     addSite: (s) => setDb((d) => ({ ...d, sites: [...d.sites, { ...s, id: uid() }] })),
+    updateSite: (s) => setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) })),
     upsertPart: (p) =>
       setDb((d) => {
         if (p.id) return { ...d, catalog: d.catalog.map((x) => (x.id === p.id ? (p as CatalogPart) : x)) }

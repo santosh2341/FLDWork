@@ -1,23 +1,24 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { QuoteForm } from './Simple'
 import { useStore } from '../store'
 import { computeCosting, money, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 
 export default function Quotes() {
   const { db, createQuote } = useStore()
   const nav = useNavigate()
-  const add = async () => {
-    const customerId = db.customers[0]?.id
-    const site = db.sites.find((s) => s.customerId === customerId)
-    if (!customerId || !site) return alert('Add a customer with a site first.')
-    const name = prompt(`Quote name? (for ${db.customers[0].name}; change customer on the quote)`)
-    if (name) {
-      const id = await createQuote(customerId, site.id, name)
-      if (id) nav(`/quotes/${id}`)
-    }
-  }
+  const [open, setOpen] = useState(false)
   return (
     <>
-      <div className="row between"><h1>Quotes ({db.quotes.length})</h1><button onClick={add}>+ New quote</button></div>
+      <div className="row between"><h1>Quotes ({db.quotes.length})</h1><button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button></div>
+      {open && (
+        <QuoteForm
+          customers={db.customers}
+          sites={db.sites}
+          onCancel={() => setOpen(false)}
+          onSubmit={async (cid, sid, name) => { const id = await createQuote(cid, sid, name); if (id) nav(`/quotes/${id}`) }}
+        />
+      )}
       <table>
         <thead><tr><th>#</th><th>Name</th><th>Customer</th><th>Site</th><th>Status</th><th>Total</th></tr></thead>
         <tbody>

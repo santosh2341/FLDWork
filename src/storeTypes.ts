@@ -6,9 +6,10 @@ import type {
 // Everything the pages can do to the data. The local (browser) and remote (Supabase) stores both implement this.
 // Actions that create something return a Promise, because the remote store has to wait for the database.
 export interface Actions {
-  addCustomer: (c: Omit<Customer, 'id'>) => void
+  addCustomer: (c: Omit<Customer, 'id'>) => Promise<string | null> // resolves to the new customer's id (null if it failed)
   updateCustomer: (c: Customer) => void
   addSite: (s: Omit<Site, 'id'>) => void
+  updateSite: (s: Site) => void
   upsertPart: (p: Omit<CatalogPart, 'id'> & { id?: string }) => void
   deletePart: (id: string) => void
   createQuote: (customerId: string, siteId: string, name: string) => Promise<number>
