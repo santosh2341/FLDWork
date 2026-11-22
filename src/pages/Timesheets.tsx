@@ -6,24 +6,26 @@ import type { ScheduleEntry } from '../types'
 
 type View = 'calendar' | 'summary' | 'breakdown'
 
-const FIRST_HOUR = 7
-const LAST_HOUR = 19
+const FIRST_HOUR = 5
+const LAST_HOUR = 22
 const PX_PER_MIN = 0.8
 const HOURS = Array.from({ length: LAST_HOUR - FIRST_HOUR }, (_, i) => FIRST_HOUR + i)
 const label = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'am' : 'pm'}`
 
 export default function Timesheets() {
-  const { db, addScheduleEntry, deleteScheduleEntry, setTimesheetLock } = useStore()
+  const { db, addScheduleEntry, deleteScheduleEntry, setTimesheetLock, createJobFromQuote, canWrite } = useStore()
   const [from, setFrom] = useState(weekStart(today()))
   const [employeeId, setEmployeeId] = useState('all')
   const [view, setView] = useState<View>('calendar')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [form, setForm] = useState({ jobId: '', employeeId: db.employees[0]?.id ?? '', date: today(), start: '08:00', end: '10:00' })
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
   const people = db.employees.filter((e) => employeeId === 'all' || e.id === employeeId)
   const weekEntries = db.schedule.filter((e) => e.date >= days[0] && e.date <= days[6])
   const schedulableJobs = db.jobs.filter((j) => j.status !== 'invoiced')
+  const approvedNoJob = db.quotes.filter((q) => q.status === 'approved' && !db.jobs.some((j) => j.quoteId === q.id))
   const jobName = (id: number) => db.jobs.find((j) => j.id === id)?.name ?? `Job ${id}`
   const jobCustomer = (id: number) => {
     const j = db.jobs.find((x) => x.id === id)
@@ -35,8 +37,15 @@ export default function Timesheets() {
 
   const add = async () => {
     if (!form.jobId) return setError('Choose a job to schedule.')
+    if (!form.employeeId) return setError('Choose an employee.')
+    if (!form.date) return setError('Choose a date.')
+    if (!(form.start < form.end)) return setError('End time must be after start time.')
     const msg = await addScheduleEntry({ ...form, jobId: Number(form.jobId) })
     setError(msg ?? '')
+    if (!msg) {
+      setFrom(weekStart(form.date)) // show the week the entry landed in
+      setNotice(`Added to ${db.employees.find((e) => e.id === form.employeeId)?.name ?? 'employee'} on ${form.date}.`)
+    }
   }
   const remove = async (e: ScheduleEntry) => {
     if (!confirm(`Remove ${jobName(e.jobId)} on ${e.date}?`)) return
@@ -102,9 +111,27 @@ export default function Timesheets() {
           <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <input type="time" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} />
           <input type="time" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} />
-          <button className="primary" onClick={add}>Add</button>
+          <button className="primary" onClick={add} disabled={!canWrite}>Add</button>
         </div>
-        {schedulableJobs.length === 0 && <p className="muted">No jobs to schedule yet. Create one from an approved <Link to="/quotes">quote</Link>.</p>}
+        {schedulableJobs.length === 0 && (
+          <div>
+            <p className="muted">There are no jobs to schedule yet. A job is created from an approved <Link to="/quotes">quote</Link>.</p>
+            {approvedNoJob.length > 0 ? (
+              <ul className="plain">
+                {approvedNoJob.map((q) => (
+                  <li key={q.id}>
+                    Quote #{q.id} – {q.name}{' '}
+                    {canWrite && <button onClick={async () => { await createJobFromQuote(q.id) }}>Create job</button>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="muted">No approved quotes either. Open a quote, set its status to Approved, then come back here.</p>
+            )}
+          </div>
+        )}
+        {db.employees.length === 0 && <p className="error">No employees found. Add one in Settings first.</p>}
+        {notice && !error && <p className="muted">{notice}</p>}
         {error && <p className="error">{error}</p>}
       </div>
 
