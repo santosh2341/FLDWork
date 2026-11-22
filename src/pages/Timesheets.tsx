@@ -126,7 +126,14 @@ export default function Timesheets() {
                 ))}
               </ul>
             ) : (
-              <p className="muted">No approved quotes either. Open a quote, set its status to Approved, then come back here.</p>
+              <div>
+                <p className="muted">No approved quotes either. Open a quote and set its status to Approved (it saves automatically), then come back here.</p>
+                <ul className="plain">
+                  {db.quotes.filter((q) => q.status !== 'approved' && q.status !== 'declined' && !db.jobs.some((j) => j.quoteId === q.id)).map((q) => (
+                    <li key={q.id}><Link to={`/quotes/${q.id}`}>Quote #{q.id} – {q.name}</Link> <span className="muted">needs approval</span></li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
         )}

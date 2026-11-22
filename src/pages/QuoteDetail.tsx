@@ -134,7 +134,14 @@ export default function QuoteDetail() {
         <div><small>Quote total</small><br />{money(costing.total)}</div>
         <div><small>Status</small><br />
           <i className="dot" style={{ background: STATUS_COLOR[draft.status] }} />
-          <select value={draft.status} onChange={(e) => change({ status: e.target.value as QuoteStatus })}>
+          <select value={draft.status} onChange={(e) => {
+            // a status change saves straight away, so "Approved" can't be left unsaved (jobs need an approved, saved quote)
+            const status = e.target.value as QuoteStatus
+            const withLog: Quote = { ...draft, status, timeline: [{ id: uid(), type: 'System', message: `Status changed to ${STATUS_LABEL[status]}`, at: new Date().toISOString() }, ...draft.timeline] }
+            saveQuote(withLog)
+            setDraft(withLog)
+            setDirty(false)
+          }}>
             {Object.entries(STATUS_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
         </div>
