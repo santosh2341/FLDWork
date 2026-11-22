@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { addBaseLayers } from '../lib/mapLayers'
 import { AU_STATES, formatAddress, geocode, isBlank, validateAddress } from '../lib/address'
 import type { AddressParts, AuState, GeoPoint } from '../lib/address'
 
@@ -53,7 +54,7 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
   useEffect(() => {
     if (!el.current || map.current) return
     const m = L.map(el.current, { scrollWheelZoom: false }).setView([-25.3, 133.8], 3)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap contributors' }).addTo(m)
+    addBaseLayers(m, 'satellite')
     m.on('click', (ev: L.LeafletMouseEvent) => emit.current({ parts: latest.current.parts, point: { lat: ev.latlng.lat, lng: ev.latlng.lng } }))
     map.current = m
     return () => { m.remove(); map.current = null; marker.current = null }
@@ -71,7 +72,7 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
         if (p) emit.current({ parts: latest.current.parts, point: { lat: p.lat, lng: p.lng } })
       })
     } else marker.current.setLatLng(ll)
-    m.setView(ll, Math.max(m.getZoom(), 16))
+    m.setView(ll, Math.max(m.getZoom(), 18))
   }, [point])
 
   return (

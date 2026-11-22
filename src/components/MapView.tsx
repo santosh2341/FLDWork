@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import { addBaseLayers } from '../lib/mapLayers'
 
 export interface Pin {
   id: string
@@ -20,10 +21,7 @@ export default function MapView({ pins }: { pins: Pin[] }) {
   useEffect(() => {
     if (!el.current || map.current) return
     map.current = L.map(el.current).setView([-25.3, 133.8], 4)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map.current)
+    addBaseLayers(map.current)
     layer.current = L.layerGroup().addTo(map.current)
     return () => {
       map.current?.remove()
