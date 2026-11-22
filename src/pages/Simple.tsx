@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import AddressFields from '../components/AddressFields'
 import type { AddressValue } from '../components/AddressFields'
-import { emptyAddress, formatAddress, isBlank, parseAddress, validateAddress } from '../lib/address'
+import { emptyAddress, formatAddress, isBlank, normalizeParts, parseAddress, validateAddress } from '../lib/address'
 import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 
 export function Soon() {
@@ -23,7 +23,7 @@ const emptyC: CForm = { name: '', contactName: '', phone: '', email: '', addr: {
 
 // existing records only have a one-line address, so split it for editing
 const addrOf = (x: { address: string; addressParts?: import('../lib/address').AddressParts; lat?: number; lng?: number }): AddressValue => ({
-  parts: x.addressParts ?? parseAddress(x.address),
+  parts: normalizeParts(x.addressParts) ?? parseAddress(x.address),
   point: x.lat != null && x.lng != null ? { lat: x.lat, lng: x.lng } : null,
 })
 const addrFields = (a: AddressValue) => ({

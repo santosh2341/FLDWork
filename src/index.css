@@ -451,3 +451,5 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .map.small { height: 320px; margin-top: 8px; }
 .pin span { display: block; width: 22px; height: 22px; background: #d1453b; border: 3px solid #fff; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); box-shadow: 0 2px 6px #0005; }
 @media (max-width: 520px) { .addr-grid { grid-template-columns: 1fr 1fr; } .addr-wide { grid-column: span 2; } }
+
+.addr-2 { grid-column: span 2; }

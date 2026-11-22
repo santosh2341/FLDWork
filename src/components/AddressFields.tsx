@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { addBaseLayers } from '../lib/mapLayers'
-import { AU_STATES, formatAddress, geocode, isBlank, validateAddress } from '../lib/address'
+import { AU_STATES, formatAddress, geocode, isBlank, stateLabel, validateAddress } from '../lib/address'
 import type { AddressParts, AuState, GeoPoint } from '../lib/address'
 
 export interface AddressValue {
@@ -79,21 +79,21 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
     <fieldset className="addr">
       <legend>{label}</legend>
       <div className="addr-grid">
-        <label>Unit / level<input value={parts.unit} onChange={set('unit')} placeholder="e.g. 3 or Level 2" /></label>
-        <label>Street no.<input value={parts.streetNumber} onChange={set('streetNumber')} placeholder="12" /></label>
-        <label className="addr-wide">Street name<input value={parts.streetName} onChange={set('streetName')} placeholder="Smith Street" autoComplete="address-line1" /></label>
-        <label className="addr-wide">Suburb<input value={parts.suburb} onChange={set('suburb')} autoComplete="address-level2" /></label>
-        <label>State
+        <label className="addr-wide">Street *<input value={parts.street} onChange={set('street')} placeholder="88 Southbank Boulevard" autoComplete="address-line1" /></label>
+        <label className="addr-wide">Unit / level (optional)<input value={parts.unit} onChange={set('unit')} placeholder="e.g. 3 or Level 2" /></label>
+        <label className="addr-wide">City / Suburb *<input value={parts.suburb} onChange={set('suburb')} placeholder="Southbank" autoComplete="address-level2" /></label>
+        <label className="addr-2">State *
           <select value={parts.state} onChange={set('state')}>
-            <option value="">–</option>
-            {AU_STATES.map((s: AuState) => <option key={s} value={s}>{s}</option>)}
+            <option value="">Select…</option>
+            {AU_STATES.map((s: AuState) => <option key={s} value={s}>{stateLabel(s)}</option>)}
           </select>
         </label>
-        <label>Postcode<input value={parts.postcode} onChange={set('postcode')} inputMode="numeric" maxLength={4} placeholder="3000" autoComplete="postal-code" /></label>
+        <label>Postcode *<input value={parts.postcode} onChange={set('postcode')} inputMode="numeric" maxLength={4} placeholder="3006" autoComplete="postal-code" /></label>
+        <label className="addr-wide">Country<input value="Australia" readOnly disabled /></label>
       </div>
       <div className="row wrap">
         <button type="button" onClick={find} disabled={busy}>{busy ? 'Looking up…' : 'Find on map'}</button>
-        <span className="muted">{formatAddress(parts)}</span>
+        <span className="muted">{formatAddress(parts).replace(/ • /g, "  •  ")}</span>
       </div>
       {status && <p className="muted">{status}</p>}
       <div ref={el} className="map small" />
