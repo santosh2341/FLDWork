@@ -5,12 +5,12 @@ import { useStore } from '../store'
 import { computeCosting, money, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 
 export default function Quotes() {
-  const { db, createQuote } = useStore()
+  const { db, createQuote, canWrite } = useStore()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   return (
     <>
-      <div className="row between"><h1>Quotes ({db.quotes.length})</h1><button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button></div>
+      <div className="row between"><h1>Quotes ({db.quotes.length})</h1>{canWrite && <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button>}</div>
       {open && (
         <QuoteForm
           customers={db.customers}

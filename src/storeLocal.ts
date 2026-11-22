@@ -15,6 +15,8 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     },
     updateCustomer: (c) => setDb((d) => ({ ...d, customers: d.customers.map((x) => (x.id === c.id ? c : x)) })),
     addSite: (s) => setDb((d) => ({ ...d, sites: [...d.sites, { ...s, id: uid() }] })),
+    deleteCustomer: (id) => setDb((d) => ({ ...d, customers: d.customers.filter((c) => c.id !== id), sites: d.sites.filter((s) => s.customerId !== id) })),
+    deleteSite: (id) => setDb((d) => ({ ...d, sites: d.sites.filter((s) => s.id !== id) })),
     updateSite: (s) => setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) })),
     upsertPart: (p) =>
       setDb((d) => {

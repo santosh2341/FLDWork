@@ -10,6 +10,8 @@ export interface Actions {
   updateCustomer: (c: Customer) => void
   addSite: (s: Omit<Site, 'id'>) => void
   updateSite: (s: Site) => void
+  deleteCustomer: (id: string) => void // UI only offers this when the customer has no quotes, jobs or invoices
+  deleteSite: (id: string) => void
   upsertPart: (p: Omit<CatalogPart, 'id'> & { id?: string }) => void
   deletePart: (id: string) => void
   createQuote: (customerId: string, siteId: string, name: string) => Promise<number>

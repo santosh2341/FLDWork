@@ -14,7 +14,7 @@ const SOURCES = ['Website', 'Referral', 'Phone', 'Walk-in', 'Other']
 const EMPTY = { name: '', contactName: '', phone: '', email: '', address: '', source: 'Website', notes: '' }
 
 export default function Leads() {
-  const { db, addLead, updateLead, convertLead } = useStore()
+  const { db, addLead, updateLead, convertLead, canWrite } = useStore()
   const nav = useNavigate()
   const [filter, setFilter] = useState<LeadStatus | 'all'>('all')
   const [q, setQ] = useState('')
@@ -46,7 +46,7 @@ export default function Leads() {
     <>
       <div className="row between">
         <h1>Leads ({rows.length})</h1>
-        <button className="primary" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New lead'}</button>
+        {canWrite && <button className="primary" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New lead'}</button>}
       </div>
 
       {adding && (

@@ -49,12 +49,12 @@ function CustomerForm({ initial, submitLabel, onSubmit, onCancel }: {
 }
 
 export function Customers() {
-  const { db, addCustomer } = useStore()
+  const { db, addCustomer, canWrite } = useStore()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   return (
     <>
-      <div className="row between"><h1>Customers ({db.customers.length})</h1><button onClick={() => setOpen(true)}>+ New customer</button></div>
+      <div className="row between"><h1>Customers ({db.customers.length})</h1>{canWrite && <button onClick={() => setOpen(true)}>+ New customer</button>}</div>
       {open && (
         <CustomerForm
           initial={emptyC}
@@ -159,7 +159,7 @@ export function QuoteForm({ customers, sites, fixedCustomerId, onSubmit, onCance
 
 export function CustomerDetail() {
   const { id } = useParams()
-  const { db, addSite, updateCustomer, createQuote } = useStore()
+  const { db, addSite, updateSite, deleteSite, deleteCustomer, updateCustomer, createQuote, canWrite } = useStore()
   const nav = useNavigate()
   const [editing, setEditing] = useState(false)
   const [addingSite, setAddingSite] = useState(false)
@@ -168,11 +168,12 @@ export function CustomerDetail() {
   if (!c) return <p>Customer not found.</p>
   const sites = db.sites.filter((s) => s.customerId === c.id)
   const quotes = db.quotes.filter((q) => q.customerId === c.id)
+  const hasHistory = quotes.length > 0 || db.jobs.some((j) => j.customerId === c.id) || db.invoices.some((i) => i.customerId === c.id)
   return (
     <>
       <div className="row between">
         <h1>{c.name}</h1>
-        <label><input type="checkbox" checked={c.onHold} onChange={(e) => updateCustomer({ ...c, onHold: e.target.checked })} /> On hold</label>
+        <label><input type="checkbox" disabled={!canWrite} checked={c.onHold} onChange={(e) => updateCustomer({ ...c, onHold: e.target.checked })} /> On hold</label>
       </div>
       <div className="grid2">
         {editing ? (
@@ -184,13 +185,13 @@ export function CustomerDetail() {
           />
         ) : (
           <div className="card">
-            <div className="row between"><h3>Contact</h3><button onClick={() => setEditing(true)}>Edit</button></div>
+            <div className="row between"><h3>Contact</h3>{canWrite && <button onClick={() => setEditing(true)}>Edit</button>}</div>
             <p>{c.contactName || <span className="muted">No contact name</span>}<br />{c.phone}<br />{c.email}<br />{c.address}</p>
           </div>
         )}
         <div className="card">
           <div className="row between"><h3>Sites</h3>
-            <button onClick={() => setAddingSite(true)}>+ Add</button>
+            {canWrite && <button onClick={() => setAddingSite(true)}>+ Add</button>}
           </div>
           {addingSite && (
             <SiteForm
@@ -200,12 +201,20 @@ export function CustomerDetail() {
               onSubmit={(cid, name, address) => { addSite({ customerId: cid, name, address }); setAddingSite(false) }}
             />
           )}
-          <ul>{sites.map((s) => <li key={s.id}>{s.name} <span className="muted">{s.address}</span></li>)}</ul>
+          <ul>{sites.map((s) => {
+            const used = db.quotes.some((q) => q.siteId === s.id) || db.jobs.some((j) => j.siteId === s.id) || db.invoices.some((i) => i.siteId === s.id)
+            return (
+              <li key={s.id}>{s.name} <span className="muted">{s.address}</span>{' '}
+                {canWrite && <button className="link-btn" onClick={() => { const name = prompt('Site name', s.name); if (name?.trim()) updateSite({ ...s, name: name.trim() }) }}>rename</button>}{' '}
+                {canWrite && <button className="link-btn" disabled={used} title={used ? 'In use by a quote, job or invoice' : ''} onClick={() => confirm(`Delete site "${s.name}"?`) && deleteSite(s.id)}>delete</button>}
+              </li>
+            )
+          })}</ul>
           {!sites.length && !addingSite && <p className="muted">No sites yet. Add one to create quotes.</p>}
         </div>
       </div>
       <div className="row between"><h3>Quotes</h3>
-        <button disabled={!sites.length} onClick={() => setAddingQuote(true)}>+ New quote</button>
+        {canWrite && <button disabled={!sites.length} onClick={() => setAddingQuote(true)}>+ New quote</button>}
       </div>
       {addingQuote && (
         <QuoteForm
@@ -215,6 +224,15 @@ export function CustomerDetail() {
           onCancel={() => setAddingQuote(false)}
           onSubmit={async (cid, sid, name) => { const qid = await createQuote(cid, sid, name); if (qid) nav(`/quotes/${qid}`) }}
         />
+      )}
+      {canWrite && (
+        <p>
+          <button
+            disabled={hasHistory}
+            title={hasHistory ? 'This customer has quotes, jobs or invoices, so it cannot be deleted. Put it on hold instead.' : ''}
+            onClick={() => { if (confirm(`Delete customer "${c.name}" and its sites? This cannot be undone.`)) { deleteCustomer(c.id); nav('/customers') } }}
+          >Delete customer</button>
+        </p>
       )}
       <table>
         <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Total</th></tr></thead>
@@ -233,12 +251,12 @@ export function CustomerDetail() {
 }
 
 export function Sites() {
-  const { db, addSite } = useStore()
+  const { db, addSite, canWrite } = useStore()
   const [open, setOpen] = useState(false)
   return (
     <>
       <div className="row between"><h1>Sites ({db.sites.length})</h1>
-        <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New site</button>
+        {canWrite && <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New site</button>}
       </div>
       {open && (
         <SiteForm

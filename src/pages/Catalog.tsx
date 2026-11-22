@@ -6,7 +6,7 @@ import type { CatalogPart } from '../types'
 const blank: Omit<CatalogPart, 'id'> = { partNo: '', description: '', vendor: '', category: '', cost: 0, markupPct: 30, stock: 0 }
 
 export default function Catalog() {
-  const { db, upsertPart, deletePart } = useStore()
+  const { db, upsertPart, deletePart, canWrite } = useStore()
   const [q, setQ] = useState('')
   const [edit, setEdit] = useState<(Omit<CatalogPart, 'id'> & { id?: string }) | null>(null)
   const rows = db.catalog.filter((p) => `${p.partNo} ${p.description} ${p.vendor} ${p.category}`.toLowerCase().includes(q.toLowerCase()))
@@ -15,7 +15,7 @@ export default function Catalog() {
     <>
       <div className="row between">
         <h1>Catalog ({rows.length})</h1>
-        <button onClick={() => setEdit({ ...blank })}>+ Add part</button>
+        {canWrite && <button onClick={() => setEdit({ ...blank })}>+ Add part</button>}
       </div>
       <input className="wide" placeholder="Search parts…" value={q} onChange={(e) => setQ(e.target.value)} />
       <table>
@@ -26,7 +26,7 @@ export default function Catalog() {
               <td>{p.partNo}</td><td>{p.description}</td><td>{p.vendor}</td><td>{p.category}</td>
               <td>{money(p.cost)}</td><td>{p.markupPct}%</td><td>{money(sellFromCost(p.cost, p.markupPct))}</td>
               <td className={p.stock < 5 ? 'low' : ''}>{p.stock}</td>
-              <td><button onClick={() => setEdit(p)}>Edit</button> <button onClick={() => confirm('Delete part?') && deletePart(p.id)}>Delete</button></td>
+              <td>{canWrite && <><button onClick={() => setEdit(p)}>Edit</button> <button onClick={() => confirm('Delete part?') && deletePart(p.id)}>Delete</button></>}</td>
             </tr>
           ))}
         </tbody>

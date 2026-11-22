@@ -33,6 +33,7 @@ interface Ctx extends Actions {
   openTab: (t: OpenTab) => void
   closeTab: (path: string) => void
   remote: boolean // true when connected to Supabase
+  canWrite: boolean // false for technician / read-only users (the database enforces this too)
   profile: Profile | null // signed-in user's name and role (remote only)
   notice: string // last error from the database, shown as a banner
   dismissNotice: () => void
@@ -128,6 +129,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     await reload()
   }, [reload])
 
+  const canWrite = !remote || (!!profile && ['admin', 'accounts', 'sales', 'dispatcher'].includes(profile.role))
   const value = useMemo<Ctx>(
     () => ({
       ...actions,
@@ -136,12 +138,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       openTab,
       closeTab,
       remote,
+      canWrite,
       profile,
       notice,
       dismissNotice: () => setNotice(''),
       seedDemoData,
     }),
-    [actions, db, tabs, openTab, closeTab, remote, profile, notice, seedDemoData],
+    [actions, db, tabs, openTab, closeTab, remote, canWrite, profile, notice, seedDemoData],
   )
 
   if (remote && loading) return <div className="center muted">Loading your data…</div>

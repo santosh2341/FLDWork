@@ -82,6 +82,12 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       setDb((d) => ({ ...d, customers: d.customers.map((x) => (x.id === c.id ? c : x)) }))
       void write(() => sb.from('customers').update({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold }).eq('id', c.id))
     },
+    deleteCustomer: (id) => {
+      void write(() => sb.from('customers').delete().eq('id', id))
+    },
+    deleteSite: (id) => {
+      void write(() => sb.from('sites').delete().eq('id', id))
+    },
     updateSite: (s) => {
       setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) }))
       void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, lat: s.lat ?? null, lng: s.lng ?? null }).eq('id', s.id))
