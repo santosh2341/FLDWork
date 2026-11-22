@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
 import Icon, { Logo } from './Icon'
@@ -62,7 +62,7 @@ export default function Shell() {
   const loc = useLocation()
   const nav = useNavigate()
   const [expanded, setExpanded] = useState(false)
-  const [hover, setHover] = useState<string | null>(null)
+  const [openKey, setOpenKey] = useState<string | null>(null) // which sidebar section is dropped down
   const [q, setQ] = useState('')
   const [bell, setBell] = useState(false)
   const [tour, setTour] = useState(false)
@@ -78,6 +78,20 @@ export default function Shell() {
 
   // Close the mobile menu whenever the page changes.
   useEffect(() => setDrawer(false), [loc.pathname])
+
+  // Which sidebar link matches the current page: the longest matching path wins.
+  const { activeSection, activeTo } = useMemo(() => {
+    const links = NAV.flatMap((n) => (n.columns.length ? n.columns.flatMap((c) => c.links.map((l) => ({ sec: n.label, to: l.to }))) : [{ sec: n.label, to: n.to }]))
+    const p = loc.pathname
+    const hit = links
+      .filter((l) => (l.to === '/' ? p === '/' : p === l.to || p.startsWith(l.to + '/')))
+      .sort((a, b) => b.to.length - a.to.length)[0]
+    return { activeSection: hit?.sec, activeTo: hit?.to }
+  }, [loc.pathname])
+  // Keep the section you are in open.
+  useEffect(() => {
+    if (activeSection) setOpenKey(activeSection)
+  }, [activeSection])
 
   const notices = useMemo(() => {
     const out: { text: string; to: string }[] = []
@@ -107,29 +121,52 @@ export default function Shell() {
       <aside className="rail">
         <button className="drawer-close" onClick={() => setDrawer(false)} aria-label="Close menu">×</button>
         <Link to="/" className="logo" title="Fieldwork"><Logo size={34} /><span className="logo-text">Fieldwork</span></Link>
-        {NAV.map((n) => (
-          <div key={n.label} className="rail-item-wrap" onMouseEnter={() => setHover(n.label)} onMouseLeave={() => setHover(null)}>
-            <NavLink to={n.to} className="rail-item" end={n.to === '/'}>
-              <span className="icon"><Icon name={n.icon} /></span>
-              <span className="label">{n.label}</span>
-            </NavLink>
-            {n.columns.length > 0 && (
-              <div className={`flyout ${hover === n.label ? 'show' : ''}`}>
-                <div className="flyout-head"><Icon name={n.icon} size={16} /> {n.label}</div>
-                <div className="flyout-cols">
-                  {n.columns.map((c, i) => (
-                    <div key={i}>
-                      {c.heading && <div className="flyout-sub">{c.heading}</div>}
-                      {c.links.map((l) => (
-                        <Link key={l.to + l.label} to={l.to} onClick={() => setHover(null)}>{l.label}</Link>
-                      ))}
-                    </div>
-                  ))}
+        {NAV.map((n) => {
+          const linkCount = n.columns.reduce((a, c) => a + c.links.length, 0)
+          const drop = linkCount > 1 // single-link sections are plain links
+          const open = drop && openKey === n.label
+          const active = activeSection === n.label
+          return (
+            <div key={n.label} className="rail-item-wrap">
+              {drop ? (
+                <button
+                  className={`rail-item ${active ? 'active' : ''} ${open ? 'open' : ''}`}
+                  aria-expanded={open}
+                  title={n.label}
+                  onClick={() => {
+                    if (!expanded && !drawer) {
+                      setExpanded(true) // icons only: widen the sidebar so the links are readable
+                      setOpenKey(n.label)
+                    } else setOpenKey(open ? null : n.label)
+                  }}
+                >
+                  <span className="icon"><Icon name={n.icon} /></span>
+                  <span className="label">{n.label}</span>
+                  <span className="chev"><Icon name="down" size={16} /></span>
+                </button>
+              ) : (
+                <Link to={n.to} className={`rail-item ${active ? 'active' : ''}`} title={n.label}>
+                  <span className="icon"><Icon name={n.icon} /></span>
+                  <span className="label">{n.label}</span>
+                </Link>
+              )}
+              {drop && (
+                <div className={`sub ${open ? 'open' : ''}`}>
+                  <div className="sub-inner">
+                    {n.columns.map((c, i) => (
+                      <div key={i} className="sub-group">
+                        {c.heading && c.heading !== n.label && <div className="flyout-sub">{c.heading}</div>}
+                        {c.links.map((l) => (
+                          <Link key={l.to + l.label} to={l.to} className={`sub-link ${activeTo === l.to ? 'active' : ''}`} tabIndex={open ? 0 : -1}>{l.label}</Link>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          )
+        })}
         <button className="rail-toggle" onClick={() => setExpanded((e) => !e)} aria-label="Expand or collapse sidebar">
           <Icon name={expanded ? 'left' : 'right'} size={18} />
         </button>
