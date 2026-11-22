@@ -1,7 +1,39 @@
 import { useState } from 'react'
+import type { ReactNode } from 'react'
 import { useAuth } from '../auth'
+import Icon, { Logo } from '../components/Icon'
 
 type Mode = 'in' | 'up' | 'forgot'
+
+const POINTS = [
+  'Quotes with live costing and margins',
+  'Scheduling, timesheets and mobile audits',
+  'Invoicing with ageing, payments and retainage',
+  'Inventory, purchase orders and reports',
+]
+
+// Split layout: brand panel on the left (hidden on small screens), form on the right.
+function AuthShell({ children }: { children: ReactNode }) {
+  return (
+    <div className="auth-shell">
+      <aside className="auth-hero">
+        <div className="auth-grid" />
+        <div className="auth-brand"><Logo size={40} /> Fieldwork</div>
+        <div className="auth-copy">
+          <h2>Run every job, from first quote to final invoice.</h2>
+          <p>One place for your office and your crews: quote, schedule, complete and get paid.</p>
+          <ul className="auth-points">
+            {POINTS.map((t) => (
+              <li key={t}><span className="tick"><Icon name="check" size={14} /></span>{t}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="auth-foot">Field service management</div>
+      </aside>
+      <div className="login-wrap">{children}</div>
+    </div>
+  )
+}
 
 export default function Login() {
   const { signIn, signUp, recovery, linkError, resetPassword, updatePassword, cancelRecovery } = useAuth()
@@ -37,7 +69,7 @@ export default function Login() {
       if (err) show(err, true)
     }
     return (
-      <div className="login-wrap">
+      <AuthShell>
         <form className="login" onSubmit={save}>
           <h1>Fieldwork</h1>
           <p className="muted">Choose a new password</p>
@@ -47,7 +79,7 @@ export default function Login() {
           {msg && <p className={isError ? 'error' : 'muted'}>{msg}</p>}
           <button type="button" className="link-btn" onClick={() => void cancelRecovery()}>Cancel</button>
         </form>
-      </div>
+      </AuthShell>
     )
   }
 
@@ -73,7 +105,7 @@ export default function Login() {
   }
 
   return (
-    <div className="login-wrap">
+    <AuthShell>
       <form className="login" onSubmit={submit}>
         <h1>Fieldwork</h1>
         <p className="muted">
@@ -104,6 +136,6 @@ export default function Login() {
           </button>
         )}
       </form>
-    </div>
+    </AuthShell>
   )
 }

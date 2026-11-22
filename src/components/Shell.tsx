@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
+import Icon, { Logo } from './Icon'
+import type { IconName } from './Icon'
 import { useAuth } from '../auth'
 import { daysOverdue, isUnpaid } from '../lib/invoicing'
 
 interface Flyout {
   label: string
-  icon: string
+  icon: IconName
   to: string
   columns: { heading?: string; links: { label: string; to: string }[] }[]
 }
@@ -15,32 +17,32 @@ interface Flyout {
 // Sidebar structure follows guide section 1.4. Entries without a built page
 // route to a placeholder.
 const NAV: Flyout[] = [
-  { label: 'Dashboard', icon: '⌂', to: '/', columns: [] },
-  { label: 'Customers', icon: '☺', to: '/customers', columns: [{ links: [{ label: 'All Customers', to: '/customers' }, { label: 'Sites', to: '/sites' }] }] },
-  { label: 'Leads', icon: '✦', to: '/leads', columns: [{ links: [{ label: 'All Leads', to: '/leads' }] }] },
-  { label: 'Quotes', icon: '✎', to: '/quotes', columns: [{ links: [{ label: 'All Quotes', to: '/quotes' }] }] },
+  { label: 'Dashboard', icon: 'home', to: '/', columns: [] },
+  { label: 'Customers', icon: 'users', to: '/customers', columns: [{ links: [{ label: 'All Customers', to: '/customers' }, { label: 'Sites', to: '/sites' }] }] },
+  { label: 'Leads', icon: 'sparkles', to: '/leads', columns: [{ links: [{ label: 'All Leads', to: '/leads' }] }] },
+  { label: 'Quotes', icon: 'quote', to: '/quotes', columns: [{ links: [{ label: 'All Quotes', to: '/quotes' }] }] },
   {
     label: 'Materials',
-    icon: '▣',
+    icon: 'box',
     to: '/materials/catalog',
     columns: [
       { heading: 'Materials', links: [{ label: 'Catalog', to: '/materials/catalog' }, { label: 'Pre-Builds', to: '/materials/pre-builds' }, { label: 'Inventory', to: '/materials/inventory' }, { label: 'Inventory Counts', to: '/materials/counts' }] },
       { heading: 'Orders', links: [{ label: 'Purchase Orders', to: '/materials/purchase-orders' }, { label: 'Vendor Quotes', to: '/materials/vendor-quotes' }, { label: 'Receipts', to: '/materials/receipts' }] },
     ],
   },
-  { label: 'Jobs', icon: '⚒', to: '/jobs', columns: [{ links: [{ label: 'All Jobs', to: '/jobs' }] }] },
+  { label: 'Jobs', icon: 'wrench', to: '/jobs', columns: [{ links: [{ label: 'All Jobs', to: '/jobs' }] }] },
   {
     label: 'Invoices',
-    icon: '▤',
+    icon: 'receipt',
     to: '/invoices',
     columns: [
       { heading: 'Customer', links: [{ label: 'Unpaid Invoices', to: '/invoices' }, { label: 'Paid Invoices', to: '/invoices/paid' }, { label: 'All Invoices', to: '/invoices/all' }, { label: 'Payments', to: '/invoices/payments' }, { label: 'Credits', to: '/invoices/credits' }, { label: 'Retainages', to: '/invoices/retainages' }] },
     ],
   },
-  { label: 'Recurring', icon: '↻', to: '/recurring', columns: [{ links: [{ label: 'Recurring Jobs', to: '/recurring' }] }] },
-  { label: 'Schedules', icon: '▦', to: '/schedules/timesheets', columns: [{ heading: 'View', links: [{ label: 'Day View', to: '/schedules/day' }, { label: 'Week View', to: '/schedules/week' }, { label: 'Month View', to: '/schedules/month' }] }, { heading: 'Timesheets', links: [{ label: 'Timesheets', to: '/schedules/timesheets' }, { label: 'Work Orders', to: '/schedules/work-orders' }, { label: 'Run Sheets', to: '/schedules/run-sheets' }] }] },
-  { label: 'Settings', icon: '⚙', to: '/settings/general', columns: [{ heading: 'Mobile Settings', links: [{ label: 'General', to: '/settings/general' }, { label: 'Statuses', to: '/settings/statuses' }, { label: 'Audits', to: '/settings/audits' }, { label: 'Invoicing', to: '/settings/invoicing' }] }] },
-  { label: 'Reports', icon: '▥', to: '/reports', columns: [{ links: [{ label: 'View Reports', to: '/reports' }] }] },
+  { label: 'Recurring', icon: 'refresh', to: '/recurring', columns: [{ links: [{ label: 'Recurring Jobs', to: '/recurring' }] }] },
+  { label: 'Schedules', icon: 'calendar', to: '/schedules/timesheets', columns: [{ heading: 'View', links: [{ label: 'Day View', to: '/schedules/day' }, { label: 'Week View', to: '/schedules/week' }, { label: 'Month View', to: '/schedules/month' }] }, { heading: 'Timesheets', links: [{ label: 'Timesheets', to: '/schedules/timesheets' }, { label: 'Work Orders', to: '/schedules/work-orders' }, { label: 'Run Sheets', to: '/schedules/run-sheets' }] }] },
+  { label: 'Settings', icon: 'sliders', to: '/settings/general', columns: [{ heading: 'Mobile Settings', links: [{ label: 'General', to: '/settings/general' }, { label: 'Statuses', to: '/settings/statuses' }, { label: 'Audits', to: '/settings/audits' }, { label: 'Invoicing', to: '/settings/invoicing' }] }] },
+  { label: 'Reports', icon: 'chart', to: '/reports', columns: [{ links: [{ label: 'View Reports', to: '/reports' }] }] },
 ]
 
 function crumbs(pathname: string): { label: string; to: string }[] {
@@ -65,6 +67,14 @@ export default function Shell() {
   const [bell, setBell] = useState(false)
   const [tour, setTour] = useState(false)
   const [drawer, setDrawer] = useState(false) // mobile menu
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => (document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'))
+  const toggleTheme = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    setTheme(next)
+    document.documentElement.dataset.theme = next
+    try { localStorage.setItem('fld-theme', next) } catch { /* private mode */ }
+  }
+  const initials = (profile?.fullName || 'U').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   // Close the mobile menu whenever the page changes.
   useEffect(() => setDrawer(false), [loc.pathname])
@@ -96,16 +106,16 @@ export default function Shell() {
       {drawer && <div className="scrim" onClick={() => setDrawer(false)} />}
       <aside className="rail">
         <button className="drawer-close" onClick={() => setDrawer(false)} aria-label="Close menu">×</button>
-        <Link to="/" className="logo" title="Fieldwork">F</Link>
+        <Link to="/" className="logo" title="Fieldwork"><Logo size={34} /><span className="logo-text">Fieldwork</span></Link>
         {NAV.map((n) => (
           <div key={n.label} className="rail-item-wrap" onMouseEnter={() => setHover(n.label)} onMouseLeave={() => setHover(null)}>
             <NavLink to={n.to} className="rail-item" end={n.to === '/'}>
-              <span className="icon">{n.icon}</span>
+              <span className="icon"><Icon name={n.icon} /></span>
               <span className="label">{n.label}</span>
             </NavLink>
             {n.columns.length > 0 && (
               <div className={`flyout ${hover === n.label ? 'show' : ''}`}>
-                <div className="flyout-head">{n.icon} {n.label}</div>
+                <div className="flyout-head"><Icon name={n.icon} size={16} /> {n.label}</div>
                 <div className="flyout-cols">
                   {n.columns.map((c, i) => (
                     <div key={i}>
@@ -121,14 +131,14 @@ export default function Shell() {
           </div>
         ))}
         <button className="rail-toggle" onClick={() => setExpanded((e) => !e)} aria-label="Expand or collapse sidebar">
-          {expanded ? '«' : '»'}
+          <Icon name={expanded ? 'left' : 'right'} size={18} />
         </button>
       </aside>
 
       <div className="main">
         <header className="topbar">
-          <button className="menu-btn" onClick={() => setDrawer(true)} aria-label="Open menu">☰</button>
-          <button className="tenant">{db.settings.companyName} ▾</button>
+          <button className="menu-btn icon-btn" onClick={() => setDrawer(true)} aria-label="Open menu"><Icon name="menu" /></button>
+          <button className="tenant"><span className="tenant-mark">{(db.settings.companyName || 'F').slice(0, 1).toUpperCase()}</span>{db.settings.companyName} <Icon name="down" size={14} /></button>
           <div className="tabs">
             {tabs.map((t) => (
               <span key={t.path} className={`tab ${loc.pathname === t.path ? 'active' : ''}`}>
@@ -138,6 +148,7 @@ export default function Shell() {
             ))}
           </div>
           <div className="search">
+            <span className="search-ico"><Icon name="search" size={16} /></span>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers, quotes, parts…" />
             {results.length > 0 && (
               <div className="search-results">
@@ -150,7 +161,7 @@ export default function Shell() {
             )}
           </div>
           <div className="bell-wrap">
-            <button onClick={() => setBell(!bell)} aria-label="Notifications">🔔{notices.length > 0 && <span className="badge">{notices.length}</span>}</button>
+            <button className="icon-btn" onClick={() => setBell(!bell)} aria-label="Notifications"><Icon name="bell" />{notices.length > 0 && <span className="badge">{notices.length}</span>}</button>
             {bell && (
               <div className="search-results bell-list">
                 {notices.length === 0 && <span className="muted pad">You're all caught up.</span>}
@@ -158,11 +169,13 @@ export default function Shell() {
               </div>
             )}
           </div>
-          <button onClick={() => setTour(true)} aria-label="Help and tour">?</button>
+          <button className="icon-btn" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}><Icon name={theme === 'dark' ? 'sun' : 'moon'} /></button>
+          <button className="icon-btn" onClick={() => setTour(true)} aria-label="Help and tour" title="Product tour"><Icon name="help" /></button>
           {remote && (
             <div className="who">
-              <span>{profile?.fullName || 'Signed in'}{profile && <small className="muted"> · {profile.role}</small>}</span>
-              <button onClick={() => void signOut()}>Sign out</button>
+              <span className="avatar" aria-hidden="true">{initials}</span>
+              <span className="who-name">{profile?.fullName || 'Signed in'}{profile && <small>{profile.role}</small>}</span>
+              <button className="icon-btn" onClick={() => void signOut()} aria-label="Sign out" title="Sign out"><Icon name="logout" /></button>
             </div>
           )}
         </header>
@@ -181,7 +194,7 @@ export default function Shell() {
             </span>
           ))}
         </nav>
-        <main className="page"><Outlet /></main>
+        <main className="page"><div key={loc.pathname} className="page-anim"><Outlet /></div></main>
       </div>
     </div>
   )

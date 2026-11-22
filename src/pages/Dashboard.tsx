@@ -5,6 +5,9 @@ import MapView from '../components/MapView'
 import type { Pin } from '../components/MapView'
 import { addDays, today } from '../lib/dates'
 import { daysOverdue, isUnpaid } from '../lib/invoicing'
+import Icon from '../components/Icon'
+import type { IconName } from '../components/Icon'
+import CountUp from '../components/CountUp'
 
 const ANNOUNCEMENTS = [
   { title: 'Welcome to Fieldwork', body: 'Quotes, jobs, scheduling, invoicing, inventory and reports are all live in this build.' },
@@ -12,18 +15,22 @@ const ANNOUNCEMENTS = [
 ]
 
 export default function Dashboard() {
-  const { db, addReminder, toggleReminder, snoozeReminder, remote, seedDemoData } = useStore()
+  const { db, addReminder, toggleReminder, snoozeReminder, remote, seedDemoData, profile } = useStore()
   const [date, setDate] = useState(today())
   const [hidden, setHidden] = useState<Record<string, boolean>>({})
   const [text, setText] = useState('')
 
-  const alerts = [
-    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers' },
-    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices' },
-    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory' },
-    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs' },
-    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes' },
+  const alerts: { label: string; n: number; to: string; icon: IconName }[] = [
+    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers', icon: 'users' },
+    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices', icon: 'receipt' },
+    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory', icon: 'box' },
+    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs', icon: 'wrench' },
+    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes', icon: 'quote' },
   ]
+  const hour = new Date().getHours()
+  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const first = profile?.fullName?.split(' ')[0]
+  const longDate = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
 
   const reminders = db.reminders.filter((r) => !r.done && (!r.snoozedUntil || r.snoozedUntil <= today()))
   const dayEntries = db.schedule.filter((e) => e.date === date)
@@ -49,7 +56,12 @@ export default function Dashboard() {
 
   return (
     <>
-      <h1>Service Dashboard</h1>
+      <div className="page-head">
+        <div>
+          <h1>{greeting}{first ? `, ${first}` : ''}</h1>
+          <p className="muted">{longDate} · Service Dashboard</p>
+        </div>
+      </div>
 
       {remote && db.customers.length === 0 && db.quotes.length === 0 && (
         <div className="card">
@@ -62,8 +74,9 @@ export default function Dashboard() {
       <div className="cards">
         {alerts.map((c) => (
           <Link key={c.label} to={c.to} className={`card alert ${c.n === 0 ? 'zero' : ''}`}>
-            <div className="big">{c.n}</div>
-            <div>{c.label}</div>
+            <span className="alert-icon"><Icon name={c.icon} size={18} /></span>
+            <div className="big"><CountUp value={c.n} /></div>
+            <div className="alert-label">{c.label}<Icon name="arrow" size={15} /></div>
           </Link>
         ))}
       </div>

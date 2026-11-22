@@ -45,3 +45,11 @@ for the connected project; copy `.env.example` to `.env.local` and fill them in 
 ## Not built yet
 Accounting integrations, emailing and PDF invoices, contractor and vendor invoices, automatic (background) recurring jobs,
 BI reporting, file uploads to Supabase Storage (attachments are still stored inline, 400 KB max), per-role hiding of buttons.
+
+## Design system
+
+The look lives in `src/index.css` (design tokens at the top, then base, layout, components, motion).
+
+- Light and dark themes: the toggle in the top bar saves the choice in `localStorage` (`fld-theme`); the first visit follows the system setting. Colours are CSS variables, so new pages pick up both themes automatically. Use `var(--panel)`, `var(--ink)`, `var(--line)`, `var(--brand)` etc. instead of hard-coded hex values.
+- Icons are inline SVGs in `src/components/Icon.tsx` (add a path to `PATHS` to add an icon). The logo mark is in the same file.
+- Motion: pages fade/slide in on navigation, cards and table rows stagger in, dashboard counters count up, menus and modals pop. All of it is switched off for people who prefer reduced motion.

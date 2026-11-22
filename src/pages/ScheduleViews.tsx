@@ -125,12 +125,12 @@ export function MonthView() {
       <DateNav date={first} setDate={(d) => setDate(d.slice(0, 7) + '-01')} unit="month" />
       <p className="muted">{month.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</p>
       <div className="scroll-x"><div className="month-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
-        {DAY_NAMES.map((n) => <div key={n} style={{ background: '#fafbfc', padding: 6, fontWeight: 600, fontSize: '.8rem' }}>{n}</div>)}
+        {DAY_NAMES.map((n) => <div key={n} style={{ background: 'var(--surface-2)', padding: 6, fontWeight: 600, fontSize: '.8rem' }}>{n}</div>)}
         {cells.map((d) => {
           const es = db.schedule.filter((e) => e.date === d).sort(byTime)
           const inMonth = d.slice(0, 7) === first.slice(0, 7)
           return (
-            <div key={d} style={{ background: d === today() ? '#e6f2f2' : '#fff', minHeight: 84, padding: 4, opacity: inMonth ? 1 : 0.45, fontSize: '.75rem' }}>
+            <div key={d} style={{ background: d === today() ? 'var(--brand-soft)' : 'var(--panel)', minHeight: 84, padding: 4, opacity: inMonth ? 1 : 0.45, fontSize: '.75rem' }}>
               <b>{parseDate(d).getDate()}</b>
               {es.slice(0, 3).map((e) => <div key={e.id}>{e.start} {jobInfo(db, e.jobId).name}</div>)}
               {es.length > 3 && <div className="muted">+{es.length - 3} more</div>}
