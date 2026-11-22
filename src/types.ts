@@ -1,3 +1,4 @@
+import type { AddressParts } from './lib/address'
 export type QuoteStatus = 'to_be_completed' | 'sent' | 'approved' | 'declined'
 
 export interface Customer {
@@ -6,7 +7,10 @@ export interface Customer {
   contactName: string
   phone: string
   email: string
-  address: string
+  address: string // one-line version, e.g. "3/12 Smith Street, Parramatta NSW 2150"
+  addressParts?: AddressParts
+  lat?: number
+  lng?: number
   onHold: boolean
 }
 
@@ -15,6 +19,7 @@ export interface Site {
   customerId: string
   name: string
   address: string
+  addressParts?: AddressParts
   lat?: number
   lng?: number
 }

@@ -19,7 +19,7 @@ export default function MapView({ pins }: { pins: Pin[] }) {
 
   useEffect(() => {
     if (!el.current || map.current) return
-    map.current = L.map(el.current).setView([-37.9, 145.1], 10)
+    map.current = L.map(el.current).setView([-25.3, 133.8], 4)
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; OpenStreetMap contributors',

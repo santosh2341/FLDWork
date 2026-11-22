@@ -64,7 +64,7 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       try {
         const { data, error } = await sb
           .from('customers')
-          .insert({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold })
+          .insert({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, address_parts: c.addressParts ?? null, lat: c.lat ?? null, lng: c.lng ?? null, on_hold: c.onHold })
           .select('id')
           .single()
         if (error) {
@@ -80,7 +80,7 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     },
     updateCustomer: (c) => {
       setDb((d) => ({ ...d, customers: d.customers.map((x) => (x.id === c.id ? c : x)) }))
-      void write(() => sb.from('customers').update({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, on_hold: c.onHold }).eq('id', c.id))
+      void write(() => sb.from('customers').update({ name: c.name, contact_name: c.contactName, phone: c.phone, email: c.email, address: c.address, address_parts: c.addressParts ?? null, lat: c.lat ?? null, lng: c.lng ?? null, on_hold: c.onHold }).eq('id', c.id))
     },
     deleteCustomer: (id) => {
       void write(() => sb.from('customers').delete().eq('id', id))
@@ -90,10 +90,10 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     },
     updateSite: (s) => {
       setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) }))
-      void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, lat: s.lat ?? null, lng: s.lng ?? null }).eq('id', s.id))
+      void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null }).eq('id', s.id))
     },
     addSite: (s) => {
-      void write(() => sb.from('sites').insert({ customer_id: s.customerId, name: s.name, address: s.address, lat: s.lat ?? null, lng: s.lng ?? null }))
+      void write(() => sb.from('sites').insert({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null }))
     },
     upsertPart: (p) => {
       const row = { part_no: p.partNo, description: p.description, vendor: p.vendor, category: p.category, cost: p.cost, markup_pct: p.markupPct, stock: p.stock }
