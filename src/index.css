@@ -242,17 +242,18 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .card.alert {
   position: relative; overflow: hidden; width: 212px; margin: 0; padding: 16px 18px 16px; color: var(--ink); display: block; border-top: 1px solid var(--line);
 }
-.card.alert::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--danger), #fb923c); }
-.card.alert.zero::before { background: linear-gradient(90deg, var(--ok), #2dd4bf); }
+.card.alert { --tone: var(--brand-2); }
+.card.alert.tone-warn { --tone: var(--warn); }
+.card.alert.tone-danger { --tone: var(--danger); }
+.card.alert.zero { --tone: var(--ok); }
+.card.alert::before { content: ''; position: absolute; inset: 0 0 auto 0; height: 3px; background: linear-gradient(90deg, var(--tone), color-mix(in srgb, var(--tone) 35%, transparent)); }
 .card.alert::after {
   content: ''; position: absolute; right: -30px; top: -30px; width: 110px; height: 110px; border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--danger) 14%, transparent), transparent 70%); transition: transform .4s var(--ease);
+  background: radial-gradient(circle, color-mix(in srgb, var(--tone) 14%, transparent), transparent 70%); transition: transform .4s var(--ease);
 }
-.card.alert.zero::after { background: radial-gradient(circle, color-mix(in srgb, var(--ok) 14%, transparent), transparent 70%); }
 .card.alert:hover { text-decoration: none; transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
 .card.alert:hover::after { transform: scale(1.35); }
-.alert-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 12px; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); position: relative; z-index: 1; }
-.card.alert.zero .alert-icon { color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+.alert-icon { width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; margin-bottom: 12px; color: var(--tone); background: color-mix(in srgb, var(--tone) 12%, transparent); position: relative; z-index: 1; }
 .alert-label { color: var(--muted); font-size: .86rem; font-weight: 500; position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; }
 .alert-label svg { opacity: 0; transform: translateX(-6px); transition: all .25s var(--ease); }
 .card.alert:hover .alert-label svg { opacity: 1; transform: none; }
@@ -453,3 +454,18 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 @media (max-width: 520px) { .addr-grid { grid-template-columns: 1fr 1fr; } .addr-wide { grid-column: span 2; } }
 
 .addr-2 { grid-column: span 2; }
+
+/* ---------- Dashboard: lists scroll inside their cards instead of stretching the page ---------- */
+.scroll-list { max-height: 260px; overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.scroll-list::-webkit-scrollbar { width: 8px; }
+.scroll-list::-webkit-scrollbar-thumb { background: var(--line-strong); border-radius: 8px; }
+.scroll-list table { overflow: visible; }
+.sched-emp { position: sticky; top: 0; z-index: 2; display: block; padding: 8px 0 6px; background: var(--panel); }
+.card.fill { display: flex; flex-direction: column; height: 480px; }
+.card.fill .scroll-list.grow { flex: 1; min-height: 0; max-height: none; }
+.card.fill .map { flex: 1; height: auto; min-height: 240px; }
+@media (max-width: 768px) {
+  .card.fill { height: auto; }
+  .card.fill .scroll-list.grow { max-height: 380px; flex: none; }
+  .card.fill .map { flex: none; height: 250px; }
+}
