@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
@@ -64,6 +64,10 @@ export default function Shell() {
   const [q, setQ] = useState('')
   const [bell, setBell] = useState(false)
   const [tour, setTour] = useState(false)
+  const [drawer, setDrawer] = useState(false) // mobile menu
+
+  // Close the mobile menu whenever the page changes.
+  useEffect(() => setDrawer(false), [loc.pathname])
 
   const notices = useMemo(() => {
     const out: { text: string; to: string }[] = []
@@ -88,17 +92,19 @@ export default function Shell() {
   }, [q, db])
 
   return (
-    <div className={`shell ${expanded ? 'expanded' : ''}`}>
+    <div className={`shell ${expanded ? 'expanded' : ''} ${drawer ? 'drawer-open' : ''}`}>
+      {drawer && <div className="scrim" onClick={() => setDrawer(false)} />}
       <aside className="rail">
+        <button className="drawer-close" onClick={() => setDrawer(false)} aria-label="Close menu">×</button>
         <Link to="/" className="logo" title="Fieldwork">F</Link>
         {NAV.map((n) => (
           <div key={n.label} className="rail-item-wrap" onMouseEnter={() => setHover(n.label)} onMouseLeave={() => setHover(null)}>
             <NavLink to={n.to} className="rail-item" end={n.to === '/'}>
               <span className="icon">{n.icon}</span>
-              {expanded && <span className="label">{n.label}</span>}
+              <span className="label">{n.label}</span>
             </NavLink>
-            {hover === n.label && n.columns.length > 0 && (
-              <div className="flyout">
+            {n.columns.length > 0 && (
+              <div className={`flyout ${hover === n.label ? 'show' : ''}`}>
                 <div className="flyout-head">{n.icon} {n.label}</div>
                 <div className="flyout-cols">
                   {n.columns.map((c, i) => (
@@ -121,6 +127,7 @@ export default function Shell() {
 
       <div className="main">
         <header className="topbar">
+          <button className="menu-btn" onClick={() => setDrawer(true)} aria-label="Open menu">☰</button>
           <button className="tenant">{db.settings.companyName} ▾</button>
           <div className="tabs">
             {tabs.map((t) => (
