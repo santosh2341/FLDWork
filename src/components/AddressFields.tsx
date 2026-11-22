@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { addBaseLayers } from '../lib/mapLayers'
-import { AU_STATES, formatAddress, geocode, isBlank, stateLabel, validateAddress } from '../lib/address'
+import { AU_STATES, UNIT_TYPES, formatAddress, geocode, isBlank, stateLabel, validateAddress } from '../lib/address'
 import type { AddressParts, AuState, GeoPoint } from '../lib/address'
 
 export interface AddressValue {
@@ -11,12 +11,14 @@ export interface AddressValue {
 }
 
 // Australian address entry with a "find on map" step. The pin can be dragged (or the map clicked) to fine-tune the location.
-export default function AddressFields({ value, onChange, label = 'Address' }: {
+export default function AddressFields({ value, onChange, label = 'Address', allowPoBox = false }: {
   value: AddressValue
   onChange: (v: AddressValue) => void
   label?: string
+  allowPoBox?: boolean // billing addresses may be a PO Box; sites must be a physical street address
 }) {
   const { parts, point } = value
+  const po = parts.kind === 'po_box'
   const [status, setStatus] = useState('')
   const [busy, setBusy] = useState(false)
   const el = useRef<HTMLDivElement>(null)
@@ -61,6 +63,10 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
   }, [])
 
   useEffect(() => {
+    if (!po) setTimeout(() => map.current?.invalidateSize(), 0)
+  }, [po])
+
+  useEffect(() => {
     const m = map.current
     if (!m) return
     if (!point) { marker.current?.remove(); marker.current = null; return }
@@ -78,9 +84,29 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
   return (
     <fieldset className="addr">
       <legend>{label}</legend>
+      {allowPoBox && (
+        <div className="row" style={{ marginBottom: 8 }}>
+          <label><input type="radio" checked={parts.kind !== 'po_box'} onChange={() => onChange({ parts: { ...parts, kind: 'street' }, point })} /> Street address</label>
+          <label><input type="radio" checked={parts.kind === 'po_box'} onChange={() => onChange({ parts: { ...parts, kind: 'po_box' }, point: null })} /> PO Box (postal only, no map pin)</label>
+        </div>
+      )}
       <div className="addr-grid">
-        <label className="addr-wide">Street *<input value={parts.street} onChange={set('street')} placeholder="88 Southbank Boulevard" autoComplete="address-line1" /></label>
-        <label className="addr-wide">Unit / level (optional)<input value={parts.unit} onChange={set('unit')} placeholder="e.g. 3 or Level 2" /></label>
+        {po ? (
+          <label className="addr-wide">PO Box number *<input value={parts.street} onChange={set('street')} placeholder="e.g. 1234" /></label>
+        ) : (
+          <>
+            <label className="addr-wide">Building / complex name (optional)<input value={parts.building ?? ''} onChange={set('building')} placeholder="e.g. Collins Square" /></label>
+            <label>Unit type
+              <select value={parts.unitType ?? ''} onChange={set('unitType')}>
+                <option value="">None</option>
+                {UNIT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </label>
+            <label>Unit / level no.<input value={parts.unit} onChange={set('unit')} placeholder="e.g. 3 or 4A" /></label>
+            <label>Lot no. (optional)<input value={parts.lot ?? ''} onChange={set('lot')} placeholder="rural / new estate" /></label>
+            <label className="addr-wide">Street *<input value={parts.street} onChange={set('street')} placeholder="88 Southbank Boulevard" autoComplete="address-line1" /></label>
+          </>
+        )}
         <label className="addr-wide">City / Suburb *<input value={parts.suburb} onChange={set('suburb')} placeholder="Southbank" autoComplete="address-level2" /></label>
         <label className="addr-2">State *
           <select value={parts.state} onChange={set('state')}>
@@ -92,12 +118,12 @@ export default function AddressFields({ value, onChange, label = 'Address' }: {
         <label className="addr-wide">Country<input value="Australia" readOnly disabled /></label>
       </div>
       <div className="row wrap">
-        <button type="button" onClick={find} disabled={busy}>{busy ? 'Looking up…' : 'Find on map'}</button>
+        {!po && <button type="button" onClick={find} disabled={busy}>{busy ? 'Looking up…' : 'Find on map'}</button>}
         <span className="muted">{formatAddress(parts).replace(/ • /g, "  •  ")}</span>
       </div>
       {status && <p className="muted">{status}</p>}
-      <div ref={el} className="map small" />
-      {point && <p className="muted">Location saved as {point.lat.toFixed(5)}, {point.lng.toFixed(5)}.</p>}
+      <div ref={el} className="map small" style={po ? { display: 'none' } : undefined} />
+      {!po && point && <p className="muted">Location saved as {point.lat.toFixed(5)}, {point.lng.toFixed(5)}.</p>}
     </fieldset>
   )
 }

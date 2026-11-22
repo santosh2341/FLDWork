@@ -55,7 +55,7 @@ function CustomerForm({ initial, submitLabel, onSubmit, onCancel }: {
       <label className="block">Contact name<br /><input className="wide" value={f.contactName} onChange={set('contactName')} /></label>
       <label className="block">Phone<br /><input className="wide" type="tel" value={f.phone} onChange={set('phone')} /></label>
       <label className="block">Email<br /><input className="wide" type="email" value={f.email} onChange={set('email')} /></label>
-      <AddressFields value={f.addr} onChange={(addr) => setF({ ...f, addr })} label="Address (Australia)" />
+      <AddressFields value={f.addr} onChange={(addr) => setF({ ...f, addr })} label="Address (Australia)" allowPoBox />
       {err && <p className="error">{err}</p>}
       <div className="row">
         <button type="submit" className="primary" disabled={busy}>{busy ? 'Saving…' : submitLabel}</button>
@@ -104,12 +104,14 @@ export function Customers() {
 
 function SiteForm({ customers, fixedCustomerId, initial, submitLabel = 'Add site', onSubmit, onCancel }: {
   customers: { id: string; name: string }[]; fixedCustomerId?: string
-  initial?: { customerId: string; name: string; addr: AddressValue }; submitLabel?: string
-  onSubmit: (customerId: string, name: string, addr: AddressValue) => void; onCancel: () => void
+  initial?: { customerId: string; name: string; addr: AddressValue; propertyType?: string; accessNotes?: string }; submitLabel?: string
+  onSubmit: (customerId: string, name: string, addr: AddressValue, extra: { propertyType: string; accessNotes: string }) => void; onCancel: () => void
 }) {
   const [customerId, setCustomerId] = useState(initial?.customerId ?? fixedCustomerId ?? customers[0]?.id ?? '')
   const [name, setName] = useState(initial?.name ?? '')
   const [addr, setAddr] = useState<AddressValue>(initial?.addr ?? { parts: emptyAddress, point: null })
+  const [propertyType, setPropertyType] = useState(initial?.propertyType ?? '')
+  const [accessNotes, setAccessNotes] = useState(initial?.accessNotes ?? '')
   const [err, setErr] = useState('')
   const submit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -118,7 +120,7 @@ function SiteForm({ customers, fixedCustomerId, initial, submitLabel = 'Add site
     const ae = validateAddress(addr.parts)
     if (ae) return setErr(ae)
     if (!isBlank(addr.parts) && !addr.point && !confirm('This site has no map location, so it will not appear on the dashboard map. Save anyway? (Use "Find on map" first.)')) return
-    onSubmit(customerId, name.trim(), addr)
+    onSubmit(customerId, name.trim(), addr, { propertyType, accessNotes: accessNotes.trim() })
   }
   return (
     <form className="card narrow" onSubmit={submit}>
@@ -130,7 +132,16 @@ function SiteForm({ customers, fixedCustomerId, initial, submitLabel = 'Add site
         </label>
       )}
       <label className="block">Site name *<br /><input className="wide" value={name} onChange={(e) => setName(e.target.value)} autoFocus /></label>
+      <label className="block">Property type<br />
+        <select className="wide" value={propertyType} onChange={(e) => setPropertyType(e.target.value)}>
+          <option value="">Not set</option>
+          {['Residential', 'Commercial', 'Industrial', 'Retail', 'Strata / body corporate', 'Rural', 'Government / education'].map((t) => <option key={t} value={t}>{t}</option>)}
+        </select>
+      </label>
       <AddressFields value={addr} onChange={setAddr} label="Site address (Australia)" />
+      <label className="block">Access &amp; site notes<br />
+        <textarea rows={3} value={accessNotes} onChange={(e) => setAccessNotes(e.target.value)} placeholder="Gate or door codes, parking, induction, site contact, working hours, hazards" />
+      </label>
       {err && <p className="error">{err}</p>}
       <div className="row"><button type="submit" className="primary">{submitLabel}</button><button type="button" onClick={onCancel}>Cancel</button></div>
     </form>
@@ -221,7 +232,7 @@ export function CustomerDetail() {
               customers={[c]}
               fixedCustomerId={c.id}
               onCancel={() => setAddingSite(false)}
-              onSubmit={(cid, name, addr) => { addSite({ customerId: cid, name, ...addrFields(addr) }); setAddingSite(false) }}
+              onSubmit={(cid, name, addr, x) => { addSite({ customerId: cid, name, ...addrFields(addr), ...x }); setAddingSite(false) }}
             />
           )}
           {editingSite && (
@@ -229,15 +240,15 @@ export function CustomerDetail() {
               customers={[c]}
               fixedCustomerId={c.id}
               submitLabel="Save site"
-              initial={{ customerId: c.id, name: editingSite.name, addr: addrOf(editingSite) }}
+              initial={{ customerId: c.id, name: editingSite.name, addr: addrOf(editingSite), propertyType: editingSite.propertyType, accessNotes: editingSite.accessNotes }}
               onCancel={() => setEditingSite(null)}
-              onSubmit={(cid, name, addr) => { updateSite({ ...editingSite, customerId: cid, name, ...addrFields(addr) }); setEditingSite(null) }}
+              onSubmit={(cid, name, addr, x) => { updateSite({ ...editingSite, customerId: cid, name, ...addrFields(addr), ...x }); setEditingSite(null) }}
             />
           )}
           <ul>{sites.map((s) => {
             const used = db.quotes.some((q) => q.siteId === s.id) || db.jobs.some((j) => j.siteId === s.id) || db.invoices.some((i) => i.siteId === s.id)
             return (
-              <li key={s.id}>{s.name} <span className="muted">{s.address}</span> <span title={s.lat != null ? 'Shown on the map' : 'No map location yet. Edit the site and use Find on map.'}>{s.lat != null ? '📍' : '⚠️'}</span>{' '}
+              <li key={s.id}>{s.name} <span className="muted">{s.address}</span>{s.propertyType && <span className="pill" style={{ marginLeft: 6, fontSize: '.7rem', padding: '1px 8px' }}>{s.propertyType}</span>} <span title={s.lat != null ? 'Shown on the map' : 'No map location yet. Edit the site and use Find on map.'}>{s.lat != null ? '📍' : '⚠️'}</span>{' '}
                 {canWrite && <button className="link-btn" onClick={() => { setEditingSite(s); setAddingSite(false) }}>edit</button>}{' '}
                 {canWrite && <button className="link-btn" disabled={used} title={used ? 'In use by a quote, job or invoice' : ''} onClick={() => confirm(`Delete site "${s.name}"?`) && deleteSite(s.id)}>delete</button>}
               </li>
@@ -295,14 +306,14 @@ export function Sites() {
         <SiteForm
           customers={db.customers}
           onCancel={() => setOpen(false)}
-          onSubmit={(customerId, name, addr) => { addSite({ customerId, name, ...addrFields(addr) }); setOpen(false) }}
+          onSubmit={(customerId, name, addr, x) => { addSite({ customerId, name, ...addrFields(addr), ...x }); setOpen(false) }}
         />
       )}
       <table>
-        <thead><tr><th>Site</th><th>Customer</th><th>Address</th><th>Map</th></tr></thead>
+        <thead><tr><th>Site</th><th>Customer</th><th>Type</th><th>Address</th><th>Map</th></tr></thead>
         <tbody>
           {db.sites.map((s) => (
-            <tr key={s.id}><td>{s.name}</td><td><Link to={`/customers/${s.customerId}`}>{db.customers.find((c) => c.id === s.customerId)?.name}</Link></td><td>{s.address}</td><td>{s.lat != null ? '📍' : '⚠️ not mapped'}</td></tr>
+            <tr key={s.id}><td>{s.name}</td><td><Link to={`/customers/${s.customerId}`}>{db.customers.find((c) => c.id === s.customerId)?.name}</Link></td><td>{s.propertyType}</td><td>{s.address}{s.accessNotes && <><br /><span className="muted">Access: {s.accessNotes}</span></>}</td><td>{s.lat != null ? '📍' : '⚠️ not mapped'}</td></tr>
           ))}
         </tbody>
       </table>

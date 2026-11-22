@@ -90,10 +90,10 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     },
     updateSite: (s) => {
       setDb((d) => ({ ...d, sites: d.sites.map((x) => (x.id === s.id ? s : x)) }))
-      void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null }).eq('id', s.id))
+      void write(() => sb.from('sites').update({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null, property_type: s.propertyType ?? '', access_notes: s.accessNotes ?? '' }).eq('id', s.id))
     },
     addSite: (s) => {
-      void write(() => sb.from('sites').insert({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null }))
+      void write(() => sb.from('sites').insert({ customer_id: s.customerId, name: s.name, address: s.address, address_parts: s.addressParts ?? null, lat: s.lat ?? null, lng: s.lng ?? null, property_type: s.propertyType ?? '', access_notes: s.accessNotes ?? '' }))
     },
     upsertPart: (p) => {
       const row = { part_no: p.partNo, description: p.description, vendor: p.vendor, category: p.category, cost: p.cost, markup_pct: p.markupPct, stock: p.stock }

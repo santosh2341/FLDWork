@@ -22,6 +22,8 @@ export interface Site {
   addressParts?: AddressParts
   lat?: number
   lng?: number
+  propertyType?: string // Residential, Commercial, Industrial, ...
+  accessNotes?: string // gate codes, parking, induction, site contact, hours
 }
 
 export interface CatalogPart {

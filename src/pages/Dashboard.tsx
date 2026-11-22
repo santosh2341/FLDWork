@@ -47,7 +47,7 @@ export default function Dashboard() {
         lat: site.lat,
         lng: site.lng,
         title: `Job ${job.id} – ${job.name}`,
-        detail: `${e.start}–${e.end}, ${site.address}`,
+        detail: `${e.start}–${e.end}, ${site.address}${site.accessNotes ? ' · Access: ' + site.accessNotes : ''}`,
         href: '/jobs',
       })
     }
