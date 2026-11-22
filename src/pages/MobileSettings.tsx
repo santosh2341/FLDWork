@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import Audits from './Audits'
+import Team from './Team'
 import AddressFields from '../components/AddressFields'
 import { emptyAddress, formatAddress, isBlank, normalizeParts, parseAddress, validateAddress } from '../lib/address'
 import { emptyCompany, formatAbn, formatBsb, validateCompany } from '../lib/company'
@@ -12,6 +13,7 @@ const TABS = [
   { key: 'statuses', label: 'Statuses' },
   { key: 'audits', label: 'Audits' },
   { key: 'invoicing', label: 'Invoicing' },
+  { key: 'team', label: 'Team' },
 ] as const
 
 const DEFAULT_LABELS: Record<JobStatus, string> = {
@@ -63,6 +65,8 @@ export default function MobileSettings() {
 
       {current === 'audits' ? (
         <Audits />
+      ) : current === 'team' ? (
+        <Team />
       ) : (
         <>
           {current === 'general' && (

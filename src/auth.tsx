@@ -10,7 +10,7 @@ interface AuthCtx {
   session: Session | null
   signIn: (email: string, password: string) => Promise<string | null>
   // returns an error message, 'confirm' when an email must be confirmed first, or null when signed in
-  signUp: (email: string, password: string, fullName: string, companyName: string) => Promise<string | null>
+  signUp: (email: string, password: string, fullName: string, companyName: string, inviteCode?: string) => Promise<string | null>
   signOut: () => Promise<void>
   recovery: boolean // true while the person arrived from a password-reset email and must choose a new password
   linkError: string // set when an email link was expired or invalid
@@ -56,14 +56,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const signUp = useCallback(async (email: string, password: string, fullName: string, companyName: string) => {
+  const signUp = useCallback(async (email: string, password: string, fullName: string, companyName: string, inviteCode?: string) => {
     if (!supabase) return 'Supabase is not configured'
     try {
       // The database trigger handle_new_user() reads these two values and creates the company, profile and employee.
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { full_name: fullName, company_name: companyName } },
+        options: { data: { full_name: fullName, company_name: companyName, ...(inviteCode ? { invite_code: inviteCode } : {}) } },
       })
       if (error) return error.message
       return data.session ? null : 'confirm'

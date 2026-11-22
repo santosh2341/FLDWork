@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { supabase } from '../lib/supabase'
 import type { ReactNode } from 'react'
 import { useAuth } from '../auth'
 import Icon, { Logo } from '../components/Icon'
@@ -37,7 +38,9 @@ function AuthShell({ children }: { children: ReactNode }) {
 
 export default function Login() {
   const { signIn, signUp, recovery, linkError, resetPassword, updatePassword, cancelRecovery } = useAuth()
-  const [mode, setMode] = useState<Mode>('in')
+  const inviteCode = new URLSearchParams(window.location.search).get('invite') ?? ''
+  const [invite, setInvite] = useState<{ company: string; email: string; role: string } | null>(null)
+  const [mode, setMode] = useState<Mode>(inviteCode ? 'up' : 'in')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -46,6 +49,19 @@ export default function Login() {
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState(linkError)
   const [isError, setIsError] = useState(!!linkError)
+
+  useEffect(() => {
+    if (!inviteCode || !supabase) return
+    void supabase.rpc('invite_info', { p_code: inviteCode }).then(({ data }) => {
+      if (data) {
+        setInvite(data as { company: string; email: string; role: string })
+        setEmail((data as { email: string }).email)
+      } else {
+        setMsg('This invitation link is invalid, already used, or has expired. Ask your admin for a new one.')
+        setIsError(true)
+      }
+    })
+  }, [inviteCode])
 
   const show = (text: string, error: boolean) => {
     setMsg(text)
@@ -94,8 +110,9 @@ export default function Login() {
       else show('If an account exists for that email, a reset link is on its way. It can take a few minutes. Check your spam folder too.', false)
       return
     }
-    const r = mode === 'in' ? await signIn(email.trim(), password) : await signUp(email.trim(), password, fullName.trim(), company.trim())
+    const r = mode === 'in' ? await signIn(email.trim(), password) : await signUp(email.trim(), password, fullName.trim(), company.trim(), invite ? inviteCode : undefined)
     setBusy(false)
+    if (!r || r === 'confirm') window.history.replaceState(null, '', window.location.pathname)
     if (r === 'confirm') {
       show('Account created. Check your email for a confirmation link, then sign in.', false)
       setMode('in')
@@ -111,13 +128,14 @@ export default function Login() {
         <p className="muted">
           {mode === 'in' ? 'Sign in to your company' : mode === 'up' ? 'Create your company account' : 'Enter your email and we will send you a link to reset your password'}
         </p>
+        {mode === 'up' && invite && <p className="muted">You have been invited to join <b>{invite.company}</b> as {invite.role}.</p>}
         {mode === 'up' && (
           <>
             <label>Your name<input required value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" /></label>
-            <label>Company name<input required value={company} onChange={(e) => setCompany(e.target.value)} autoComplete="organization" /></label>
+            {!invite && <label>Company name<input required value={company} onChange={(e) => setCompany(e.target.value)} autoComplete="organization" /></label>}
           </>
         )}
-        <label>Email<input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label>
+        <label>Email<input required type="email" value={email} readOnly={!!invite} onChange={(e) => setEmail(e.target.value)} autoComplete="email" /></label>
         {mode !== 'forgot' && (
           <label>Password<input required type="password" minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={mode === 'in' ? 'current-password' : 'new-password'} /></label>
         )}

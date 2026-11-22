@@ -15,8 +15,8 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 - [x] "Email" button that opens a ready-written email to the customer
 
 ## Phase 2: Accounts and team
-- [ ] Forgot / reset password
-- [ ] Team page: admins see members and change roles
+- [x] Forgot / reset password (added by you)
+- [x] Team page: admins see members, change roles, invite by link
 
 ## Phase 3: Data housekeeping and accounting
 - [ ] Archive / delete quotes and jobs (blocked when they have downstream records)
