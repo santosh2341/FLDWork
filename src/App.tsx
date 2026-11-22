@@ -30,9 +30,9 @@ export default function App() {
 
 // With Supabase configured, nothing is shown until the user signs in.
 function Gate() {
-  const { remote, ready, session } = useAuth()
+  const { remote, ready, session, recovery } = useAuth()
   if (!ready) return <div className="center muted">Loading…</div>
-  if (remote && !session) return <Login />
+  if (remote && (!session || recovery)) return <Login />
   return <AppRoutes />
 }
 
