@@ -12,7 +12,7 @@ export const JOB_LABEL: Record<JobStatus, string> = {
 }
 
 export default function Jobs() {
-  const { db, setJobStatus, createInvoiceFromJob } = useStore()
+  const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite } = useStore()
   const nav = useNavigate()
   const labels = db.settings.jobStatusLabels
   const changeStatus = (j: Job, status: JobStatus) => {
@@ -35,7 +35,7 @@ export default function Jobs() {
       {db.jobs.length > 0 && (
         <table>
           <thead>
-            <tr><th>Job</th><th>Quote</th><th>Customer</th><th>Site</th><th>Value</th><th>Status</th><th /></tr>
+            <tr><th>Job</th><th>Quote</th><th>Customer</th><th>Site</th><th>Value</th><th>Status</th><th /><th /></tr>
           </thead>
           <tbody>
             {db.jobs.map((j) => {
@@ -66,6 +66,11 @@ export default function Jobs() {
                       <button disabled={j.status !== 'complete'} title={j.status !== 'complete' ? 'Mark the job complete first' : ''} onClick={async () => { const id = await createInvoiceFromJob(j.id); if (id) nav(`/invoices/${id}`) }}>
                         Create invoice
                       </button>
+                    )}
+                  </td>
+                  <td>
+                    {canWrite && (
+                      <button className="link-btn" disabled={!!inv} title={inv ? 'This job has an invoice' : ''} onClick={() => confirm(`Delete job ${j.id}? Its schedule entries and audit results are removed too.`) && deleteJob(j.id)}>Delete</button>
                     )}
                   </td>
                 </tr>

@@ -4,6 +4,7 @@ import { useStore } from '../store'
 import AddressFields from '../components/AddressFields'
 import type { AddressValue } from '../components/AddressFields'
 import { emptyAddress, formatAddress, isBlank, normalizeParts, parseAddress, validateAddress } from '../lib/address'
+import { exportCustomers } from '../lib/accounting'
 import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 
 export function Soon() {
@@ -71,7 +72,7 @@ export function Customers() {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <div className="row between"><h1>Customers ({db.customers.length})</h1>{canWrite && <button onClick={() => setOpen(true)}>+ New customer</button>}</div>
+      <div className="row between"><h1>Customers ({db.customers.length})</h1><div className="row"><button onClick={() => exportCustomers(db.customers)}>Export CSV</button>{canWrite && <button onClick={() => setOpen(true)}>+ New customer</button>}</div></div>
       {open && (
         <CustomerForm
           initial={emptyC}

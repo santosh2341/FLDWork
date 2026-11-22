@@ -51,6 +51,8 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }))
       return id
     },
+    deleteQuote: (id) => setDb((d) => ({ ...d, quotes: d.quotes.filter((q) => q.id !== id), leads: d.leads.map((l) => (l.quoteId === id ? { ...l, quoteId: undefined } : l)), recurring: d.recurring.filter((r) => r.quoteId !== id) })),
+    deleteJob: (id) => setDb((d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id), schedule: d.schedule.filter((e) => e.jobId !== id), auditResults: d.auditResults.filter((r) => r.jobId !== id) })),
     setJobStatus: (jobId, status) => setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) })),
     createInvoiceFromJob: async (jobId) => {
       const existing = db.invoices.find((i) => i.jobId === jobId && !i.voided)

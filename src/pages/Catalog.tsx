@@ -1,3 +1,4 @@
+import { exportParts } from '../lib/accounting'
 import { useState } from 'react'
 import { useStore } from '../store'
 import { money, sellFromCost } from '../lib/costing'
@@ -15,7 +16,7 @@ export default function Catalog() {
     <>
       <div className="row between">
         <h1>Catalog ({rows.length})</h1>
-        {canWrite && <button onClick={() => setEdit({ ...blank })}>+ Add part</button>}
+        <div className="row"><button onClick={() => exportParts(db.catalog)}>Export CSV</button>{canWrite && <button onClick={() => setEdit({ ...blank })}>+ Add part</button>}</div>
       </div>
       <input className="wide" placeholder="Search parts…" value={q} onChange={(e) => setQ(e.target.value)} />
       <table>

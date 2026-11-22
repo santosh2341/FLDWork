@@ -19,8 +19,8 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 - [x] Team page: admins see members, change roles, invite by link
 
 ## Phase 3: Data housekeeping and accounting
-- [ ] Archive / delete quotes and jobs (blocked when they have downstream records)
-- [ ] CSV exports: invoices (Xero / MYOB import layout), customers, parts
+- [x] Delete quotes and jobs (blocked when they have downstream records)
+- [x] CSV exports: Xero sales-invoice import, customers, parts (MYOB layout later)
 
 ## Phase 4: AI assistant (Claude API through a Supabase Edge Function)
 - [ ] Edge Function with auth, per-company usage limit, API key kept server-side

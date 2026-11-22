@@ -16,6 +16,8 @@ export interface Actions {
   deletePart: (id: string) => void
   createQuote: (customerId: string, siteId: string, name: string) => Promise<number>
   saveQuote: (q: Quote) => void
+  deleteQuote: (id: number) => void // UI only offers this when the quote has no job
+  deleteJob: (id: number) => void // UI only offers this when the job has no invoice
   createJobFromQuote: (quoteId: number) => Promise<number>
   setJobStatus: (jobId: number, status: JobStatus) => void
   createInvoiceFromJob: (jobId: number) => Promise<number>

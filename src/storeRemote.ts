@@ -107,6 +107,12 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     saveQuote: (q) => {
       void write(() => sb.rpc('save_quote', { p: q }))
     },
+    deleteQuote: (id) => {
+      void write(() => sb.from('quotes').delete().eq('id', id))
+    },
+    deleteJob: (id) => {
+      void write(() => sb.from('jobs').delete().eq('id', id))
+    },
     createJobFromQuote: async (quoteId) => num(await call<number>('create_job_from_quote', { p_quote_id: quoteId })),
     setJobStatus: (jobId, status) => {
       setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) }))

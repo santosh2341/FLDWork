@@ -11,7 +11,7 @@ const MAX_FILE = 400 * 1024 // browser storage is small; larger files wait for S
 
 export default function QuoteDetail() {
   const { id } = useParams()
-  const { db, saveQuote, openTab, createJobFromQuote } = useStore()
+  const { db, saveQuote, openTab, createJobFromQuote, deleteQuote, canWrite } = useStore()
   const nav = useNavigate()
   const stored = db.quotes.find((q) => q.id === Number(id))
   const [draft, setDraft] = useState<Quote | null>(stored ?? null)
@@ -125,6 +125,13 @@ export default function QuoteDetail() {
             </button>
           )}
           <Link className="btn" to={`/quotes/${draft.id}/print`}>Print / PDF</Link>
+          {canWrite && (
+            <button
+              disabled={db.jobs.some((j) => j.quoteId === draft.id)}
+              title={db.jobs.some((j) => j.quoteId === draft.id) ? 'This quote has a job, so it cannot be deleted' : ''}
+              onClick={() => { if (confirm(`Delete quote #${draft.id}? This cannot be undone.`)) { deleteQuote(draft.id); nav('/quotes') } }}
+            >Delete</button>
+          )}
           <button className="primary" disabled={!dirty} onClick={save}>Save</button>
         </div>
       </div>

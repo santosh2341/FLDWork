@@ -5,6 +5,7 @@ import { daysOverdue, invoiceState, invoiceTotals, isUnpaid, STATE_COLOR, STATE_
 import type { InvoiceState, InvoiceTotals } from '../lib/invoicing'
 import { money } from '../lib/costing'
 import { downloadCsv } from '../lib/csv'
+import { exportXeroInvoices } from '../lib/accounting'
 import type { Invoice } from '../types'
 import RetainageTable from './Retainages'
 
@@ -105,7 +106,10 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
     <>
       <div className="row between">
         <h1>{heading} ({count})</h1>
-        <button onClick={exportCsv} disabled={count === 0 || filter === 'retainages'}>Export CSV</button>
+        <div className="row">
+          <button onClick={() => { if (!exportXeroInvoices(db)) alert('No approved or sent invoices to export yet.') }} title="Sent and approved invoices, in Xero's sales invoice import layout">Export for Xero</button>
+          <button onClick={exportCsv} disabled={count === 0 || filter === 'retainages'}>Export CSV</button>
+        </div>
       </div>
       <div className="subtabs">
         {TABS.map((t) => (
