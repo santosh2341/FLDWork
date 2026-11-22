@@ -124,7 +124,7 @@ export function MonthView() {
       <h1>Month view</h1>
       <DateNav date={first} setDate={(d) => setDate(d.slice(0, 7) + '-01')} unit="month" />
       <p className="muted">{month.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
+      <div className="scroll-x"><div className="month-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
         {DAY_NAMES.map((n) => <div key={n} style={{ background: '#fafbfc', padding: 6, fontWeight: 600, fontSize: '.8rem' }}>{n}</div>)}
         {cells.map((d) => {
           const es = db.schedule.filter((e) => e.date === d).sort(byTime)
@@ -137,7 +137,7 @@ export function MonthView() {
             </div>
           )
         })}
-      </div>
+      </div></div>
     </>
   )
 }
