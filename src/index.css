@@ -469,3 +469,12 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
   .card.fill .scroll-list.grow { max-height: 380px; flex: none; }
   .card.fill .map { flex: none; height: 250px; }
 }
+
+/* ---------- Dashboard summary cards: fill the row, calmer look ---------- */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.card.alert { width: auto; padding: 16px 18px 14px; background: linear-gradient(165deg, color-mix(in srgb, var(--tone) 9%, var(--panel)), var(--panel) 65%); }
+.card.alert::after { display: none; }
+.alert-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; position: relative; z-index: 1; }
+.alert-top .alert-icon { margin-bottom: 0; }
+.alert-pill { font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; color: var(--tone); background: color-mix(in srgb, var(--tone) 14%, transparent); }
+@media (max-width: 768px) { .cards { grid-template-columns: repeat(2, 1fr); gap: 12px; } }
