@@ -1,0 +1,22 @@
+/* Sidebar dropdown sections (kept in its own file so it loads with the Sidebar in Shell.tsx) */
+/* Sidebar dropdown sections */
+button.rail-item { width: 100%; border: 0; background: transparent; box-shadow: none; text-align: left; font-weight: 500; }
+button.rail-item:hover:not(:disabled) { background: rgba(255, 255, 255, .07); color: #fff; transform: none; box-shadow: none; border-color: transparent; }
+button.rail-item:active:not(:disabled) { transform: none; }
+.rail-item .chev { margin-left: auto; display: grid; opacity: .7; transition: transform .25s var(--ease); }
+.shell:not(.expanded) .rail-item .chev { display: none; }
+.rail-item.open .chev { transform: rotate(180deg); opacity: 1; }
+.sub { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .28s var(--ease); }
+.sub.open { grid-template-rows: 1fr; }
+.sub-inner { overflow: hidden; min-height: 0; margin: 0 0 0 21px; padding-left: 14px; border-left: 1px solid rgba(255, 255, 255, .1); }
+.shell:not(.expanded) .sub { display: none; }
+.sub-group { padding: 4px 0 2px; }
+.sub-link { display: block; padding: 7px 12px; margin: 1px 0; border-radius: 8px; color: var(--rail-ink); font-size: .88rem; white-space: nowrap; transition: background-color .15s, color .15s, padding-left .18s var(--ease); }
+.sub-link:hover { background: rgba(255, 255, 255, .07); color: #fff; text-decoration: none; padding-left: 16px; }
+.sub-link.active { color: #5eead4; background: rgba(45, 212, 191, .1); font-weight: 600; }
+.flyout-sub { font-size: .66rem; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: #6f8693; margin: 8px 0 2px 12px; }
+
+@media (max-width: 768px) {
+  .shell:not(.expanded) .sub { display: grid; }
+  .shell:not(.expanded) .rail-item .chev { display: grid; }
+}
