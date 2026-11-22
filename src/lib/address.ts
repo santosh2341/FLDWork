@@ -153,3 +153,10 @@ export async function geocode(a: AddressParts, signal?: AbortSignal): Promise<Ge
   const sub = await search(base, signal)
   return sub ? { point: sub, precision: 'suburb' } : null
 }
+
+// Short form for tight spaces, e.g. "140 George Street, Sydney". Falls back to the stored one-line text.
+export function shortAddress(address?: string, parts?: AddressParts): string {
+  if (parts && !isBlank(parts)) return [streetLine(parts), clean(parts.suburb)].filter(Boolean).join(', ')
+  const m = /(?:Street|Postal):\s*(.*?)\s*•\s*City\/Suburb:\s*(.*?)\s*(?:•|$)/.exec(address ?? '')
+  return m ? [m[1], m[2]].filter(Boolean).join(', ') : (address ?? '')
+}
