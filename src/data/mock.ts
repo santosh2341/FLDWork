@@ -117,6 +117,7 @@ export const seed: Db = {
   counts: [],
   jobNotes: [],
   clock: [],
+  jobPhotos: [],
   jobs: [],
   invoices: [
     {

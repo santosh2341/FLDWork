@@ -1,4 +1,5 @@
 import { uid } from './lib/id'
+import { shrinkPhoto } from './lib/photos'
 import type { Dispatch, SetStateAction } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { errMsg } from './lib/remote'
@@ -124,11 +125,46 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       void write(() => sb.from('quotes').delete().eq('id', id))
     },
     deleteJob: (id) => {
-      void write(() => sb.from('jobs').delete().eq('id', id))
+      const paths = getDb().jobPhotos.filter((p) => p.jobId === id && p.path).map((p) => p.path as string)
+      void write(async () => {
+        if (paths.length) await sb.storage.from('job-photos').remove(paths) // tidy the files; the rows go with the job
+        return sb.from('jobs').delete().eq('id', id)
+      })
     },
     createJobFromQuote: async (quoteId) => num(await call<number>('create_job_from_quote', { p_quote_id: quoteId })),
     addJobNote: (jobId, text, author) => {
       void write(() => sb.from('job_notes').insert({ job_id: jobId, text, author }))
+    },
+    addJobPhoto: async (jobId, file, author) => {
+      try {
+        const cid = await companyId()
+        if (!cid) return 'Not signed in.'
+        const blob = await shrinkPhoto(file)
+        const path = `${cid}/${jobId}/${uid()}.jpg`
+        const up = await sb.storage.from('job-photos').upload(path, blob, { contentType: 'image/jpeg' })
+        if (up.error) return up.error.message
+        const ins = await sb.from('job_photos').insert({ job_id: jobId, path, name: file.name, author })
+        if (ins.error) return ins.error.message
+        await reload()
+        return null
+      } catch (e) {
+        return errMsg(e)
+      }
+    },
+    deleteJobPhoto: (id) => {
+      const ph = getDb().jobPhotos.find((p) => p.id === id)
+      setDb((d) => ({ ...d, jobPhotos: d.jobPhotos.filter((p) => p.id !== id) }))
+      void write(async () => {
+        if (ph?.path) await sb.storage.from('job-photos').remove([ph.path])
+        return sb.from('job_photos').delete().eq('id', id)
+      })
+    },
+    photoUrls: async (photos) => {
+      const paths = photos.filter((p) => p.path).map((p) => p.path as string)
+      if (paths.length === 0) return {}
+      const { data } = await sb.storage.from('job-photos').createSignedUrls(paths, 3600)
+      const byPath = new Map((data ?? []).map((d) => [d.path, d.signedUrl]))
+      return Object.fromEntries(photos.flatMap((p) => (p.path && byPath.get(p.path) ? [[p.id, byPath.get(p.path) as string]] : [])))
     },
     clockOn: (jobId, employeeId) => {
       if (getDb().clock.some((c) => c.jobId === jobId && c.employeeId === employeeId && !c.end)) return

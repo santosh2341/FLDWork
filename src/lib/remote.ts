@@ -31,6 +31,7 @@ export function emptyDb(): Db {
     counts: [],
     jobNotes: [],
     clock: [],
+    jobPhotos: [],
   }
 }
 

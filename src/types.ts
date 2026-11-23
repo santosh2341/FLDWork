@@ -182,6 +182,16 @@ export interface JobNote {
   at: string // ISO timestamp
 }
 
+export interface JobPhoto {
+  id: string
+  jobId: number
+  name: string
+  author: string
+  at: string
+  path?: string // storage path (database mode)
+  dataUrl?: string // inline image (local mode)
+}
+
 export interface ClockEntry {
   id: string
   jobId: number
@@ -351,4 +361,5 @@ export interface Db {
   counts: InventoryCount[]
   jobNotes: JobNote[]
   clock: ClockEntry[]
+  jobPhotos: JobPhoto[]
 }

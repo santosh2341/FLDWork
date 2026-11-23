@@ -22,6 +22,9 @@ export interface Actions {
   createJobFromQuote: (quoteId: number) => Promise<number>
   setJobStatus: (jobId: number, status: JobStatus) => void
   addJobNote: (jobId: number, text: string, author: string) => void
+  addJobPhoto: (jobId: number, file: File, author: string) => Promise<string | null> // resolves to an error message, or null
+  deleteJobPhoto: (id: string) => void
+  photoUrls: (photos: { id: string; path?: string; dataUrl?: string }[]) => Promise<Record<string, string>>
   clockOn: (jobId: number, employeeId: string) => void
   clockOff: (jobId: number, employeeId: string) => void
   createInvoiceFromJob: (jobId: number) => Promise<number>

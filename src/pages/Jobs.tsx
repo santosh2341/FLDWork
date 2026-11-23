@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import JobPhotos from '../components/JobPhotos'
 import FilterBar, { useFilter } from '../components/FilterBar'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
@@ -13,7 +14,7 @@ export const JOB_LABEL: Record<JobStatus, string> = {
 }
 
 export default function Jobs() {
-  const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite } = useStore()
+  const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite, profile } = useStore()
   const nav = useNavigate()
   const pend = useFilter() === 'pending'
   const rows = pend ? db.jobs.filter((j) => j.status === 'pending') : db.jobs
@@ -52,7 +53,8 @@ export default function Jobs() {
                     const mins = Math.round(db.clock.filter((c) => c.jobId === j.id).reduce((t, c) => t + (new Date(c.end ?? Date.now()).getTime() - new Date(c.start).getTime()), 0) / 60000)
                     if (!notes.length && mins <= 0) return null
                     return <><br /><span className="muted">{mins > 0 ? `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m on site` : ''}{mins > 0 && notes.length ? ' · ' : ''}{notes.length ? `${notes.length} note${notes.length > 1 ? 's' : ''}: “${notes[0].text.slice(0, 60)}”` : ''}</span></>
-                  })()}</td>
+                  })()}
+                  <details><summary className="muted">Photos ({db.jobPhotos.filter((p) => p.jobId === j.id).length})</summary><JobPhotos jobId={j.id} author={profile?.fullName ?? ''} canAdd={canWrite} /></details></td>
                   <td><Link to={`/quotes/${j.quoteId}`}>{j.quoteId}</Link></td>
                   <td>{db.customers.find((c) => c.id === j.customerId)?.name}</td>
                   <td>{db.sites.find((s) => s.id === j.siteId)?.name}</td>
