@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import PreSendCheck from '../components/PreSendCheck'
+import { quoteIssues } from '../lib/checks'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AiPolish from '../components/AiPolish'
 import { useStore } from '../store'
@@ -136,6 +138,8 @@ export default function QuoteDetail() {
           <button className="primary" disabled={!dirty} onClick={save}>Save</button>
         </div>
       </div>
+
+      <PreSendCheck issues={quoteIssues(db, draft)} />
 
       <div className="strip">
         <div><small>Customer</small><br />{customer?.name}</div>

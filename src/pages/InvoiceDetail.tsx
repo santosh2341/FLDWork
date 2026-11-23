@@ -4,6 +4,8 @@ import { useStore } from '../store'
 import { invoiceState, invoiceTotals, STATE_COLOR, STATE_LABEL, withLog } from '../lib/invoicing'
 import { money } from '../lib/costing'
 import AiPolish from '../components/AiPolish'
+import PreSendCheck from '../components/PreSendCheck'
+import { invoiceIssues } from '../lib/checks'
 
 const TABS = ['Details', 'Payments', 'Log', 'Notes'] as const
 
@@ -70,6 +72,8 @@ export default function InvoiceDetail() {
           )}
         </div>
       </div>
+
+      {inv.stage === 'draft' && !inv.voided && <PreSendCheck issues={invoiceIssues(db, inv)} />}
 
       <div className="subtabs">
         {TABS.map((x) => <button key={x} className={x === tab ? 'active' : ''} onClick={() => setTab(x)}>{x}</button>)}

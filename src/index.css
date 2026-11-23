@@ -526,3 +526,5 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .md-choice button { flex: 1; justify-content: center; }
 .md-big { width: 100%; min-height: 52px; font-size: 1.05rem; margin-top: 6px; }
 .myday input, .myday select { min-height: 46px; font-size: 1rem; }
+.presend { border-left: 4px solid #d98a00; }
+.presend ul { margin: 8px 0 0; padding-left: 20px; }
