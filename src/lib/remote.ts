@@ -29,6 +29,8 @@ export function emptyDb(): Db {
     preBuilds: [],
     purchaseOrders: [],
     counts: [],
+    jobNotes: [],
+    clock: [],
   }
 }
 

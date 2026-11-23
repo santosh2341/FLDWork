@@ -127,6 +127,16 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       void write(() => sb.from('jobs').delete().eq('id', id))
     },
     createJobFromQuote: async (quoteId) => num(await call<number>('create_job_from_quote', { p_quote_id: quoteId })),
+    addJobNote: (jobId, text, author) => {
+      void write(() => sb.from('job_notes').insert({ job_id: jobId, text, author }))
+    },
+    clockOn: (jobId, employeeId) => {
+      if (getDb().clock.some((c) => c.jobId === jobId && c.employeeId === employeeId && !c.end)) return
+      void write(() => sb.from('clock_entries').insert({ job_id: jobId, employee_id: employeeId }))
+    },
+    clockOff: (jobId, employeeId) => {
+      void write(() => sb.from('clock_entries').update({ ended_at: new Date().toISOString() }).eq('job_id', jobId).eq('employee_id', employeeId).is('ended_at', null))
+    },
     setJobStatus: (jobId, status) => {
       setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) }))
       void write(() => sb.from('jobs').update({ status }).eq('id', jobId))

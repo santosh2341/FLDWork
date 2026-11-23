@@ -21,6 +21,9 @@ export interface Actions {
   deleteJob: (id: number) => void // UI only offers this when the job has no invoice
   createJobFromQuote: (quoteId: number) => Promise<number>
   setJobStatus: (jobId: number, status: JobStatus) => void
+  addJobNote: (jobId: number, text: string, author: string) => void
+  clockOn: (jobId: number, employeeId: string) => void
+  clockOff: (jobId: number, employeeId: string) => void
   createInvoiceFromJob: (jobId: number) => Promise<number>
   saveInvoice: (inv: Invoice) => void
   recordPayment: (invoiceId: number, p: Omit<Payment, 'id'>) => void

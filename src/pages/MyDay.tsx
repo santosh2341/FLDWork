@@ -8,7 +8,7 @@ const nice = (s: string) => new Date(s + 'T00:00:00').toLocaleDateString('en-AU'
 
 // Phone-first screen for technicians: today's visits, tap to navigate or call, start/finish, run audits.
 export default function MyDay() {
-  const { db, profile, setJobStatus, saveAuditResult } = useStore()
+  const { db, profile, setJobStatus, saveAuditResult, addJobNote, clockOn, clockOff } = useStore()
   const me = useMemo(() => {
     const n = (profile?.fullName ?? '').trim().toLowerCase()
     return db.employees.find((e) => n && e.name.trim().toLowerCase() === n)?.id ?? ''
@@ -18,6 +18,7 @@ export default function MyDay() {
   const [runFor, setRunFor] = useState<{ job: Job; audit: Audit } | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState('')
+  const [noteText, setNoteText] = useState<Record<number, string>>({})
 
   const entries = db.schedule.filter((e) => e.employeeId === empId && e.date === date).sort((a, b) => a.start.localeCompare(b.start))
   const labels = db.settings.jobStatusLabels
@@ -30,7 +31,26 @@ export default function MyDay() {
       return
     }
     setMsg('')
+    clockOff(j.id, empId)
     setJobStatus(j.id, 'complete')
+  }
+
+  const start = (j: Job) => {
+    clockOn(j.id, empId)
+    setJobStatus(j.id, 'in_progress')
+  }
+
+  const addNote = (j: Job) => {
+    const t = (noteText[j.id] ?? '').trim()
+    if (!t) return
+    addJobNote(j.id, t, db.employees.find((e) => e.id === empId)?.name || profile?.fullName || '')
+    setNoteText({ ...noteText, [j.id]: '' })
+  }
+
+  const worked = (jobId: number) => {
+    const ms = db.clock.filter((c) => c.jobId === jobId && c.employeeId === empId).reduce((a, c) => a + (new Date(c.end ?? new Date().toISOString()).getTime() - new Date(c.start).getTime()), 0)
+    const m = Math.round(ms / 60000)
+    return m <= 0 ? '' : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`
   }
 
   const submitAudit = () => {
@@ -132,8 +152,17 @@ export default function MyDay() {
                 })}
               </div>
             )}
-            {(j.status === 'scheduled' || j.status === 'pending') && <button className="primary md-big" onClick={() => setJobStatus(j.id, 'in_progress')}>Start job</button>}
-            {j.status === 'in_progress' && <button className="primary md-big" onClick={() => finish(j)}>Mark complete</button>}
+            {worked(j.id) && <p className="muted">Time on this job: <b>{worked(j.id)}</b>{db.clock.some((c) => c.jobId === j.id && c.employeeId === empId && !c.end) ? ' (clock running)' : ''}</p>}
+            <div className="md-notes">
+              <b>Notes</b>
+              {db.jobNotes.filter((n) => n.jobId === j.id).slice(0, 5).map((n) => (
+                <p key={n.id}><span className="muted">{n.author} · {new Date(n.at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</span><br />{n.text}</p>
+              ))}
+              <textarea rows={2} placeholder="Add a note (what you did, parts used, issues)" value={noteText[j.id] ?? ''} onChange={(ev) => setNoteText({ ...noteText, [j.id]: ev.target.value })} />
+              <button disabled={!(noteText[j.id] ?? '').trim()} onClick={() => addNote(j)}>Add note</button>
+            </div>
+            {(j.status === 'scheduled' || j.status === 'pending') && <button className="primary md-big" onClick={() => start(j)}>Start job & clock on</button>}
+            {j.status === 'in_progress' && <button className="primary md-big" onClick={() => finish(j)}>Mark complete & clock off</button>}
           </div>
         )
       })}

@@ -47,7 +47,12 @@ export default function Jobs() {
               const inv = db.invoices.find((i) => i.jobId === j.id && !i.voided)
               return (
                 <tr key={j.id}>
-                  <td>{j.id} – {j.name}</td>
+                  <td>{j.id} – {j.name}{(() => {
+                    const notes = db.jobNotes.filter((n) => n.jobId === j.id)
+                    const mins = Math.round(db.clock.filter((c) => c.jobId === j.id).reduce((t, c) => t + (new Date(c.end ?? Date.now()).getTime() - new Date(c.start).getTime()), 0) / 60000)
+                    if (!notes.length && mins <= 0) return null
+                    return <><br /><span className="muted">{mins > 0 ? `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m on site` : ''}{mins > 0 && notes.length ? ' · ' : ''}{notes.length ? `${notes.length} note${notes.length > 1 ? 's' : ''}: “${notes[0].text.slice(0, 60)}”` : ''}</span></>
+                  })()}</td>
                   <td><Link to={`/quotes/${j.quoteId}`}>{j.quoteId}</Link></td>
                   <td>{db.customers.find((c) => c.id === j.customerId)?.name}</td>
                   <td>{db.sites.find((s) => s.id === j.siteId)?.name}</td>

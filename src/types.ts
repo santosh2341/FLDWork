@@ -174,6 +174,22 @@ export interface Invoice {
   retainageReleased?: boolean
 }
 
+export interface JobNote {
+  id: string
+  jobId: number
+  author: string
+  text: string
+  at: string // ISO timestamp
+}
+
+export interface ClockEntry {
+  id: string
+  jobId: number
+  employeeId?: string
+  start: string // ISO timestamp
+  end?: string // set when clocked off
+}
+
 export interface Employee {
   id: string
   name: string
@@ -333,4 +349,6 @@ export interface Db {
   preBuilds: PreBuild[]
   purchaseOrders: PurchaseOrder[]
   counts: InventoryCount[]
+  jobNotes: JobNote[]
+  clock: ClockEntry[]
 }

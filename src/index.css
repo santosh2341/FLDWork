@@ -541,3 +541,7 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .card.alert.zero .big { color: var(--muted); }
 .card.alert:hover .alert-icon { background: var(--brand-soft); color: var(--brand); }
 .card.alert:hover .alert-pill { color: var(--brand); border-color: var(--brand-2); }
+.md-notes { margin: 10px 0; display: grid; gap: 6px; }
+.md-notes p { margin: 0; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; }
+.md-notes textarea { width: 100%; font-size: 1rem; }
+.md-notes button { min-height: 44px; }
