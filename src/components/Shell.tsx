@@ -100,21 +100,25 @@ export default function Shell() {
     const od = db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length
     const low = db.catalog.filter((p) => p.stock < 5).length
     const pend = db.jobs.filter((j) => j.status === 'pending').length
-    if (od) out.push({ text: `${od} overdue invoice${od > 1 ? 's' : ''}`, to: '/invoices' })
-    if (low) out.push({ text: `${low} part${low > 1 ? 's' : ''} low on stock`, to: '/materials/inventory' })
-    if (pend) out.push({ text: `${pend} job${pend > 1 ? 's' : ''} waiting to be scheduled`, to: '/schedules/timesheets' })
+    if (od) out.push({ text: `${od} overdue invoice${od > 1 ? 's' : ''}`, to: '/invoices?filter=overdue' })
+    if (low) out.push({ text: `${low} part${low > 1 ? 's' : ''} low on stock`, to: '/materials/inventory?filter=low' })
+    if (pend) out.push({ text: `${pend} job${pend > 1 ? 's' : ''} waiting to be scheduled`, to: '/jobs?filter=pending' })
     return out
   }, [db])
 
   const results = useMemo(() => {
     const s = q.trim().toLowerCase()
     if (!s) return []
+    const has = (...v: (string | number | undefined)[]) => v.join(' ').toLowerCase().includes(s)
+    const cust = (id: string) => db.customers.find((c) => c.id === id)?.name ?? ''
     return [
-      ...db.customers.filter((c) => c.name.toLowerCase().includes(s)).map((c) => ({ group: 'Customers', label: c.name, to: `/customers/${c.id}` })),
-      ...db.quotes.filter((x) => `${x.id} ${x.name}`.toLowerCase().includes(s)).map((x) => ({ group: 'Quotes', label: `#${x.id} ${x.name}`, to: `/quotes/${x.id}` })),
-      ...db.invoices.filter((i) => String(i.id).includes(s)).map((i) => ({ group: 'Invoices', label: `Invoice #${i.id}`, to: `/invoices/${i.id}` })),
-      ...db.catalog.filter((p) => `${p.partNo} ${p.description}`.toLowerCase().includes(s)).map((p) => ({ group: 'Parts', label: `${p.partNo} ${p.description}`, to: '/materials/catalog' })),
-    ].slice(0, 12)
+      ...db.customers.filter((c) => has(c.name, c.contactName, c.email, c.phone, c.address)).map((c) => ({ group: 'Customers', label: c.contactName ? `${c.name} (${c.contactName})` : c.name, to: `/customers/${c.id}` })),
+      ...db.sites.filter((x) => has(x.name, x.address)).map((x) => ({ group: 'Sites', label: `${x.name} – ${cust(x.customerId)}`, to: `/customers/${x.customerId}` })),
+      ...db.quotes.filter((x) => has(x.id, x.name, cust(x.customerId))).map((x) => ({ group: 'Quotes', label: `#${x.id} ${x.name}`, to: `/quotes/${x.id}` })),
+      ...db.jobs.filter((j) => has(j.id, j.name, cust(j.customerId))).map((j) => ({ group: 'Jobs', label: `#${j.id} ${j.name}`, to: '/jobs' })),
+      ...db.invoices.filter((i) => has(i.id, cust(i.customerId))).map((i) => ({ group: 'Invoices', label: `Invoice #${i.id} – ${cust(i.customerId)}`, to: `/invoices/${i.id}` })),
+      ...db.catalog.filter((p) => has(p.partNo, p.description)).map((p) => ({ group: 'Parts', label: `${p.partNo} ${p.description}`, to: '/materials/catalog' })),
+    ].slice(0, 15)
   }, [q, db])
 
   return (
@@ -188,11 +192,20 @@ export default function Shell() {
           </div>
           <div className="search">
             <span className="search-ico"><Icon name="search" size={16} /></span>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search customers, quotes, parts…" />
-            {results.length > 0 && (
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && results[0]) { nav(results[0].to); setQ('') }
+                if (e.key === 'Escape') setQ('')
+              }}
+              placeholder="Search customers, sites, quotes, jobs, parts…"
+            />
+            {q.trim() && (
               <div className="search-results">
+                {results.length === 0 && <div className="muted" style={{ padding: '8px 10px' }}>No matches for "{q.trim()}"</div>}
                 {results.map((r) => (
-                  <Link key={r.group + r.label} to={r.to} onClick={() => setQ('')}>
+                  <Link key={r.group + r.to + r.label} to={r.to} onClick={() => setQ('')}>
                     <small>{r.group}</small> {r.label}
                   </Link>
                 ))}

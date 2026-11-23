@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import FilterBar, { useFilter } from '../components/FilterBar'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
 import { money, sellFromCost } from '../lib/costing'
@@ -9,14 +10,17 @@ import { uid } from '../lib/id'
 export function Inventory() {
   const { db } = useStore()
   const total = db.catalog.reduce((a, p) => a + p.stock * p.cost, 0)
+  const low = useFilter() === 'low'
+  const rows = low ? db.catalog.filter((p) => p.stock < 5) : db.catalog
   return (
     <>
       <h1>Inventory</h1>
       <p className="muted">Total stock value at cost: <b>{money(total)}</b></p>
+      <FilterBar label="parts with fewer than 5 in stock" shown={rows.length} total={db.catalog.length} />
       <table>
         <thead><tr><th>Part no.</th><th>Description</th><th>Vendor</th><th className="num">In stock</th><th className="num">Cost</th><th className="num">Value</th></tr></thead>
         <tbody>
-          {db.catalog.map((p) => (
+          {rows.map((p) => (
             <tr key={p.id}>
               <td>{p.partNo}</td><td>{p.description}</td><td>{p.vendor}</td>
               <td className={`num ${p.stock < 5 ? 'low' : ''}`}>{p.stock}</td>

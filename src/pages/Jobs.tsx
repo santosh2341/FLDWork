@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import FilterBar, { useFilter } from '../components/FilterBar'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
 import type { Job, JobStatus } from '../types'
@@ -14,6 +15,8 @@ export const JOB_LABEL: Record<JobStatus, string> = {
 export default function Jobs() {
   const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite } = useStore()
   const nav = useNavigate()
+  const pend = useFilter() === 'pending'
+  const rows = pend ? db.jobs.filter((j) => j.status === 'pending') : db.jobs
   const labels = db.settings.jobStatusLabels
   const changeStatus = (j: Job, status: JobStatus) => {
     if (status === 'complete' && db.settings.requireAuditsToComplete) {
@@ -32,13 +35,14 @@ export default function Jobs() {
       {db.jobs.length === 0 && (
         <p className="muted">No jobs yet. Approve a quote, then use "Create job" on the quote.</p>
       )}
+      <FilterBar label="jobs waiting to be scheduled" shown={rows.length} total={db.jobs.length} />
       {db.jobs.length > 0 && (
         <table>
           <thead>
             <tr><th>Job</th><th>Quote</th><th>Customer</th><th>Site</th><th>Value</th><th>Status</th><th /><th /></tr>
           </thead>
           <tbody>
-            {db.jobs.map((j) => {
+            {rows.map((j) => {
               const q = db.quotes.find((x) => x.id === j.quoteId)
               const inv = db.invoices.find((i) => i.jobId === j.id && !i.voided)
               return (

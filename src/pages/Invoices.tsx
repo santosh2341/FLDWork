@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import FilterBar, { useFilter } from '../components/FilterBar'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { daysOverdue, invoiceState, invoiceTotals, isUnpaid, STATE_COLOR, STATE_LABEL, withLog } from '../lib/invoicing'
@@ -37,6 +38,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
   const { db, saveInvoice } = useStore()
   const nav = useNavigate()
   const filter = initial
+  const overdueOnly = useFilter() === 'overdue'
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<SortState>({ key: 'id', dir: -1 })
 
@@ -52,6 +54,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
 
   const invoiceRows: InvRow[] = db.invoices
     .filter((i) => (filter === 'unpaid' ? isUnpaid(i) : filter === 'paid' ? invoiceState(i) === 'paid' : true))
+    .filter((i) => !overdueOnly || (isUnpaid(i) && daysOverdue(i) > 0))
     .filter((i) => match(`${i.id} ${i.jobId} ${custName(i.customerId)} ${siteName(i.siteId)}`))
     .map((i) => ({ inv: i, t: invoiceTotals(i), st: invoiceState(i), customer: custName(i.customerId), site: siteName(i.siteId) }))
   const invVal = (r: InvRow, key: string): Cell => {
@@ -116,6 +119,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           <button key={t.key} className={t.key === filter ? 'active' : ''} onClick={() => nav(t.to)}>{t.label}</button>
         ))}
       </div>
+      <FilterBar label="overdue invoices" shown={invoiceRows.length} total={db.invoices.length} />
       <input className="wide" placeholder="Search invoice, job, customer or site…" value={q} onChange={(e) => setQ(e.target.value)} />
       {filter === 'unpaid' && <p className="muted">Outstanding balance: <b>{money(outstanding)}</b></p>}
 

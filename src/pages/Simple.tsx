@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import FilterBar, { useFilter } from '../components/FilterBar'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import AddressFields from '../components/AddressFields'
@@ -70,6 +71,8 @@ export function Customers() {
   const { db, addCustomer, canWrite } = useStore()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
+  const hold = useFilter() === 'hold'
+  const rows = hold ? db.customers.filter((c) => c.onHold) : db.customers
   return (
     <>
       <div className="row between"><h1>Customers ({db.customers.length})</h1><div className="row"><button onClick={() => exportCustomers(db.customers)}>Export CSV</button>{canWrite && <button onClick={() => setOpen(true)}>+ New customer</button>}</div></div>
@@ -84,10 +87,11 @@ export function Customers() {
           }}
         />
       )}
+      <FilterBar label="customers on hold" shown={rows.length} total={db.customers.length} />
       <table>
         <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Location</th><th>Sites</th><th>Status</th></tr></thead>
         <tbody>
-          {db.customers.map((c) => (
+          {rows.map((c) => (
             <tr key={c.id}>
               <td><Link to={`/customers/${c.id}`}>{c.name}</Link></td>
               <td>{c.contactName}</td>

@@ -23,11 +23,11 @@ export default function Dashboard() {
 
   // tone: red only for things that cost money or need action now, amber for warnings, brand teal for everyday counts
   const alerts: { label: string; n: number; to: string; icon: IconName; tone: 'danger' | 'warn' | 'brand'; hint: string }[] = [
-    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers', icon: 'users', tone: 'warn', hint: 'Review' },
-    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices', icon: 'receipt', tone: 'danger', hint: 'Chase up' },
-    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory', icon: 'box', tone: 'warn', hint: 'Reorder' },
-    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs', icon: 'wrench', tone: 'brand', hint: 'Assign' },
-    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes', icon: 'quote', tone: 'brand', hint: 'Finish' },
+    { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers?filter=hold', icon: 'users', tone: 'warn', hint: 'Review' },
+    { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices?filter=overdue', icon: 'receipt', tone: 'danger', hint: 'Chase up' },
+    { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory?filter=low', icon: 'box', tone: 'warn', hint: 'Reorder' },
+    { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs?filter=pending', icon: 'wrench', tone: 'brand', hint: 'Assign' },
+    { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes?filter=to_be_completed', icon: 'quote', tone: 'brand', hint: 'Finish' },
   ]
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
