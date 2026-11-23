@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import type { Audit, Job, JobStatus } from '../types'
 import JobPhotos from '../components/JobPhotos'
+import AssetLogger from '../components/AssetLogger'
 
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const addDays = (s: string, n: number) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return iso(d) }
@@ -162,6 +163,7 @@ export default function MyDay() {
               <textarea rows={2} placeholder="Add a note (what you did, parts used, issues)" value={noteText[j.id] ?? ''} onChange={(ev) => setNoteText({ ...noteText, [j.id]: ev.target.value })} />
               <button disabled={!(noteText[j.id] ?? '').trim()} onClick={() => addNote(j)}>Add note</button>
             </div>
+            <AssetLogger assets={db.assets.filter((a) => a.active && a.customerId === j.customerId && (!a.siteId || a.siteId === j.siteId))} jobId={j.id} by={db.employees.find((x) => x.id === empId)?.name || profile?.fullName || ''} />
             <JobPhotos jobId={j.id} author={db.employees.find((x) => x.id === empId)?.name || profile?.fullName || ''} />
             {(j.status === 'scheduled' || j.status === 'pending') && <button className="primary md-big" onClick={() => start(j)}>Start job & clock on</button>}
             {j.status === 'in_progress' && <button className="primary md-big" onClick={() => finish(j)}>Mark complete & clock off</button>}

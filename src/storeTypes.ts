@@ -1,7 +1,6 @@
 import type { LineItem,
   AppSettings, Audit, AuditResult, CatalogPart, Customer, Invoice, JobStatus, Lead, Payment, PreBuild,
-  Quote, RecurringJob, ScheduleEntry, Site, VendorQuote, VendorQuoteLine,
-} from './types'
+  Quote, RecurringJob, ScheduleEntry, Site, VendorQuote, VendorQuoteLine, Asset } from './types'
 
 // Everything the pages can do to the data. The local (browser) and remote (Supabase) stores both implement this.
 // Actions that create something return a Promise, because the remote store has to wait for the database.
@@ -25,6 +24,10 @@ export interface Actions {
   addJobPhoto: (jobId: number, file: File, author: string) => Promise<string | null> // resolves to an error message, or null
   deleteJobPhoto: (id: string) => void
   photoUrls: (photos: { id: string; path?: string; dataUrl?: string }[]) => Promise<Record<string, string>>
+  addAsset: (a: Omit<Asset, 'id' | 'services'>) => void
+  updateAsset: (a: Asset) => void
+  deleteAsset: (id: string) => void
+  logAssetService: (assetId: string, date: string, notes: string, by: string, jobId?: number) => void
   clockOn: (jobId: number, employeeId: string) => void
   clockOff: (jobId: number, employeeId: string) => void
   createInvoiceFromJob: (jobId: number) => Promise<number>

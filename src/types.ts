@@ -182,6 +182,34 @@ export interface JobNote {
   at: string // ISO timestamp
 }
 
+export interface AssetService {
+  id: string
+  jobId?: number
+  date: string // yyyy-mm-dd
+  notes: string
+  by: string
+}
+
+export interface Asset {
+  id: string
+  customerId: string
+  siteId?: string
+  name: string // e.g. "Rooftop split system"
+  category: string // HVAC, fire panel, switchboard, ...
+  make: string
+  model: string
+  serial: string
+  location: string // where on site
+  installDate?: string
+  warrantyUntil?: string
+  intervalMonths?: number // service every N months
+  lastServiced?: string
+  nextDue?: string
+  notes: string
+  active: boolean
+  services: AssetService[]
+}
+
 export interface JobPhoto {
   id: string
   jobId: number
@@ -362,4 +390,5 @@ export interface Db {
   jobNotes: JobNote[]
   clock: ClockEntry[]
   jobPhotos: JobPhoto[]
+  assets: Asset[]
 }

@@ -32,6 +32,7 @@ export function emptyDb(): Db {
     jobNotes: [],
     clock: [],
     jobPhotos: [],
+    assets: [],
   }
 }
 

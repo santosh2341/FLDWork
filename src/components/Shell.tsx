@@ -21,6 +21,7 @@ const NAV: Flyout[] = [
   { label: 'Dashboard', icon: 'home', to: '/', columns: [] },
   { label: 'My Day', icon: 'calendar', to: '/my-day', columns: [] },
   { label: 'Customers', icon: 'users', to: '/customers', columns: [{ links: [{ label: 'All Customers', to: '/customers' }, { label: 'Sites', to: '/sites' }] }] },
+  { label: 'Equipment', icon: 'wrench', to: '/assets', columns: [{ links: [{ label: 'All Equipment', to: '/assets' }, { label: 'Services Due', to: '/assets?filter=due' }] }] },
   { label: 'Leads', icon: 'sparkles', to: '/leads', columns: [{ links: [{ label: 'All Leads', to: '/leads' }] }] },
   { label: 'Quotes', icon: 'quote', to: '/quotes', columns: [{ links: [{ label: 'All Quotes', to: '/quotes' }] }] },
   {

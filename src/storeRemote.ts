@@ -166,6 +166,23 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       const byPath = new Map((data ?? []).map((d) => [d.path, d.signedUrl]))
       return Object.fromEntries(photos.flatMap((p) => (p.path && byPath.get(p.path) ? [[p.id, byPath.get(p.path) as string]] : [])))
     },
+    addAsset: (a) => {
+      void write(async () => {
+        const cid = await companyId()
+        return sb.from('assets').insert({ company_id: cid, customer_id: a.customerId, site_id: a.siteId || null, name: a.name, category: a.category, make: a.make, model: a.model, serial: a.serial, location: a.location, install_date: a.installDate || null, warranty_until: a.warrantyUntil || null, interval_months: a.intervalMonths || null, last_serviced: a.lastServiced || null, next_due: a.nextDue || null, notes: a.notes, active: a.active })
+      })
+    },
+    updateAsset: (a) => {
+      setDb((d) => ({ ...d, assets: d.assets.map((x) => (x.id === a.id ? a : x)) }))
+      void write(() => sb.from('assets').update({ customer_id: a.customerId, site_id: a.siteId || null, name: a.name, category: a.category, make: a.make, model: a.model, serial: a.serial, location: a.location, install_date: a.installDate || null, warranty_until: a.warrantyUntil || null, interval_months: a.intervalMonths || null, last_serviced: a.lastServiced || null, next_due: a.nextDue || null, notes: a.notes, active: a.active }).eq('id', a.id))
+    },
+    deleteAsset: (id) => {
+      setDb((d) => ({ ...d, assets: d.assets.filter((x) => x.id !== id) }))
+      void write(() => sb.from('assets').delete().eq('id', id))
+    },
+    logAssetService: (assetId, date, notes, by, jobId) => {
+      void write(() => sb.rpc('log_asset_service', { p_asset: assetId, p_date: date, p_notes: notes, p_job: jobId ?? null, p_by: by }))
+    },
     clockOn: (jobId, employeeId) => {
       if (getDb().clock.some((c) => c.jobId === jobId && c.employeeId === employeeId && !c.end)) return
       void write(() => sb.from('clock_entries').insert({ job_id: jobId, employee_id: employeeId }))

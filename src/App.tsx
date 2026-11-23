@@ -14,6 +14,7 @@ const Jobs = lazy(() => import('./pages/Jobs'))
 const Invoices = lazy(() => import('./pages/Invoices'))
 const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'))
 const Timesheets = lazy(() => import('./pages/Timesheets'))
+const Assets = lazy(() => import('./pages/Assets'))
 const MyDay = lazy(() => import('./pages/MyDay'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const MobileSettings = lazy(() => import('./pages/MobileSettings'))
@@ -74,6 +75,7 @@ function AppRoutes() {
             <Route index element={<Home />} />
             <Route path="my-day" element={<MyDay />} />
             <Route path="customers" element={<Customers />} />
+            <Route path="assets" element={<Assets />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
             <Route path="customers/:id/statement" element={<StatementPrint />} />
             <Route path="sites" element={<Sites />} />

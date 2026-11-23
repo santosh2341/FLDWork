@@ -2,6 +2,7 @@ import type { Dispatch, SetStateAction } from 'react'
 import { withLog } from './lib/invoicing'
 import { advance } from './lib/recurring'
 import { uid } from './lib/id'
+import { addMonths } from './lib/assets'
 import { blobToDataUrl, shrinkPhoto } from './lib/photos'
 import type { Actions } from './storeTypes'
 import type { CatalogPart, Db, InventoryCount, Invoice, Job, Quote, Receipt, VendorQuote } from './types'
@@ -67,6 +68,18 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     },
     deleteJobPhoto: (id) => setDb((d) => ({ ...d, jobPhotos: d.jobPhotos.filter((p) => p.id !== id) })),
     photoUrls: async (photos) => Object.fromEntries(photos.filter((p) => p.dataUrl).map((p) => [p.id, p.dataUrl as string])),
+    addAsset: (a) => setDb((d) => ({ ...d, assets: [...d.assets, { ...a, id: uid(), services: [] }] })),
+    updateAsset: (a) => setDb((d) => ({ ...d, assets: d.assets.map((x) => (x.id === a.id ? a : x)) })),
+    deleteAsset: (id) => setDb((d) => ({ ...d, assets: d.assets.filter((x) => x.id !== id) })),
+    logAssetService: (assetId, date, notes, by, jobId) =>
+      setDb((d) => ({
+        ...d,
+        assets: d.assets.map((a) => {
+          if (a.id !== assetId) return a
+          const last = !a.lastServiced || date > a.lastServiced ? date : a.lastServiced
+          return { ...a, lastServiced: last, nextDue: a.intervalMonths ? addMonths(last, a.intervalMonths) : a.nextDue, services: [{ id: uid(), jobId, date, notes, by }, ...a.services] }
+        }),
+      })),
     clockOn: (jobId, employeeId) => setDb((d) => (d.clock.some((c) => c.jobId === jobId && c.employeeId === employeeId && !c.end) ? d : { ...d, clock: [{ id: uid(), jobId, employeeId, start: new Date().toISOString() }, ...d.clock] })),
     clockOff: (jobId, employeeId) => setDb((d) => ({ ...d, clock: d.clock.map((c) => (c.jobId === jobId && c.employeeId === employeeId && !c.end ? { ...c, end: new Date().toISOString() } : c)) })),
     setJobStatus: (jobId, status) => setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) })),
