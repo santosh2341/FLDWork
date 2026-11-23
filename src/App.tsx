@@ -1,27 +1,44 @@
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AuthProvider, useAuth } from './auth'
 import { StoreProvider } from './store'
 import Login from './pages/Login'
 import Shell from './components/Shell'
-import Catalog from './pages/Catalog'
-import Quotes from './pages/Quotes'
-import QuoteDetail from './pages/QuoteDetail'
-import Jobs from './pages/Jobs'
-import Invoices from './pages/Invoices'
-import InvoiceDetail from './pages/InvoiceDetail'
-import Timesheets from './pages/Timesheets'
-import MyDay from './pages/MyDay'
 import { useStore } from './store'
-import Dashboard from './pages/Dashboard'
-import MobileSettings from './pages/MobileSettings'
-import { Inventory, InventoryCounts, PreBuilds, PurchaseOrders, Receipts, VendorQuotes } from './pages/Materials'
-import { ReportPage, ReportsHub } from './pages/Reports'
-import Leads from './pages/Leads'
-import Recurring from './pages/Recurring'
-import { WorkOrderDetail, WorkOrders } from './pages/WorkOrders'
-import { DayView, MonthView, RunSheets, WeekView } from './pages/ScheduleViews'
-import { InvoicePrint, QuotePrint } from './pages/Print'
-import { CustomerDetail, Customers, Sites, Soon } from './pages/Simple'
+
+// Pages load on demand so the first screen is quick.
+const Catalog = lazy(() => import('./pages/Catalog'))
+const Quotes = lazy(() => import('./pages/Quotes'))
+const QuoteDetail = lazy(() => import('./pages/QuoteDetail'))
+const Jobs = lazy(() => import('./pages/Jobs'))
+const Invoices = lazy(() => import('./pages/Invoices'))
+const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'))
+const Timesheets = lazy(() => import('./pages/Timesheets'))
+const MyDay = lazy(() => import('./pages/MyDay'))
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const MobileSettings = lazy(() => import('./pages/MobileSettings'))
+const Inventory = lazy(() => import('./pages/Materials').then((m) => ({ default: m.Inventory })))
+const InventoryCounts = lazy(() => import('./pages/Materials').then((m) => ({ default: m.InventoryCounts })))
+const PreBuilds = lazy(() => import('./pages/Materials').then((m) => ({ default: m.PreBuilds })))
+const PurchaseOrders = lazy(() => import('./pages/Materials').then((m) => ({ default: m.PurchaseOrders })))
+const Receipts = lazy(() => import('./pages/Materials').then((m) => ({ default: m.Receipts })))
+const VendorQuotes = lazy(() => import('./pages/Materials').then((m) => ({ default: m.VendorQuotes })))
+const ReportPage = lazy(() => import('./pages/Reports').then((m) => ({ default: m.ReportPage })))
+const ReportsHub = lazy(() => import('./pages/Reports').then((m) => ({ default: m.ReportsHub })))
+const Leads = lazy(() => import('./pages/Leads'))
+const Recurring = lazy(() => import('./pages/Recurring'))
+const WorkOrderDetail = lazy(() => import('./pages/WorkOrders').then((m) => ({ default: m.WorkOrderDetail })))
+const WorkOrders = lazy(() => import('./pages/WorkOrders').then((m) => ({ default: m.WorkOrders })))
+const DayView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.DayView })))
+const MonthView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.MonthView })))
+const RunSheets = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.RunSheets })))
+const WeekView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.WeekView })))
+const InvoicePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.InvoicePrint })))
+const QuotePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.QuotePrint })))
+const CustomerDetail = lazy(() => import('./pages/Simple').then((m) => ({ default: m.CustomerDetail })))
+const Customers = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Customers })))
+const Sites = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Sites })))
+const Soon = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Soon })))
 
 export default function App() {
   return (
@@ -49,6 +66,7 @@ function AppRoutes() {
   return (
     <StoreProvider>
       <BrowserRouter>
+        <Suspense fallback={<div className="center muted">Loading…</div>}>
         <Routes>
           <Route element={<Shell />}>
             <Route index element={<Home />} />
@@ -92,6 +110,7 @@ function AppRoutes() {
             <Route path="*" element={<Soon />} />
           </Route>
         </Routes>
+        </Suspense>
       </BrowserRouter>
     </StoreProvider>
   )

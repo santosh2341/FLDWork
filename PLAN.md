@@ -34,7 +34,7 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 ## Phase 6: Quality and AI extras
 - [ ] Ask-your-data (read-only questions about jobs, invoices, stock)
 - [x] Pre-send checks on quotes and invoices
-- [ ] QA sweep of work orders, purchase orders, counts, leads; lint and bundle-size clean-up
+- [x] QA sweep of work orders, purchase orders, counts, leads; lint and bundle-size clean-up
 
 ## Later / needs outside accounts
 - Xero or MYOB live sync (OAuth app registration), SMS reminders, equipment photo reading, manuals search
