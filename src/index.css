@@ -512,3 +512,17 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .ai-result { margin-top: 12px; padding: 12px 14px; border: 1px dashed #8b7bd8; border-radius: var(--radius, 8px); background: color-mix(in srgb, #8b7bd8 6%, transparent); }
 .ai-polish { margin-top: 6px; }
 .pill.warn { background: color-mix(in srgb, #e0a030 22%, transparent); color: var(--ink); font-size: .72rem; padding: 1px 8px; }
+
+/* Technician "My day" */
+.myday { max-width: 560px; margin: 0 auto; }
+.md-date { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0 14px; }
+.md-date > div { text-align: center; display: grid; }
+.md-date small { color: var(--muted); }
+.md-date button { font-size: 1.5rem; min-width: 52px; min-height: 48px; }
+.md-visit p { margin: 4px 0; }
+.md-access { background: var(--brand-soft); padding: 8px 10px; border-radius: 8px; }
+.md-actions, .md-audits, .md-choice { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.md-actions .btn, .md-audits button, .md-choice button { min-height: 46px; padding: 0 18px; display: inline-flex; align-items: center; text-decoration: none; }
+.md-choice button { flex: 1; justify-content: center; }
+.md-big { width: 100%; min-height: 52px; font-size: 1.05rem; margin-top: 6px; }
+.myday input, .myday select { min-height: 46px; font-size: 1rem; }

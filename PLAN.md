@@ -29,7 +29,7 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 - [ ] Needs `ANTHROPIC_API_KEY` set as a Supabase secret; the app works without it and says so
 
 ## Phase 5: Technician mobile
-- [ ] "My day" view and phone-friendly job screen (status, notes, audits)
+- [x] "My day" view and phone-friendly job screen (status, notes, audits)
 
 ## Phase 6: Quality and AI extras
 - [ ] Ask-your-data (read-only questions about jobs, invoices, stock)

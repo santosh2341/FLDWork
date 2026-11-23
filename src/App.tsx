@@ -10,6 +10,8 @@ import Jobs from './pages/Jobs'
 import Invoices from './pages/Invoices'
 import InvoiceDetail from './pages/InvoiceDetail'
 import Timesheets from './pages/Timesheets'
+import MyDay from './pages/MyDay'
+import { useStore } from './store'
 import Dashboard from './pages/Dashboard'
 import MobileSettings from './pages/MobileSettings'
 import { Inventory, InventoryCounts, PreBuilds, PurchaseOrders, Receipts, VendorQuotes } from './pages/Materials'
@@ -37,13 +39,20 @@ function Gate() {
   return <AppRoutes />
 }
 
+// Technicians land on their day; everyone else gets the dashboard.
+function Home() {
+  const { profile } = useStore()
+  return profile?.role === 'technician' ? <Navigate to="/my-day" replace /> : <Dashboard />
+}
+
 function AppRoutes() {
   return (
     <StoreProvider>
       <BrowserRouter>
         <Routes>
           <Route element={<Shell />}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<Home />} />
+            <Route path="my-day" element={<MyDay />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
             <Route path="sites" element={<Sites />} />
