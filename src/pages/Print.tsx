@@ -4,6 +4,7 @@ import { computeCosting, money } from '../lib/costing'
 import { invoiceTotals } from '../lib/invoicing'
 import { shortAddress } from '../lib/address'
 import { emptyCompany } from '../lib/company'
+import EmailPanel from '../components/EmailPanel'
 import type { CompanyProfile, CostCenter } from '../types'
 
 const auDate = (iso: string) => (iso ? new Date(iso.length === 10 ? iso + 'T00:00:00' : iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
@@ -65,7 +66,7 @@ function Toolbar({ back, mailto }: { back: string; mailto?: string }) {
     <div className="no-print row" style={{ marginBottom: 12 }}>
       <Link to={back}>← Back</Link>
       <button className="primary" onClick={() => window.print()}>Print / Save as PDF</button>
-      {mailto && <a className="btn" href={mailto}>Email to customer</a>}
+      {mailto && <a className="btn" href={mailto}>Open in my email app</a>}
       <span className="muted">In the print window, choose "Save as PDF" as the destination.</span>
     </div>
   )
@@ -106,6 +107,7 @@ export function QuotePrint() {
   return (
     <>
       <Toolbar back={`/quotes/${q.id}`} mailto={mailto} />
+      <EmailPanel kind="quote" id={q.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} />
       <article className="doc">
         <Letterhead company={company} fallbackName={db.settings.companyName} title="QUOTE" number={q.id}
           rows={[['Date', auDate(created)], ['Valid until', auDate(valid.toISOString())]]} />
@@ -144,6 +146,7 @@ export function InvoicePrint() {
   return (
     <>
       <Toolbar back={`/invoices/${inv.id}`} mailto={mailto} />
+      <EmailPanel kind="invoice" id={inv.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} />
       <article className="doc">
         <Letterhead company={company} fallbackName={db.settings.companyName} title={title} number={inv.id}
           rows={[['Issued', auDate(inv.issuedAt)], ['Due', auDate(inv.dueAt)], ...(job ? [['Job', `#${job.id}`] as [string, string]] : [])]} />
