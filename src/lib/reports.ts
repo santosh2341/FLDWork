@@ -196,6 +196,28 @@ export const REPORTS: ReportDef[] = [
     }),
   },
   {
+    id: 'technician-hours',
+    title: 'Technician Hours',
+    description: 'Scheduled hours and clocked-on hours per employee, within the date range (by visit date).',
+    run: (db, f) => ({
+      columns: [
+        { key: 'employee', label: 'Employee' },
+        { key: 'visits', label: 'Visits', kind: 'num' },
+        { key: 'scheduled', label: 'Scheduled hours', kind: 'num' },
+        { key: 'clocked', label: 'Clocked hours', kind: 'num' },
+        { key: 'diff', label: 'Clocked – scheduled', kind: 'num' },
+      ],
+      rows: db.employees.map((e) => {
+        const visits = db.schedule.filter((s) => s.employeeId === e.id && inRange(s.date, f))
+        const scheduled = visits.reduce((a, s) => a + hoursBetween(s.start, s.end), 0)
+        const clocked = db.clock
+          .filter((c) => c.employeeId === e.id && c.end && inRange(c.start.slice(0, 10), f))
+          .reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
+        return { employee: e.name, visits: visits.length, scheduled: round2(scheduled), clocked: round2(clocked), diff: round2(clocked - scheduled) }
+      }),
+    }),
+  },
+  {
     id: 'aged-receivables',
     title: 'Aged Receivables',
     description: 'Outstanding balances per customer in ageing buckets.',

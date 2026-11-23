@@ -212,6 +212,7 @@ export function CustomerDetail() {
     <>
       <div className="row between">
         <h1>{c.name}</h1>
+        <Link className="btn" to={`/customers/${c.id}/statement`}>Statement</Link>
         <label><input type="checkbox" disabled={!canWrite} checked={c.onHold} onChange={(e) => updateCustomer({ ...c, onHold: e.target.checked })} /> On hold</label>
       </div>
       <div className="grid2">

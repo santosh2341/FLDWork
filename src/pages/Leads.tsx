@@ -2,6 +2,9 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import type { LeadStatus } from '../types'
+import AddressFields from '../components/AddressFields'
+import type { AddressValue } from '../components/AddressFields'
+import { emptyAddress, formatAddress, isBlank, validateAddress } from '../lib/address'
 
 const LABEL: Record<LeadStatus, string> = {
   new: 'New',
@@ -20,6 +23,7 @@ export default function Leads() {
   const [q, setQ] = useState('')
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState(EMPTY)
+  const [addr, setAddr] = useState<AddressValue>({ parts: emptyAddress, point: null })
   const [error, setError] = useState('')
 
   const rows = db.leads
@@ -29,7 +33,12 @@ export default function Leads() {
   const save = () => {
     if (!form.name.trim()) return setError('A lead needs a name.')
     if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) return setError('That email address does not look right.')
-    addLead({ ...form, name: form.name.trim(), email: form.email.trim() })
+    if (!isBlank(addr.parts)) {
+      const bad = validateAddress(addr.parts)
+      if (bad) return setError(bad)
+    }
+    addLead({ ...form, name: form.name.trim(), email: form.email.trim(), address: isBlank(addr.parts) ? '' : formatAddress(addr.parts) })
+    setAddr({ parts: emptyAddress, point: null })
     setForm(EMPTY)
     setError('')
     setAdding(false)
@@ -59,9 +68,9 @@ export default function Leads() {
             <input className="grow" placeholder="Email" value={form.email} onChange={set('email')} />
           </div>
           <div className="row wrap" style={{ marginTop: 8 }}>
-            <input className="grow" placeholder="Site address" value={form.address} onChange={set('address')} />
             <select value={form.source} onChange={set('source')}>{SOURCES.map((s) => <option key={s}>{s}</option>)}</select>
           </div>
+          <AddressFields value={addr} onChange={setAddr} label="Site address (Australia, optional)" showMap={false} />
           <textarea rows={2} style={{ marginTop: 8 }} placeholder="What do they need?" value={form.notes} onChange={set('notes')} />
           {error && <p className="error">{error}</p>}
           <div className="row" style={{ marginTop: 8 }}><button className="primary" onClick={save}>Save lead</button></div>

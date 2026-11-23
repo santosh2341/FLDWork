@@ -34,6 +34,7 @@ const MonthView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ defa
 const RunSheets = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.RunSheets })))
 const WeekView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.WeekView })))
 const InvoicePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.InvoicePrint })))
+const StatementPrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.StatementPrint })))
 const PoPrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.PoPrint })))
 const QuotePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.QuotePrint })))
 const CustomerDetail = lazy(() => import('./pages/Simple').then((m) => ({ default: m.CustomerDetail })))
@@ -74,6 +75,7 @@ function AppRoutes() {
             <Route path="my-day" element={<MyDay />} />
             <Route path="customers" element={<Customers />} />
             <Route path="customers/:id" element={<CustomerDetail />} />
+            <Route path="customers/:id/statement" element={<StatementPrint />} />
             <Route path="sites" element={<Sites />} />
             <Route path="quotes" element={<Quotes />} />
             <Route path="quotes/:id" element={<QuoteDetail />} />

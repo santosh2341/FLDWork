@@ -30,7 +30,7 @@ function Letterhead({ company, fallbackName, title, number, rows }: {
       </div>
       <div className="doc-title">
         <h1>{title}</h1>
-        <div className="doc-no">#{number}</div>
+        {number > 0 && <div className="doc-no">#{number}</div>}
         <table className="doc-meta"><tbody>{rows.map(([k, v]) => <tr key={k}><td>{k}</td><td>{v}</td></tr>)}</tbody></table>
       </div>
     </header>
@@ -206,6 +206,38 @@ export function PoPrint() {
           <tr className="doc-grand"><td>Total (inc GST)</td><td>{money(total + gst)}</td></tr>
         </tbody></table>
         <p className="doc-foot">Please quote PO {po.id} on your delivery docket and invoice. Prices are in Australian dollars.</p>
+      </article>
+    </>
+  )
+}
+
+export function StatementPrint() {
+  const { id } = useParams()
+  const { db } = useStore()
+  const c = db.customers.find((x) => x.id === id)
+  if (!c) return <p>Customer not found.</p>
+  const company = { ...emptyCompany, ...db.settings.company }
+  const invs = db.invoices.filter((i) => i.customerId === c.id && !i.voided && i.stage !== 'draft').sort((a, b) => a.issuedAt.localeCompare(b.issuedAt))
+  const rows = invs.map((i) => ({ i, t: invoiceTotals(i) }))
+  const owing = rows.reduce((a, r) => a + r.t.balance, 0)
+  const todayIso = new Date().toISOString().slice(0, 10)
+  return (
+    <>
+      <Toolbar back={`/customers/${c.id}`} />
+      <article className="doc">
+        <Letterhead company={company} fallbackName={db.settings.companyName} title="STATEMENT" number={0} rows={[['Date', auDate(todayIso)]]} />
+        <div className="doc-parties"><div><h4>Customer</h4><b>{c.name}</b>{c.contactName && <div>Attn: {c.contactName}</div>}{addressLines(c.address).map((l) => <div key={l}>{l}</div>)}</div><div /></div>
+        <table className="doc-table">
+          <thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th className="num">Total</th><th className="num">Paid / credited</th><th className="num">Balance</th></tr></thead>
+          <tbody>
+            {rows.map(({ i, t }) => (
+              <tr key={i.id}><td>#{i.id}</td><td>{auDate(i.issuedAt)}</td><td>{auDate(i.dueAt)}{t.balance > 0.005 && i.dueAt < todayIso ? ' (overdue)' : ''}</td><td className="num">{money(t.total)}</td><td className="num">{money(t.paid + t.credited)}</td><td className="num">{money(t.balance)}</td></tr>
+            ))}
+            {rows.length === 0 && <tr><td colSpan={6}>No invoices have been issued to this customer.</td></tr>}
+          </tbody>
+        </table>
+        <table className="doc-totals"><tbody><tr className="doc-grand"><td>Total owing (inc GST)</td><td>{money(owing)}</td></tr></tbody></table>
+        {(company.bsb || company.accountNumber) && <p className="doc-foot">Pay by bank transfer: {company.accountName || company.tradingName} · BSB {company.bsb} · Account {company.accountNumber}{company.bankName ? ` (${company.bankName})` : ''}</p>}
       </article>
     </>
   )
