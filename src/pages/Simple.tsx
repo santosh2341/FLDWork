@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import AddressFields from '../components/AddressFields'
@@ -70,7 +70,8 @@ function CustomerForm({ initial, submitLabel, onSubmit, onCancel }: {
 export function Customers() {
   const { db, addCustomer, canWrite } = useStore()
   const nav = useNavigate()
-  const [open, setOpen] = useState(false)
+  const startOpen = useStartOpen()
+  const [open, setOpen] = useState(startOpen)
   const hold = useFilter() === 'hold'
   const rows = hold ? db.customers.filter((c) => c.onHold) : db.customers
   return (

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
 import { CATEGORIES, DUE_LABEL, addMonths, dueState, todayIso } from '../lib/assets'
 import type { Asset } from '../types'
 
@@ -70,7 +70,8 @@ export default function Assets() {
   const dueOnly = useFilter() === 'due'
   const [q, setQ] = useState('')
   const [cust, setCust] = useState('')
-  const [form, setForm] = useState<Draft | null>(null)
+  const startOpen = useStartOpen()
+  const [form, setForm] = useState<Draft | null>(() => (startOpen ? blank() : null))
   const [openId, setOpenId] = useState('')
   const [note, setNote] = useState('')
 

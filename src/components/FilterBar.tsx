@@ -16,3 +16,9 @@ export default function FilterBar({ label, shown, total }: { label: string; show
     </div>
   )
 }
+
+// True when the page was opened from a "Create" shortcut (?new=1), so its form can start open.
+export function useStartOpen(): boolean {
+  const [p] = useSearchParams()
+  return p.get('new') === '1'
+}

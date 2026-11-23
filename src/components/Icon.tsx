@@ -25,6 +25,12 @@ const PATHS = {
   close: <path d="M6 6l12 12M18 6 6 18" />,
   down: <path d="m6 9 6 6 6-6" />,
   arrow: <path d="M5 12h14M13 6l6 6-6 6" />,
+  plus: <path d="M12 5v14M5 12h14" />,
+  back: <path d="m15 5-7 7 7 7" />,
+  chevron: <path d="m9 5 7 7-7 7" />,
+  grid: <><rect x="4" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" /><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" /><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" /></>,
+  pin: <><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z" /><circle cx="12" cy="9.5" r="2.5" /></>,
+  phone: <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z" />,
   check: <path d="m5 12.5 4.5 4.5L19 7.5" />,
 } as const
 
@@ -38,16 +44,16 @@ export default function Icon({ name, size = 20, ...rest }: { name: IconName; siz
   )
 }
 
-export function Logo({ size = 34 }: { size?: number }) {
+export function Logo({ size = 34, id = 'fldlogo' }: { size?: number; id?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
       <defs>
-        <linearGradient id="fldlogo" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#2dd4bf" />
           <stop offset="1" stopColor="#0f766e" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="16" fill="url(#fldlogo)" />
+      <rect width="64" height="64" rx="16" fill={`url(#${id})`} />
       <path d="M22 18h22M22 18v28M22 32h16" fill="none" stroke="#fff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )

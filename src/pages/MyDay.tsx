@@ -129,9 +129,11 @@ export default function MyDay() {
         const audits = (q?.forms ?? []).map((fid) => db.audits.find((a) => a.id === fid)).filter((a): a is Audit => !!a)
         const nav = s?.lat != null && s?.lng != null ? `${s.lat},${s.lng}` : addr
         return (
-          <div key={e.id} className="card md-visit">
+          <div key={e.id} className="md-slot" data-st={j.status}>
+          <div className="md-time"><b>{e.start}</b><span>{e.end}</span></div>
+          <div className="md-rail" aria-hidden="true"><i /></div>
+          <div className="card md-visit">
             <div className="row between">
-              <b>{e.start}–{e.end}</b>
               <span className={`pill st-${j.status}`}>{labels[j.status as JobStatus]}</span>
             </div>
             <h3>{j.id} – {j.name}</h3>
@@ -167,6 +169,7 @@ export default function MyDay() {
             <JobPhotos jobId={j.id} author={db.employees.find((x) => x.id === empId)?.name || profile?.fullName || ''} />
             {(j.status === 'scheduled' || j.status === 'pending') && <button className="primary md-big" onClick={() => start(j)}>Start job & clock on</button>}
             {j.status === 'in_progress' && <button className="primary md-big" onClick={() => finish(j)}>Mark complete & clock off</button>}
+          </div>
           </div>
         )
       })}

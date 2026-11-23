@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
+import MobileChrome from './MobileChrome'
+import { useResponsiveTables } from './useResponsiveTables'
 import '../sidebar.css'
+import '../mobile.css'
 import Icon, { Logo } from './Icon'
 import type { IconName } from './Icon'
 import { useAuth } from '../auth'
@@ -60,7 +63,7 @@ function crumbs(pathname: string): { label: string; to: string }[] {
 }
 
 export default function Shell() {
-  const { tabs, closeTab, db, remote, profile, notice, dismissNotice } = useStore()
+  const { tabs, closeTab, db, remote, profile, notice, dismissNotice, canWrite } = useStore()
   const { signOut } = useAuth()
   const loc = useLocation()
   const nav = useNavigate()
@@ -77,6 +80,8 @@ export default function Shell() {
     document.documentElement.dataset.theme = next
     try { localStorage.setItem('fld-theme', next) } catch { /* private mode */ }
   }
+  const pageRef = useRef<HTMLElement>(null)
+  useResponsiveTables(pageRef, [loc.pathname, loc.search])
   const initials = (profile?.fullName || 'U').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   // Close the mobile menu whenever the page changes.
@@ -121,6 +126,10 @@ export default function Shell() {
       ...db.catalog.filter((p) => has(p.partNo, p.description)).map((p) => ({ group: 'Parts', label: `${p.partNo} ${p.description}`, to: '/materials/catalog' })),
     ].slice(0, 15)
   }, [q, db])
+
+  const trail = crumbs(loc.pathname)
+  const mBackLabel = trail.length > 2 ? trail[trail.length - 2].label : ''
+  const mBack = trail.length > 2 ? trail[trail.length - 2].to : null // detail pages get a back arrow; top-level pages do not
 
   return (
     <div className={`shell ${expanded ? 'expanded' : ''} ${drawer ? 'drawer-open' : ''}`}>
@@ -179,6 +188,22 @@ export default function Shell() {
         </button>
       </aside>
 
+      <MobileChrome
+        backLabel={mBackLabel}
+        backTo={mBack}
+        nav={NAV}
+        company={db.settings.companyName}
+        who={profile ? { name: profile.fullName || 'Signed in', role: profile.role } : null}
+        notices={notices}
+        q={q}
+        setQ={setQ}
+        results={results}
+        theme={theme}
+        toggleTheme={toggleTheme}
+        openTour={() => setTour(true)}
+        signOut={remote ? () => void signOut() : undefined}
+        canWrite={canWrite}
+      />
       <div className="main">
         <header className="topbar">
           <button className="menu-btn icon-btn" onClick={() => setDrawer(true)} aria-label="Open menu"><Icon name="menu" /></button>
@@ -247,7 +272,7 @@ export default function Shell() {
             </span>
           ))}
         </nav>
-        <main className="page"><div key={loc.pathname} className="page-anim"><Outlet /></div></main>
+        <main className="page" ref={pageRef}><div key={loc.pathname} className="page-anim"><Outlet /></div></main>
       </div>
     </div>
   )

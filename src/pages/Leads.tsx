@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useStartOpen } from '../components/FilterBar'
 import { useStore } from '../store'
 import type { LeadStatus } from '../types'
 import AddressFields from '../components/AddressFields'
@@ -21,7 +22,8 @@ export default function Leads() {
   const nav = useNavigate()
   const [filter, setFilter] = useState<LeadStatus | 'all'>('all')
   const [q, setQ] = useState('')
-  const [adding, setAdding] = useState(false)
+  const startOpen = useStartOpen()
+  const [adding, setAdding] = useState(startOpen)
   const [form, setForm] = useState(EMPTY)
   const [addr, setAddr] = useState<AddressValue>({ parts: emptyAddress, point: null })
   const [error, setError] = useState('')

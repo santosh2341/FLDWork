@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
 import { Link, useNavigate } from 'react-router-dom'
 import { QuoteForm } from './Simple'
 import AiQuoteDraft from '../components/AiQuoteDraft'
@@ -9,7 +9,8 @@ import { computeCosting, money, STATUS_COLOR, STATUS_LABEL } from '../lib/costin
 export default function Quotes() {
   const { db, createQuote, canWrite, remote } = useStore()
   const nav = useNavigate()
-  const [open, setOpen] = useState(false)
+  const startOpen = useStartOpen()
+  const [open, setOpen] = useState(startOpen)
   const [ai, setAi] = useState(false)
   const todo = useFilter() === 'to_be_completed'
   const rows = todo ? db.quotes.filter((q) => q.status === 'to_be_completed') : db.quotes
