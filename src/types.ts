@@ -267,7 +267,7 @@ export interface PoLine {
 export interface PurchaseOrder {
   id: number
   vendor: string
-  status: 'draft' | 'ordered' | 'received'
+  status: 'draft' | 'ordered' | 'received' | 'cancelled'
   createdAt: string
   lines: PoLine[]
 }

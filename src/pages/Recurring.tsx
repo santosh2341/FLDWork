@@ -6,7 +6,8 @@ import { FREQ_LABEL } from '../lib/recurring'
 import type { RecurringJob } from '../types'
 
 export default function Recurring() {
-  const { db, addRecurring, updateRecurring, runRecurring } = useStore()
+  const { db, addRecurring, updateRecurring, deleteRecurring, runRecurring } = useStore()
+  const [edit, setEdit] = useState<RecurringJob | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ name: '', quoteId: '', frequency: 'monthly' as RecurringJob['frequency'], nextDue: today() })
   const [error, setError] = useState('')
@@ -72,14 +73,31 @@ export default function Recurring() {
         <tbody>
           {db.recurring.map((r) => (
             <tr key={r.id}>
-              <td><b>{r.name}</b></td>
+              <td>{edit?.id === r.id ? <input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /> : <b>{r.name}</b>}</td>
               <td>{customerOf(r.quoteId)}</td>
               <td><Link to={`/quotes/${r.quoteId}`}>{quoteLabel(r.quoteId)}</Link></td>
-              <td>{FREQ_LABEL[r.frequency]}</td>
-              <td>{r.nextDue} {isDue(r) && <span className="badge">Due</span>}</td>
+              <td>{edit?.id === r.id ? (
+                <select value={edit.frequency} onChange={(e) => setEdit({ ...edit, frequency: e.target.value as RecurringJob['frequency'] })}>
+                  {(Object.keys(FREQ_LABEL) as RecurringJob['frequency'][]).map((f) => <option key={f} value={f}>{FREQ_LABEL[f]}</option>)}
+                </select>
+              ) : FREQ_LABEL[r.frequency]}</td>
+              <td>{edit?.id === r.id ? <input type="date" value={edit.nextDue} onChange={(e) => e.target.value && setEdit({ ...edit, nextDue: e.target.value })} /> : <>{r.nextDue} {isDue(r) && <span className="badge">Due</span>}</>}</td>
               <td>{r.lastCreated ?? '–'}</td>
               <td><input type="checkbox" checked={r.active} aria-label={`Activate ${r.name}`} onChange={(e) => updateRecurring({ ...r, active: e.target.checked })} /></td>
-              <td><button disabled={!r.active} onClick={() => run([r.id])}>Create job now</button></td>
+              <td>
+                {edit?.id === r.id ? (
+                  <div className="row">
+                    <button className="primary" disabled={!edit.name.trim()} onClick={() => { updateRecurring({ ...edit, name: edit.name.trim() }); setEdit(null) }}>Save</button>
+                    <button onClick={() => setEdit(null)}>Cancel</button>
+                  </div>
+                ) : (
+                  <div className="row">
+                    <button disabled={!r.active} onClick={() => run([r.id])}>Create job now</button>
+                    <button onClick={() => setEdit(r)}>Edit</button>
+                    <button className="link-btn" onClick={() => confirm(`Delete the schedule "${r.name}"? Jobs already created are kept.`) && deleteRecurring(r.id)}>Delete</button>
+                  </div>
+                )}
+              </td>
             </tr>
           ))}
           {db.recurring.length === 0 && <tr><td colSpan={8} className="muted">No recurring schedules yet.</td></tr>}

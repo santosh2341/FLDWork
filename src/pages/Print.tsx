@@ -175,3 +175,38 @@ export function InvoicePrint() {
     </>
   )
 }
+
+export function PoPrint() {
+  const { id } = useParams()
+  const { db } = useStore()
+  const po = db.purchaseOrders.find((x) => x.id === Number(id))
+  if (!po) return <p>Purchase order not found.</p>
+  const company = { ...emptyCompany, ...db.settings.company }
+  const total = po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0)
+  const gst = total * (db.settings.defaultTaxRate / 100)
+  const part = (pid: string) => db.catalog.find((p) => p.id === pid)
+  return (
+    <>
+      <Toolbar back="/materials/purchase-orders" />
+      <article className="doc">
+        <Letterhead company={company} fallbackName={db.settings.companyName} title="PURCHASE ORDER" number={po.id}
+          rows={[['Date', auDate(po.createdAt)], ['Status', po.status]]} />
+        <div className="doc-parties"><div><h4>Vendor</h4><b>{po.vendor}</b></div><div><h4>Deliver to</h4><b>{company.tradingName || db.settings.companyName}</b>{addressLines(company.address).map((l) => <div key={l}>{l}</div>)}</div></div>
+        <table className="doc-table">
+          <thead><tr><th>Part no.</th><th>Description</th><th className="num">Qty</th><th className="num">Unit cost</th><th className="num">Amount</th></tr></thead>
+          <tbody>
+            {po.lines.map((l) => (
+              <tr key={l.id}><td>{part(l.partId)?.partNo}</td><td>{part(l.partId)?.description ?? l.partId}</td><td className="num">{l.qty}</td><td className="num">{money(l.unitCost)}</td><td className="num">{money(l.qty * l.unitCost)}</td></tr>
+            ))}
+          </tbody>
+        </table>
+        <table className="doc-totals"><tbody>
+          <tr><td>Subtotal (ex GST)</td><td>{money(total)}</td></tr>
+          <tr><td>GST ({db.settings.defaultTaxRate}%)</td><td>{money(gst)}</td></tr>
+          <tr className="doc-grand"><td>Total (inc GST)</td><td>{money(total + gst)}</td></tr>
+        </tbody></table>
+        <p className="doc-foot">Please quote PO {po.id} on your delivery docket and invoice. Prices are in Australian dollars.</p>
+      </article>
+    </>
+  )
+}

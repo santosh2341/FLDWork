@@ -247,6 +247,10 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     addRecurring: (r) => {
       void write(() => sb.from('recurring_jobs').insert({ name: r.name, quote_id: r.quoteId, frequency: r.frequency, next_due: r.nextDue, active: r.active }))
     },
+    deleteRecurring: (id) => {
+      setDb((d) => ({ ...d, recurring: d.recurring.filter((x) => x.id !== id) }))
+      void write(() => sb.from('recurring_jobs').delete().eq('id', id))
+    },
     updateRecurring: (r) => {
       setDb((d) => ({ ...d, recurring: d.recurring.map((x) => (x.id === r.id ? r : x)) }))
       void write(() => sb.from('recurring_jobs').update({ name: r.name, quote_id: r.quoteId, frequency: r.frequency, next_due: r.nextDue, active: r.active }).eq('id', r.id))

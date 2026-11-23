@@ -34,6 +34,7 @@ const MonthView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ defa
 const RunSheets = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.RunSheets })))
 const WeekView = lazy(() => import('./pages/ScheduleViews').then((m) => ({ default: m.WeekView })))
 const InvoicePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.InvoicePrint })))
+const PoPrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.PoPrint })))
 const QuotePrint = lazy(() => import('./pages/Print').then((m) => ({ default: m.QuotePrint })))
 const CustomerDetail = lazy(() => import('./pages/Simple').then((m) => ({ default: m.CustomerDetail })))
 const Customers = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Customers })))
@@ -101,6 +102,7 @@ function AppRoutes() {
             <Route path="materials/counts" element={<InventoryCounts />} />
             <Route path="materials/pre-builds" element={<PreBuilds />} />
             <Route path="materials/purchase-orders" element={<PurchaseOrders />} />
+            <Route path="materials/purchase-orders/:id/print" element={<PoPrint />} />
             <Route path="materials/vendor-quotes" element={<VendorQuotes />} />
             <Route path="materials/receipts" element={<Receipts />} />
             <Route path="reports" element={<ReportsHub />} />

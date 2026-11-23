@@ -58,7 +58,10 @@ export default function Timesheets() {
         const byDay = days.map((d) =>
           weekEntries.filter((e) => e.employeeId === p.id && e.date === d).reduce((a, e) => a + hoursBetween(e.start, e.end), 0),
         )
-        return { person: p, byDay, total: byDay.reduce((a, b) => a + b, 0) }
+        const clocked = db.clock
+          .filter((c) => c.employeeId === p.id && c.end && c.start.slice(0, 10) >= days[0] && c.start.slice(0, 10) <= days[6])
+          .reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
+        return { person: p, byDay, total: byDay.reduce((a, b) => a + b, 0), clocked }
       }),
     [people, days, weekEntries],
   )
@@ -191,7 +194,7 @@ export default function Timesheets() {
       {view === 'summary' && (
         <table>
           <thead>
-            <tr><th>Employee</th>{days.map((d, i) => <th key={d} className="num">{DAY_NAMES[i]} {parseDate(d).getDate()}</th>)}<th className="num">Total</th></tr>
+            <tr><th>Employee</th>{days.map((d, i) => <th key={d} className="num">{DAY_NAMES[i]} {parseDate(d).getDate()}</th>)}<th className="num">Scheduled</th><th className="num" title="Time clocked on and off from My day">Clocked</th></tr>
           </thead>
           <tbody>
             {summary.map((s) => (
@@ -199,6 +202,7 @@ export default function Timesheets() {
                 <td>{s.person.name}</td>
                 {s.byDay.map((h, i) => <td key={i} className="num">{h ? h.toFixed(2) : '–'}</td>)}
                 <td className="num"><b>{s.total.toFixed(2)}</b></td>
+                <td className="num">{s.clocked ? s.clocked.toFixed(2) : '–'}</td>
               </tr>
             ))}
           </tbody>

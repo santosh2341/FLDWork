@@ -211,6 +211,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     },
     updateSettings: (s) => setDb((d) => ({ ...d, settings: s })),
     addRecurring: (r) => setDb((d) => ({ ...d, recurring: [...d.recurring, { ...r, id: uid() }] })),
+    deleteRecurring: (id) => setDb((d) => ({ ...d, recurring: d.recurring.filter((x) => x.id !== id) })),
     updateRecurring: (r) => setDb((d) => ({ ...d, recurring: d.recurring.map((x) => (x.id === r.id ? r : x)) })),
     runRecurring: async (ids) => {
       const targets = db.recurring.filter((r) => ids.includes(r.id) && r.active && db.quotes.some((q) => q.id === r.quoteId))

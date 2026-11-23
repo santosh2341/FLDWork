@@ -38,7 +38,7 @@ export interface Actions {
   saveAuditResult: (r: Omit<AuditResult, 'id' | 'completedAt'>) => void
   upsertPreBuild: (p: PreBuild) => void
   createPO: (vendor: string, lines: { partId: string; qty: number; unitCost: number }[]) => Promise<number>
-  setPOStatus: (id: number, status: 'ordered') => void
+  setPOStatus: (id: number, status: 'ordered' | 'cancelled') => void
   receivePO: (id: number, received: Record<string, number>) => void
   createCount: () => Promise<string>
   setCountLine: (countId: string, partId: string, counted: number) => void
@@ -52,6 +52,7 @@ export interface Actions {
   acceptVendorQuote: (id: number) => Promise<number> // creates a draft purchase order, resolves to its id (0 on failure)
   addRecurring: (r: Omit<RecurringJob, 'id' | 'lastCreated'>) => void
   updateRecurring: (r: RecurringJob) => void
+  deleteRecurring: (id: string) => void
   runRecurring: (ids: string[]) => Promise<number> // creates one pending job per active schedule; resolves to how many
   convertLead: (leadId: string) => Promise<number> // resolves to the new quote id (0 if the lead is missing)
 }

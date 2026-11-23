@@ -87,7 +87,13 @@ export function PurchaseOrders() {
         <div key={po.id} className="card">
           <div className="row between">
             <h3>PO {po.id} – {po.vendor} <span className="muted">{po.createdAt} · {po.status} · {money(po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0))}</span></h3>
-            {po.status === 'draft' && <button onClick={() => setPOStatus(po.id, 'ordered')}>Mark as ordered</button>}
+            <div className="row">
+              <Link className="btn" to={`/materials/purchase-orders/${po.id}/print`}>Print / PDF</Link>
+              {po.status === 'draft' && <button onClick={() => setPOStatus(po.id, 'ordered')}>Mark as ordered</button>}
+              {(po.status === 'draft' || po.status === 'ordered') && po.lines.every((l) => l.received === 0) && (
+                <button className="link-btn" onClick={() => confirm(`Cancel PO ${po.id}?`) && setPOStatus(po.id, 'cancelled')}>Cancel PO</button>
+              )}
+            </div>
           </div>
           <table>
             <thead><tr><th>Part</th><th className="num">Ordered</th><th className="num">Received</th><th className="num">Unit cost</th>{po.status === 'ordered' && <th>Receive now</th>}</tr></thead>
