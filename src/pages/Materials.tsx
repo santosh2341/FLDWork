@@ -39,14 +39,15 @@ export function PurchaseOrders() {
   const [lines, setLines] = useState<{ partId: string; qty: number; unitCost: number }[]>([])
   const [recv, setRecv] = useState<Record<string, number>>({})
   const [err, setErr] = useState('')
+  const [recvErr, setRecvErr] = useState<{ po: number; msg: string } | null>(null)
   const vendors = [...new Set(db.catalog.map((p) => p.vendor).filter(Boolean))]
   const partName = (id: string) => db.catalog.find((p) => p.id === id)?.description ?? id
 
   const create = () => {
-    if (!vendor) return setErr('Choose a vendor.')
+    if (!vendor.trim()) return setErr('Enter or choose a vendor.')
     if (lines.length === 0) return setErr('Add at least one line.')
     if (lines.some((l) => !l.partId || !(l.qty > 0))) return setErr('Every line needs a part and a quantity above zero.')
-    void createPO(vendor, lines)
+    void createPO(vendor.trim(), lines)
     setLines([])
     setErr('')
   }
@@ -57,10 +58,8 @@ export function PurchaseOrders() {
       <div className="card">
         <h3>New purchase order</h3>
         <div className="row wrap">
-          <select value={vendor} onChange={(e) => setVendor(e.target.value)}>
-            <option value="">Vendor…</option>
-            {vendors.map((v) => <option key={v}>{v}</option>)}
-          </select>
+          <input list="vendor-list" placeholder="Vendor (pick or type) *" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+          <datalist id="vendor-list">{vendors.map((v) => <option key={v} value={v} />)}</datalist>
           <button onClick={() => setLines([...lines, { partId: '', qty: 1, unitCost: 0 }])}>+ Line</button>
         </div>
         {lines.map((l, i) => (
@@ -73,7 +72,7 @@ export function PurchaseOrders() {
               }}
             >
               <option value="">Part…</option>
-              {db.catalog.filter((p) => !vendor || p.vendor === vendor).map((p) => <option key={p.id} value={p.id}>{p.partNo} – {p.description}</option>)}
+              {db.catalog.filter((p) => !vendor || !vendors.includes(vendor) || p.vendor === vendor).map((p) => <option key={p.id} value={p.id}>{p.partNo} – {p.description}</option>)}
             </select>
             <input type="number" min="1" value={l.qty} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)))} />
             <input type="number" min="0" step="0.01" value={l.unitCost} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, unitCost: Number(e.target.value) } : x)))} />
@@ -87,7 +86,7 @@ export function PurchaseOrders() {
       {db.purchaseOrders.map((po) => (
         <div key={po.id} className="card">
           <div className="row between">
-            <h3>PO {po.id} – {po.vendor} <span className="muted">{po.createdAt} · {po.status}</span></h3>
+            <h3>PO {po.id} – {po.vendor} <span className="muted">{po.createdAt} · {po.status} · {money(po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0))}</span></h3>
             {po.status === 'draft' && <button onClick={() => setPOStatus(po.id, 'ordered')}>Mark as ordered</button>}
           </div>
           <table>
@@ -104,8 +103,16 @@ export function PurchaseOrders() {
             </tbody>
           </table>
           {po.status === 'ordered' && (
-            <button className="primary" onClick={() => { receivePO(po.id, recv); setRecv({}) }}>Receive items</button>
+            <button className="primary" onClick={() => {
+              const bad = po.lines.find((l) => (recv[l.id] ?? 0) > l.qty - l.received || (recv[l.id] ?? 0) < 0)
+              if (bad) return setRecvErr({ po: po.id, msg: `You can only receive up to ${bad.qty - bad.received} of ${partName(bad.partId)}.` })
+              if (!po.lines.some((l) => (recv[l.id] ?? 0) > 0)) return setRecvErr({ po: po.id, msg: 'Enter a quantity received on at least one line.' })
+              setRecvErr(null)
+              receivePO(po.id, recv)
+              setRecv({})
+            }}>Receive items</button>
           )}
+          {recvErr?.po === po.id && <p className="error">{recvErr.msg}</p>}
         </div>
       ))}
     </>
@@ -216,10 +223,10 @@ export function VendorQuotes() {
   const todayStr = new Date().toISOString().slice(0, 10)
 
   const create = () => {
-    if (!vendor) return setErr('Choose a vendor.')
+    if (!vendor.trim()) return setErr('Enter or choose a vendor.')
     if (lines.length === 0) return setErr('Add at least one line.')
     if (lines.some((l) => !l.partId || !(l.qty > 0))) return setErr('Every line needs a part and a quantity above zero.')
-    void createVendorQuote(vendor, validUntil, lines)
+    void createVendorQuote(vendor.trim(), validUntil, lines)
     setLines([])
     setValidUntil('')
     setErr('')
@@ -231,10 +238,8 @@ export function VendorQuotes() {
       <div className="card">
         <h3>Request a quote</h3>
         <div className="row wrap">
-          <select value={vendor} onChange={(e) => setVendor(e.target.value)}>
-            <option value="">Vendor…</option>
-            {vendors.map((v) => <option key={v}>{v}</option>)}
-          </select>
+          <input list="vendor-list" placeholder="Vendor (pick or type) *" value={vendor} onChange={(e) => setVendor(e.target.value)} />
+          <datalist id="vendor-list">{vendors.map((v) => <option key={v} value={v} />)}</datalist>
           <label>Valid until <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} /></label>
           <button onClick={() => setLines([...lines, { partId: '', qty: 1, unitCost: 0 }])}>+ Line</button>
         </div>
@@ -242,7 +247,7 @@ export function VendorQuotes() {
           <div key={i} className="row wrap qrow">
             <select value={l.partId} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, partId: e.target.value, unitCost: part(e.target.value)?.cost ?? 0 } : x)))}>
               <option value="">Part…</option>
-              {db.catalog.filter((p) => !vendor || p.vendor === vendor).map((p) => <option key={p.id} value={p.id}>{p.partNo} – {p.description}</option>)}
+              {db.catalog.filter((p) => !vendor || !vendors.includes(vendor) || p.vendor === vendor).map((p) => <option key={p.id} value={p.id}>{p.partNo} – {p.description}</option>)}
             </select>
             <input type="number" min="1" value={l.qty} onChange={(e) => setLines(lines.map((x, j) => (j === i ? { ...x, qty: Number(e.target.value) } : x)))} />
             <button onClick={() => setLines(lines.filter((_, j) => j !== i))}>×</button>

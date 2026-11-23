@@ -28,7 +28,8 @@ export default function Leads() {
 
   const save = () => {
     if (!form.name.trim()) return setError('A lead needs a name.')
-    addLead({ ...form, name: form.name.trim() })
+    if (form.email.trim() && !/^\S+@\S+\.\S+$/.test(form.email.trim())) return setError('That email address does not look right.')
+    addLead({ ...form, name: form.name.trim(), email: form.email.trim() })
     setForm(EMPTY)
     setError('')
     setAdding(false)

@@ -77,7 +77,7 @@ export function WorkOrderDetail() {
       </div>
       <div className="grid2">
         <div className="card"><h3>Customer</h3><p>{customer?.name}<br />{customer?.contactName}<br />{customer?.phone}</p></div>
-        <div className="card"><h3>Site</h3><p>{site?.name}<br />{site?.address}</p></div>
+        <div className="card"><h3>Site</h3><p>{site?.name}<br />{site?.address}</p>{site?.accessNotes && <p><b>Access:</b> {site.accessNotes}</p>}</div>
       </div>
       <div className="card">
         <h3>Scope of work</h3>
