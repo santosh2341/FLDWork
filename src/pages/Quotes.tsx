@@ -1,16 +1,19 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { QuoteForm } from './Simple'
+import AiQuoteDraft from '../components/AiQuoteDraft'
 import { useStore } from '../store'
 import { computeCosting, money, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 
 export default function Quotes() {
-  const { db, createQuote, canWrite } = useStore()
+  const { db, createQuote, canWrite, remote } = useStore()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
+  const [ai, setAi] = useState(false)
   return (
     <>
-      <div className="row between"><h1>Quotes ({db.quotes.length})</h1>{canWrite && <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button>}</div>
+      <div className="row between"><h1>Quotes ({db.quotes.length})</h1><div className="row">{canWrite && remote && <button className="ai-btn" disabled={!db.customers.length} onClick={() => setAi(true)}>✨ Draft with AI</button>}{canWrite && <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button>}</div></div>
+      {ai && <AiQuoteDraft onClose={() => setAi(false)} />}
       {open && (
         <QuoteForm
           customers={db.customers}

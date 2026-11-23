@@ -504,3 +504,11 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
   @page { size: A4; margin: 16mm; }
 }
 @media (max-width: 640px) { .doc { padding: 20px; } .doc-head, .doc-parties { grid-template-columns: 1fr; display: block; } .doc-title { text-align: left; margin-top: 12px; } }
+
+/* ---------- AI assistant ---------- */
+.ai-btn { border-color: #8b7bd8; color: var(--ink); background: linear-gradient(135deg, color-mix(in srgb, #8b7bd8 14%, var(--panel)), var(--panel)); }
+.ai-btn:hover:not(:disabled) { border-color: #6c5ccf; }
+.ai-card { border-color: #8b7bd8; }
+.ai-result { margin-top: 12px; padding: 12px 14px; border: 1px dashed #8b7bd8; border-radius: var(--radius, 8px); background: color-mix(in srgb, #8b7bd8 6%, transparent); }
+.ai-polish { margin-top: 6px; }
+.pill.warn { background: color-mix(in srgb, #e0a030 22%, transparent); color: var(--ink); font-size: .72rem; padding: 1px 8px; }

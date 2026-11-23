@@ -51,6 +51,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }))
       return id
     },
+    fillQuote: async (id, fill) => setDb((d) => ({ ...d, quotes: d.quotes.map((q) => (q.id === id ? { ...q, description: fill.description, costCenters: [{ ...(q.costCenters[0] ?? { id: uid(), name: 'General' }), items: fill.items }, ...q.costCenters.slice(1)], timeline: [{ id: uid(), type: 'System', message: 'Items drafted with AI and reviewed', at: new Date().toISOString() }, ...q.timeline] } : q)) })),
     deleteQuote: (id) => setDb((d) => ({ ...d, quotes: d.quotes.filter((q) => q.id !== id), leads: d.leads.map((l) => (l.quoteId === id ? { ...l, quoteId: undefined } : l)), recurring: d.recurring.filter((r) => r.quoteId !== id) })),
     deleteJob: (id) => setDb((d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id), schedule: d.schedule.filter((e) => e.jobId !== id), auditResults: d.auditResults.filter((r) => r.jobId !== id) })),
     setJobStatus: (jobId, status) => setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) })),

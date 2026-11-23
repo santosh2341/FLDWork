@@ -71,6 +71,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const reload = useCallback(async () => {
     try {
       const r = await loadRemote()
+      dbRef.current = r.db // so actions that run right after a reload see the new data before React re-renders
       setDb(r.db)
       setProfile(r.profile)
     } catch (e) {

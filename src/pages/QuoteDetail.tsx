@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import AiPolish from '../components/AiPolish'
 import { useStore } from '../store'
 import { computeCosting, money, sellFromCost, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 import { today } from '../lib/dates'
@@ -164,9 +165,11 @@ export default function QuoteDetail() {
           <div>
             <label className="block">Description (scope of work)
               <textarea rows={6} value={draft.description} onChange={(e) => change({ description: e.target.value })} />
+              <AiPolish kind="scope" text={draft.description} onAccept={(t) => change({ description: t })} />
             </label>
             <label className="block">Notes (private, not shown to the customer)
               <textarea rows={4} value={draft.notes} onChange={(e) => change({ notes: e.target.value })} />
+              <AiPolish kind="notes" text={draft.notes} onAccept={(t) => change({ notes: t })} />
             </label>
           </div>
           <div className="card">

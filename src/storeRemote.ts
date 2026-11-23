@@ -1,3 +1,4 @@
+import { uid } from './lib/id'
 import type { Dispatch, SetStateAction } from 'react'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { errMsg } from './lib/remote'
@@ -106,6 +107,18 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       num(await call<number>('create_quote', { p_customer_id: customerId, p_site_id: siteId, p_name: name })),
     saveQuote: (q) => {
       void write(() => sb.rpc('save_quote', { p: q }))
+    },
+    fillQuote: async (id, fill) => {
+      const q = getDb().quotes.find((x) => x.id === id)
+      if (!q) return fail('Could not find the new quote.')
+      const next = {
+        ...q,
+        description: fill.description,
+        costCenters: [{ ...(q.costCenters[0] ?? { id: uid(), name: 'General' }), items: fill.items }, ...q.costCenters.slice(1)],
+        timeline: [{ id: uid(), type: 'System' as const, message: 'Items drafted with AI and reviewed', at: new Date().toISOString() }, ...q.timeline],
+      }
+      setDb((d) => ({ ...d, quotes: d.quotes.map((x) => (x.id === id ? next : x)) }))
+      await write(() => sb.rpc('save_quote', { p: next }))
     },
     deleteQuote: (id) => {
       void write(() => sb.from('quotes').delete().eq('id', id))

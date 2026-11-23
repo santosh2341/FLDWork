@@ -23,9 +23,9 @@ Status key: [x] done, [~] in progress, [ ] to do. Each phase is built, tested an
 - [x] CSV exports: Xero sales-invoice import, customers, parts (MYOB layout later)
 
 ## Phase 4: AI assistant (Claude API through a Supabase Edge Function)
-- [ ] Edge Function with auth, per-company usage limit, API key kept server-side
-- [ ] Quote builder: paste an email / text, AI drafts line items from the catalog, user approves
-- [ ] Job notes: rough notes become clean notes and a customer summary
+- [x] Edge Function ai-assist with auth, per-company daily limit, key kept server-side
+- [x] Quote builder (Quotes > Draft with AI): catalog-priced draft, user reviews then creates
+- [x] Tidy with AI on quote scope, quote notes and invoice notes
 - [ ] Needs `ANTHROPIC_API_KEY` set as a Supabase secret; the app works without it and says so
 
 ## Phase 5: Technician mobile

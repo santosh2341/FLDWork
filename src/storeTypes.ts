@@ -1,4 +1,4 @@
-import type {
+import type { LineItem,
   AppSettings, Audit, AuditResult, CatalogPart, Customer, Invoice, JobStatus, Lead, Payment, PreBuild,
   Quote, RecurringJob, ScheduleEntry, Site, VendorQuote, VendorQuoteLine,
 } from './types'
@@ -16,6 +16,7 @@ export interface Actions {
   deletePart: (id: string) => void
   createQuote: (customerId: string, siteId: string, name: string) => Promise<number>
   saveQuote: (q: Quote) => void
+  fillQuote: (id: number, fill: { description: string; items: LineItem[] }) => Promise<void> // put AI-drafted items into a new quote
   deleteQuote: (id: number) => void // UI only offers this when the quote has no job
   deleteJob: (id: number) => void // UI only offers this when the job has no invoice
   createJobFromQuote: (quoteId: number) => Promise<number>

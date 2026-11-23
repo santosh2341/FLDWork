@@ -3,6 +3,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { invoiceState, invoiceTotals, STATE_COLOR, STATE_LABEL, withLog } from '../lib/invoicing'
 import { money } from '../lib/costing'
+import AiPolish from '../components/AiPolish'
 
 const TABS = ['Details', 'Payments', 'Log', 'Notes'] as const
 
@@ -191,7 +192,8 @@ export default function InvoiceDetail() {
       {tab === 'Notes' && (
         <div className="card">
           <p className="muted">Internal notes. These are not shown to the customer. Saved when you click away.</p>
-          <textarea rows={6} defaultValue={inv.notes ?? ''} onBlur={(e) => e.target.value !== (inv.notes ?? '') && saveInvoice({ ...inv, notes: e.target.value })} />
+          <textarea key={inv.notes ?? ''} rows={6} defaultValue={inv.notes ?? ''} onBlur={(e) => e.target.value !== (inv.notes ?? '') && saveInvoice({ ...inv, notes: e.target.value })} />
+          <AiPolish kind="job_summary" text={inv.notes ?? ''} onAccept={(t) => saveInvoice({ ...inv, notes: t })} />
         </div>
       )}
     </>
