@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { usePaged } from '../components/Paged'
 import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
 import { Link, useNavigate } from 'react-router-dom'
 import { QuoteForm } from './Simple'
@@ -14,6 +15,7 @@ export default function Quotes() {
   const [ai, setAi] = useState(false)
   const todo = useFilter() === 'to_be_completed'
   const rows = todo ? db.quotes.filter((q) => q.status === 'to_be_completed') : db.quotes
+  const { shown, more } = usePaged(rows)
   return (
     <>
       <div className="row between"><h1>Quotes ({db.quotes.length})</h1><div className="row">{canWrite && remote && <button className="ai-btn" disabled={!db.customers.length} onClick={() => setAi(true)}>✨ Draft with AI</button>}{canWrite && <button disabled={!db.customers.length} onClick={() => setOpen(true)}>+ New quote</button>}</div></div>
@@ -30,7 +32,7 @@ export default function Quotes() {
       <table>
         <thead><tr><th>#</th><th>Name</th><th>Customer</th><th>Site</th><th>Status</th><th>Total</th></tr></thead>
         <tbody>
-          {rows.map((q) => (
+          {shown.map((q) => (
             <tr key={q.id}>
               <td><Link to={`/quotes/${q.id}`}>{q.id}</Link></td>
               <td>{q.name}</td>
@@ -42,6 +44,7 @@ export default function Quotes() {
           ))}
         </tbody>
       </table>
+      {more}
     </>
   )
 }
