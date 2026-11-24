@@ -16,6 +16,9 @@ export function useResponsiveTables(root: React.RefObject<HTMLElement | null>, d
         const heads = Array.from(t.querySelectorAll('thead th')).map((h) => (h.textContent ?? '').trim())
         if (!heads.length) return
         t.querySelectorAll('tbody tr').forEach((tr) => {
+          const tone = tr.querySelector('.due-overdue') ? 'red' : tr.querySelector('.due-soon') ? 'yellow' : tr.querySelector('.due-ok') ? 'green' : tr.querySelector('.dot') ? 'blue' : ''
+          if ((tr.getAttribute('data-tone') ?? '') !== tone) { if (tone) tr.setAttribute('data-tone', tone); else tr.removeAttribute('data-tone') }
+          if (tr.querySelector(':scope > td[colspan]')) tr.setAttribute('data-wide', '1')
           let i = 0
           Array.from(tr.children).forEach((td) => {
             const span = Number((td as HTMLTableCellElement).colSpan || 1)
@@ -27,7 +30,8 @@ export function useResponsiveTables(root: React.RefObject<HTMLElement | null>, d
     }
     const queue = () => { if (!queued) { queued = true; requestAnimationFrame(run) } }
     run()
-    const mo = new MutationObserver(queue)
+    // Only react to rows/cells being added or removed, never to our own attribute changes
+    const mo = new MutationObserver((m) => { if (m.some((r) => r.addedNodes.length)) queue() })
     mo.observe(el, { childList: true, subtree: true })
     return () => mo.disconnect()
     // eslint-disable-next-line react-hooks/exhaustive-deps
