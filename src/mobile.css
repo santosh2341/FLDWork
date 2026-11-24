@@ -81,10 +81,10 @@
   .page h1 { margin: 8px 0 14px; font-size: 1.95rem; font-weight: 800; line-height: 1.08; letter-spacing: -.025em; }
   .page h3 { font-size: 1.05rem; font-weight: 700; }
   .page .row.between { align-items: flex-end; gap: 10px; }
-  .page > .row.between { flex-wrap: wrap; align-items: stretch; }
-  .page > .row.between > h1 { flex: 1 1 100%; min-width: 0; margin-bottom: 2px; }
-  .page > .row.between > .row, .page > .row.between > div { flex: 1 1 100%; display: flex; gap: 8px; }
-  .page > .row.between > .row > *, .page > .row.between > div > * { flex: 1; justify-content: center; text-align: center; }
+  .page-anim > .row.between { flex-wrap: wrap; align-items: stretch; }
+  .page-anim > .row.between > h1 { flex: 1 1 100%; min-width: 0; margin-bottom: 2px; }
+  .page-anim > .row.between > .row, .page-anim > .row.between > div { flex: 1 1 100%; display: flex; gap: 8px; }
+  .page-anim > .row.between > .row > *, .page-anim > .row.between > div > * { flex: 1; justify-content: center; text-align: center; }
   .card:has(> table), .card:has(> .table-wrap), .card.flush { padding: 0; border: 0; background: transparent; box-shadow: none; overflow: visible; }
   .table-wrap { overflow: visible; }
   .muted { font-size: .92rem; }
@@ -187,7 +187,7 @@
   .page table:not(.keep-table):not(.doc-table):not(.doc-totals) { background: transparent; border: 0; box-shadow: none; border-radius: 0; overflow: visible; }
 }
 @media (max-width: 768px) {
-  .page > .row.between { margin-bottom: 14px; }
-  .page > .row.between > .row, .page > .row.between > div { width: 100%; margin: 0; }
-  .page > .row.between > .row > button, .page > .row.between > .row > .btn { flex: 1 1 0; min-width: 0; }
+  .page-anim > .row.between { margin-bottom: 14px; }
+  .page-anim > .row.between > .row, .page-anim > .row.between > div { width: 100%; margin: 0; }
+  .page-anim > .row.between > .row > button, .page-anim > .row.between > .row > .btn { flex: 1 1 0; min-width: 0; }
 }

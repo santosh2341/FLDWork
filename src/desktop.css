@@ -1,0 +1,63 @@
+/* ==========================================================================
+   Desktop refinements (769px and up): the same "run sheet" identity as the phone layout.
+   Archivo headings, line-marking status colours on a left edge, flat bordered surfaces,
+   ink-navy primary actions. Uses the existing colour variables so dark mode keeps working.
+   ========================================================================== */
+@media (min-width: 769px) {
+  :root {
+    --mark-red: #dc4a2f; --mark-yellow: #e6a800; --mark-blue: #2f6fdf; --mark-green: #1d9b62;
+    --head: 'Archivo', Inter, system-ui, sans-serif;
+    --radius: 12px;
+  }
+  :root[data-theme='dark'] { --mark-red: #f0674d; --mark-yellow: #f2b91f; --mark-blue: #5b94f5; --mark-green: #35c283; }
+  body { font-family: 'Public Sans', Inter, system-ui, sans-serif; }
+  h1, h2, h3, .page h1 { font-family: var(--head); }
+
+  /* ---- page header ---- */
+  .page { max-width: 1480px; }
+  .page h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -.028em; line-height: 1.1; margin: 6px 0 16px; }
+  .page h3 { font-size: 1rem; font-weight: 700; letter-spacing: -.005em; }
+  .crumbs { font-size: .8rem; letter-spacing: .01em; }
+  .page-anim > .row.between { align-items: flex-end; padding-bottom: 14px; margin-bottom: 18px; border-bottom: 1px solid var(--line); }
+  .page-anim > .row.between > h1 { margin-bottom: 0; }
+
+  /* ---- surfaces: flat, bordered, quiet ---- */
+  .card { border-radius: var(--radius); box-shadow: none; border-color: var(--line); }
+  .card:hover { box-shadow: none; }
+  button { border-radius: 9px; font-weight: 600; }
+  button.primary { box-shadow: none; }
+  .page-anim > .row.between > .row > button:last-child:not(.link-btn), .page-anim > .row.between > button:last-child:not(.link-btn) { background: var(--ink); border-color: var(--ink); color: var(--panel); }
+  .page-anim > .row.between > .row > button:last-child:not(.link-btn):hover:not(:disabled), .page-anim > .row.between > button:last-child:not(.link-btn):hover:not(:disabled) { background: var(--ink); filter: brightness(1.18); }
+
+  /* ---- home: needs-attention tiles with a line-marking edge ---- */
+  .cards { gap: 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel); overflow: hidden; flex-wrap: nowrap; margin-bottom: 20px; }
+  .cards .card.alert, .cards .card.alert.zero { flex: 1 1 0; width: auto; min-width: 0; margin: 0; padding: 18px 20px 16px 24px; border: 0; border-right: 1px solid var(--line); border-radius: 0; background: var(--panel); box-shadow: none; transition: background-color .15s; }
+  .cards .card.alert:last-child { border-right: 0; }
+  .cards .card.alert::before { display: block; content: ''; position: absolute; inset: 0 auto 0 0; width: 5px; height: auto; background: var(--mark-blue); }
+  .cards .card.alert.tone-danger::before { background: var(--mark-red); }
+  .cards .card.alert.tone-warn::before { background: var(--mark-yellow); }
+  .cards .card.alert.zero::before { background: var(--mark-green); }
+  .cards .card.alert::after { display: none; }
+  .cards .card.alert:hover { transform: none; box-shadow: none; background: var(--surface-2); border-color: var(--line); }
+  .cards .alert-icon { margin-bottom: 14px; border-radius: 9px; color: var(--ink); background: var(--surface-3); }
+  .cards .alert-top { align-items: center; }
+  .cards .alert-pill { border: 0; background: transparent; padding: 0; color: var(--muted); font-weight: 600; font-size: .74rem; }
+  .cards .big { font-family: var(--head); font-weight: 800; font-size: 2.5rem; letter-spacing: -.035em; line-height: 1; margin-bottom: 4px; color: var(--ink); }
+  .cards .card.alert.zero .big { color: var(--muted); }
+  .cards .alert-label { color: var(--ink); font-weight: 600; font-size: .9rem; }
+
+  /* ---- tables: flat sheet, labelled columns, coloured row edge ---- */
+  table { box-shadow: none; border-radius: var(--radius); }
+  thead th { font-family: var(--head); font-size: .74rem; font-weight: 700; letter-spacing: .04em; color: var(--muted); background: var(--surface-2); padding-top: 11px; padding-bottom: 11px; }
+  tbody td { padding-top: 13px; padding-bottom: 13px; }
+  tbody tr:first-child td:first-child { box-shadow: none; }
+  tbody tr td:first-child { position: relative; font-weight: 600; }
+  tbody tr:hover td { background: var(--surface-2); }
+  tbody td:first-child a, tbody td:first-child { font-variant-numeric: tabular-nums; }
+  .pill { font-weight: 600; letter-spacing: 0; }
+
+  /* ---- rail + topbar ---- */
+  .topbar { border-bottom-color: var(--line); }
+  .rail a.on, .rail button.on, .rail .on { box-shadow: inset 3px 0 0 var(--brand-2); }
+  .filter-bar { border-radius: 10px; }
+}
