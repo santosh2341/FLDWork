@@ -5,7 +5,7 @@ import { useEffect } from 'react'
 export function useResponsiveTables(root: React.RefObject<HTMLElement | null>, deps: unknown[]) {
   useEffect(() => {
     const el = root.current
-    if (!el) return
+    if (!el || document.documentElement.classList.contains('safe-mode')) return
     let queued = false
     const run = () => {
       queued = false
