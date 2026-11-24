@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import JobPhotos from '../components/JobPhotos'
 import FilterBar, { useFilter } from '../components/FilterBar'
@@ -11,6 +12,17 @@ export const JOB_LABEL: Record<JobStatus, string> = {
   in_progress: 'In Progress',
   complete: 'Complete',
   invoiced: 'Invoiced',
+}
+
+// Photos load only after the row is opened, so a long job list does not fetch or decode every picture up front.
+function PhotosToggle({ jobId, count, author, canAdd }: { jobId: number; count: number; author: string; canAdd: boolean }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <details onToggle={(e) => setOpen((e.currentTarget as HTMLDetailsElement).open)}>
+      <summary className="muted">Photos ({count})</summary>
+      {open && <JobPhotos jobId={jobId} author={author} canAdd={canAdd} />}
+    </details>
+  )
 }
 
 export default function Jobs() {
@@ -54,7 +66,7 @@ export default function Jobs() {
                     if (!notes.length && mins <= 0) return null
                     return <><br /><span className="muted">{mins > 0 ? `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, '0')}m on site` : ''}{mins > 0 && notes.length ? ' · ' : ''}{notes.length ? `${notes.length} note${notes.length > 1 ? 's' : ''}: “${notes[0].text.slice(0, 60)}”` : ''}</span></>
                   })()}
-                  <details><summary className="muted">Photos ({db.jobPhotos.filter((p) => p.jobId === j.id).length})</summary><JobPhotos jobId={j.id} author={profile?.fullName ?? ''} canAdd={canWrite} /></details></td>
+                  <PhotosToggle jobId={j.id} count={db.jobPhotos.filter((p) => p.jobId === j.id).length} author={profile?.fullName ?? ''} canAdd={canWrite} /></td>
                   <td><Link to={`/quotes/${j.quoteId}`}>{j.quoteId}</Link></td>
                   <td>{db.customers.find((c) => c.id === j.customerId)?.name}</td>
                   <td>{db.sites.find((s) => s.id === j.siteId)?.name}</td>
