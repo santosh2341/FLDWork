@@ -55,7 +55,7 @@ export interface CostCenter {
 
 export interface TimelineEvent {
   id: string
-  type: 'System' | 'Task'
+  type: 'System' | 'Task' | 'Customer'
   message: string
   at: string
 }
@@ -193,6 +193,22 @@ export interface JobCost {
   description: string
   amount: number // ex GST
   receiptId?: number | null // posted automatically when goods on a job PO were received
+}
+
+// A private link a customer opens to accept or decline a quote (no sign-in). See migration 026.
+export interface QuoteLink {
+  token: string // 64 random hex characters; the URL is /q/<token>
+  quoteId: number
+  createdAt: string
+  createdBy?: string
+  expiresAt: string
+  revokedAt?: string | null
+  viewCount: number
+  lastViewedAt?: string | null
+  decision?: 'accepted' | 'declined' | null
+  decidedAt?: string | null
+  signerName?: string
+  signerNote?: string
 }
 
 export interface AssetService {
@@ -406,6 +422,7 @@ export interface Db {
   counts: InventoryCount[]
   jobNotes: JobNote[]
   jobCosts: JobCost[]
+  quoteLinks: QuoteLink[]
   clock: ClockEntry[]
   jobPhotos: JobPhoto[]
   assets: Asset[]

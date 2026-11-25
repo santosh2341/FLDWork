@@ -60,6 +60,28 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     deleteJob: (id) => setDb((d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id), schedule: d.schedule.filter((e) => e.jobId !== id), auditResults: d.auditResults.filter((r) => r.jobId !== id), jobPhotos: d.jobPhotos.filter((p) => p.jobId !== id), jobNotes: d.jobNotes.filter((n) => n.jobId !== id), jobCosts: d.jobCosts.filter((n) => n.jobId !== id), clock: d.clock.filter((c) => c.jobId !== id) })),
     addJobCost: (c) => setDb((d) => ({ ...d, jobCosts: [{ ...c, id: uid() }, ...d.jobCosts] })),
     deleteJobCost: (id) => setDb((d) => ({ ...d, jobCosts: d.jobCosts.filter((x) => x.id !== id) })),
+    createQuoteLink: async (quoteId, by) => {
+      if (!db.quotes.some((q) => q.id === quoteId)) return { error: 'Quote not found.' }
+      const bytes = crypto.getRandomValues(new Uint8Array(32))
+      const token = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+      const now = new Date()
+      const expires = new Date(now.getTime() + 60 * 86400000)
+      setDb((d) => ({
+        ...d,
+        quoteLinks: [{ token, quoteId, createdAt: now.toISOString(), createdBy: by, expiresAt: expires.toISOString(), viewCount: 0 }, ...(d.quoteLinks ?? [])],
+        quotes: d.quotes.map((q) => (q.id !== quoteId ? q : {
+          ...q,
+          status: q.status === 'to_be_completed' ? 'sent' : q.status,
+          updatedAt: now.toISOString(),
+          timeline: [{ id: uid(), type: 'System', message: `Online acceptance link created${by ? ' by ' + by : ''}`, at: now.toISOString() }, ...q.timeline],
+        })),
+      }))
+      return { token }
+    },
+    revokeQuoteLink: async (token) => {
+      setDb((d) => ({ ...d, quoteLinks: (d.quoteLinks ?? []).map((l) => (l.token === token ? { ...l, revokedAt: new Date().toISOString() } : l)) }))
+      return null
+    },
     addJobNote: (jobId, text, author) => setDb((d) => ({ ...d, jobNotes: [{ id: uid(), jobId, author, text, at: new Date().toISOString() }, ...d.jobNotes] })),
     addJobPhoto: async (jobId, file, author) => {
       try {

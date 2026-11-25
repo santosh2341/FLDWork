@@ -135,6 +135,19 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     addJobCost: (c) => {
       void write(async () => sb.from('job_costs').insert({ job_id: c.jobId, cost_date: c.date, kind: c.kind, supplier: c.supplier, description: c.description, amount: c.amount }))
     },
+    createQuoteLink: async (quoteId, by) => {
+      try {
+        const { data, error } = await sb.rpc('create_quote_link', { p_quote_id: quoteId, p_by: by })
+        if (error) { fail(error.message); return { error: error.message } }
+        await reload()
+        return { token: data as string }
+      } catch (e) {
+        const m = errMsg(e)
+        fail(m)
+        return { error: m }
+      }
+    },
+    revokeQuoteLink: async (token) => write(() => sb.from('quote_links').update({ revoked_at: new Date().toISOString() }).eq('token', token)),
     deleteJobCost: (id) => {
       setDb((d) => ({ ...d, jobCosts: d.jobCosts.filter((x) => x.id !== id) }))
       void write(() => sb.from('job_costs').delete().eq('id', id))

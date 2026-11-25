@@ -2,17 +2,27 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { sendDocument, sentHistory } from '../lib/email'
 import type { SentRecord } from '../lib/email'
+import { makePdf } from '../lib/docs'
+import type { DocModel } from '../lib/docs'
+import { activeLink } from '../lib/quoteLinks'
 
-// "Email to customer": sends the document to the customer's email on file (database mode only).
-export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessage }: { kind: 'quote' | 'invoice'; id: number; to?: string; defaultSubject: string; defaultMessage: string }) {
-  const { remote, canWrite } = useStore()
+// "Email to customer": sends the document to the customer's email on file (database mode only),
+// with the PDF attached and, for quotes, a link to accept online.
+export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessage, doc }: {
+  kind: 'quote' | 'invoice'; id: number; to?: string; defaultSubject: string; defaultMessage: string; doc?: DocModel
+}) {
+  const { remote, canWrite, db, profile, createQuoteLink } = useStore()
   const [open, setOpen] = useState(false)
   const [subject, setSubject] = useState(defaultSubject)
   const [message, setMessage] = useState(defaultMessage)
   const [copyMe, setCopyMe] = useState(true)
+  const [attach, setAttach] = useState(true)
+  const [withLink, setWithLink] = useState(true)
   const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
   const [history, setHistory] = useState<SentRecord[]>([])
+  const quote = kind === 'quote' ? db.quotes.find((q) => q.id === id) : undefined
+  const decided = quote?.status === 'approved' || quote?.status === 'declined'
 
   useEffect(() => { if (remote) void sentHistory(kind, id).then(setHistory) }, [remote, kind, id])
   if (!remote || !canWrite) return null
@@ -21,7 +31,21 @@ export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessag
     setBusy(true)
     setMsg(null)
     try {
-      const r = await sendDocument({ kind, id, subject, message, copyMe })
+      let pdf: string | undefined
+      if (attach && doc) {
+        const { toBase64 } = await import('../lib/pdf')
+        pdf = toBase64(await makePdf(doc))
+      }
+      let linkToken: string | undefined
+      if (kind === 'quote' && withLink && !decided) {
+        linkToken = activeLink(db.quoteLinks, id)?.token
+        if (!linkToken) {
+          const r = await createQuoteLink(id, profile?.fullName ?? '')
+          if (r.error) throw new Error(r.error)
+          linkToken = r.token
+        }
+      }
+      const r = await sendDocument({ kind, id, subject, message, copyMe, pdf, linkToken })
       setMsg({ ok: true, text: `Sent to ${r.to}.` })
       setHistory(await sentHistory(kind, id))
       setOpen(false)
@@ -46,7 +70,9 @@ export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessag
           <label className="block">Subject<br /><input className="wide" value={subject} onChange={(e) => setSubject(e.target.value)} /></label>
           <label className="block">Message<br /><textarea className="wide" rows={6} value={message} onChange={(e) => setMessage(e.target.value)} /></label>
           <p className="muted">The {kind} itself (items, totals{kind === 'invoice' ? ', bank details' : ''}) is included below your message.</p>
-          <label><input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} /> Send me a copy</label>
+          {doc && <label className="block"><input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} /> Attach the {kind} as a PDF ({doc.fileName})</label>}
+          {kind === 'quote' && !decided && <label className="block"><input type="checkbox" checked={withLink} onChange={(e) => setWithLink(e.target.checked)} /> Include a link so the customer can accept or decline online</label>}
+          <label className="block"><input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} /> Send me a copy</label>
           <div className="row" style={{ marginTop: 8 }}><button className="primary" disabled={busy || !subject.trim()} onClick={() => void send()}>{busy ? 'Sending…' : 'Send email'}</button></div>
         </div>
       )}

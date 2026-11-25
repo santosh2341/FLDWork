@@ -51,6 +51,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
   }, [db, remote])
 
+  // local mode: another tab changed the data (for example the customer's quote page in the same browser), so use it
+  useEffect(() => {
+    if (remote) return
+    const onStorage = (e: StorageEvent) => { if (e.key === KEY && e.newValue) setDb(loadLocal()) }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [remote])
+
   const reload = useCallback(async () => {
     try {
       const r = await loadRemote()

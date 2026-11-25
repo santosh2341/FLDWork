@@ -76,9 +76,41 @@ async function go(page, route) {
 }
 
 async function workflow(page) {
+  step = 'customer accepts quote 1290 online'
+  await go(page, '/quotes/1290')
+  await page.getByRole('button', { name: 'Create link' }).click()
+  const url = await page.locator('.qlink-url').inputValue()
+  if (!/\/q\/[0-9a-f]{64}$/.test(url)) fail(`link looks wrong: ${url}`)
+  if ((await page.locator('select:has(option[value="approved"])').inputValue()) !== 'sent') fail('creating a link should mark the quote as sent')
+  const customer = await page.context().newPage()
+  await customer.goto(url)
+  await customer.getByRole('button', { name: 'Accept quote' }).waitFor()
+  const shown = await customer.locator('body').innerText()
+  if (/Materials cost|markup|PRIVATE/i.test(shown)) fail('the customer page shows costs, markups or private notes')
+  await customer.getByPlaceholder('e.g. Tom Bixler').fill('Smoke Customer')
+  await customer.getByRole('button', { name: 'Accept quote' }).click()
+  await customer.getByText('Tick the box').waitFor({ timeout: 5000 }).catch(() => fail('accepting without ticking the box should be refused'))
+  await customer.getByRole('checkbox').check()
+  await customer.getByRole('button', { name: 'Accept quote' }).click()
+  await customer.getByText('Quote accepted').waitFor({ timeout: 5000 }).catch(() => fail('accepting did not confirm'))
+  await customer.close()
+  await go(page, '/quotes/1290')
+  if ((await page.locator('select:has(option[value="approved"])').inputValue()) !== 'approved') fail('the quote should be approved after the customer accepted')
+  await page.getByText('Accepted online by Smoke Customer').first().waitFor({ timeout: 5000 }).catch(() => fail('the timeline should say who accepted online'))
+  log('customer accepted the quote online and it is approved')
+
+  step = 'quote PDF'
+  await go(page, '/quotes/1290/print')
+  const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download PDF' }).click()])
+  if (download.suggestedFilename() !== 'Quote-1290.pdf') fail(`PDF name should be Quote-1290.pdf, got ${download.suggestedFilename()}`)
+  const stream = await download.createReadStream()
+  const pdfHead = await new Promise((resolve) => stream.once('data', (c) => { resolve(c.subarray(0, 5).toString()); stream.destroy() }))
+  if (pdfHead !== '%PDF-') fail('downloaded file is not a PDF')
+  log('quote PDF downloads')
+
   step = 'approve quote 1290'
   await go(page, '/quotes/1290')
-  await page.locator('select:has(option[value="approved"])').selectOption('approved')
+  if ((await page.locator('select:has(option[value="approved"])').inputValue()) !== 'approved') await page.locator('select:has(option[value="approved"])').selectOption('approved')
   await page.getByRole('button', { name: 'Create job' }).click()
   await page.waitForURL('**/jobs')
   const jobLink = page.getByRole('link', { name: 'Job cost' }).first()

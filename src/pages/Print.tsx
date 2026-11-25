@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { today } from '../lib/dates'
 import { claimsFor, quoteNet } from '../lib/claims'
 import { Link, useParams } from 'react-router-dom'
@@ -9,14 +9,9 @@ import { shortAddress } from '../lib/address'
 import { emptyCompany } from '../lib/company'
 import EmailPanel from '../components/EmailPanel'
 import type { CompanyProfile, CostCenter } from '../types'
+import { addressLines, auDate, invoiceDoc, makePdf, quoteDoc } from '../lib/docs'
+import type { DocModel } from '../lib/docs'
 
-const auDate = (iso: string) => (iso ? new Date(iso.length === 10 ? iso + 'T00:00:00' : iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '')
-
-// Address lines for a letterhead: "Street: ... • City/Suburb: ..." becomes two readable lines.
-function addressLines(address: string): string[] {
-  const m = /(?:Street|Postal):\s*(.*?)\s*•\s*City\/Suburb:\s*(.*?)\s*•\s*State:\s*.*?\((\w+)\)\s*•\s*Postcode:\s*(\d+)/.exec(address)
-  return m ? [m[1], `${m[2]} ${m[3]} ${m[4]}`] : address ? [address] : []
-}
 
 function Letterhead({ company, fallbackName, title, number, rows }: {
   company: CompanyProfile; fallbackName: string; title: string; number: number; rows: [string, string][]
@@ -64,13 +59,28 @@ function Lines({ sections }: { sections: CostCenter[] }) {
   )
 }
 
-function Toolbar({ back, mailto }: { back: string; mailto?: string }) {
+function Toolbar({ back, mailto, doc }: { back: string; mailto?: string; doc?: DocModel }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const download = async () => {
+    if (!doc) return
+    setBusy(true); setErr('')
+    try {
+      const bytes = await makePdf(doc)
+      const { downloadPdf } = await import('../lib/pdf')
+      downloadPdf(bytes, doc.fileName)
+    } catch {
+      setErr('Could not create the PDF. Try Print instead.')
+    }
+    setBusy(false)
+  }
   return (
-    <div className="no-print row" style={{ marginBottom: 12 }}>
+    <div className="no-print row wrap" style={{ marginBottom: 12 }}>
       <Link to={back}>← Back</Link>
-      <button className="primary" onClick={() => window.print()}>Print / Save as PDF</button>
+      {doc && <button className="primary" disabled={busy} onClick={() => void download()}>{busy ? 'Creating PDF…' : 'Download PDF'}</button>}
+      <button className={doc ? '' : 'primary'} onClick={() => window.print()}>Print</button>
       {mailto && <a className="btn" href={mailto}>Open in my email app</a>}
-      <span className="muted">In the print window, choose "Save as PDF" as the destination.</span>
+      {err && <span className="error">{err}</span>}
     </div>
   )
 }
@@ -109,8 +119,8 @@ export function QuotePrint() {
   const mailto = customer?.email ? `mailto:${customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : undefined
   return (
     <>
-      <Toolbar back={`/quotes/${q.id}`} mailto={mailto} />
-      <EmailPanel kind="quote" id={q.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} />
+      <Toolbar back={`/quotes/${q.id}`} mailto={mailto} doc={quoteDoc(db, q)} />
+      <EmailPanel kind="quote" id={q.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} doc={quoteDoc(db, q)} />
       <article className="doc">
         <Letterhead company={company} fallbackName={db.settings.companyName} title="QUOTE" number={q.id}
           rows={[['Date', auDate(created)], ['Valid until', auDate(valid.toISOString())]]} />
@@ -124,7 +134,6 @@ export function QuotePrint() {
           <tr><td>GST ({q.taxRate}%)</td><td>{money(c.tax)}</td></tr>
           <tr className="doc-grand"><td>Total (inc GST)</td><td>{money(c.total)}</td></tr>
         </tbody></table>
-        {q.notes && <><h4>Notes</h4><p className="doc-scope">{q.notes}</p></>}
         <p className="doc-foot">To accept this quote, reply to this document or contact us. Prices are in Australian dollars and valid for 30 days.</p>
       </article>
     </>
@@ -148,8 +157,8 @@ export function InvoicePrint() {
   const mailto = customer?.email ? `mailto:${customer.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}` : undefined
   return (
     <>
-      <Toolbar back={`/invoices/${inv.id}`} mailto={mailto} />
-      <EmailPanel kind="invoice" id={inv.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} />
+      <Toolbar back={`/invoices/${inv.id}`} mailto={mailto} doc={invoiceDoc(db, inv)} />
+      <EmailPanel kind="invoice" id={inv.id} to={customer?.email} defaultSubject={subject} defaultMessage={body} doc={invoiceDoc(db, inv)} />
       <article className="doc">
         <Letterhead company={company} fallbackName={db.settings.companyName} title={title} number={inv.id}
           rows={[['Issued', auDate(inv.issuedAt)], ['Due', auDate(inv.dueAt)], ...(job ? [['Job', `#${job.id}`] as [string, string]] : [])]} />

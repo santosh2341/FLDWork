@@ -31,11 +31,11 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Leads: list, filters, status, convert to customer + site + draft quote | ✅ | |
 | Quotes: cost centres, parts and labour lines, pre-builds, markup, discount, GST, overheads, margins | ✅ | costing formulas follow the guide §9.5 |
 | Quote tabs: tasks and timeline, forms (audits required), attachments, status log | ✅ | attachments are stored inline, 400 KB max each |
-| Printable quote and tax invoice (ABN, GST breakdown, bank details), save as PDF through the browser | ✅ | |
+| Printable quote and tax invoice (ABN, GST breakdown, bank details) and a real PDF download (A4, multi-page) | ✅ | PDF made in the browser with pdf-lib |
 | Pre-send checks (warnings before sending a quote/invoice) | ✅ | advisory only |
-| Email a quote or invoice to the customer from inside the app | 🟡 | code deployed; needs `RESEND_API_KEY` + `EMAIL_FROM` secrets and a verified domain. Sends an HTML body, not a PDF attachment. "Open in my email app" fallback works |
+| Email a quote or invoice to the customer from inside the app | 🟡 | deployed with PDF attachment and, for quotes, an "accept online" button; needs `RESEND_API_KEY` + `EMAIL_FROM` secrets and a verified domain. "Open in my email app" fallback works |
 | Statement of account (printable) | ✅ | |
-| Online quote acceptance / e-signature by the customer | ⬜ | |
+| Online quote acceptance by link: customer views at selling prices, downloads PDF, accepts with typed name or declines with a reason; quote status and timeline update | ✅ | migration 026; links expire after 60 days and can be withdrawn |
 | Customer portal (view quotes/invoices, pay) | ⬜ | |
 
 ### Jobs, scheduling and field work
@@ -89,7 +89,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 4. ~~Drag-and-drop does not work on touch screens.~~ Tap-to-move covers phones.
 5. `supabase/schema.sql` is outdated; do not rely on it.
 6. Demo data sometimes shows a quote title that drops part of the customer name; this is how the seed data is written.
-7. Email is an HTML body without a PDF attachment, and needs the owner's domain verified at Resend.
+7. Email needs the owner's domain verified at Resend (the PDF is attached once sending is set up).
 
 ## 5. Roadmap (build in this order unless the owner says otherwise)
 
@@ -106,7 +106,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 8. ~~Fold clock hours into the timesheet approval flow.~~ Done (migration 025).
 
 **C. Customer-facing**
-9. Send documents with a PDF attachment (render server-side or via a print service) and customer-facing quote acceptance by link (accept/decline, typed signature, logged).
+9. ~~Send documents with a PDF attachment and customer-facing quote acceptance by link (accept/decline, typed signature, logged).~~ Done (migration 026).
 10. Customer portal (read-only first: quotes, invoices, statements).
 
 **D. Needs the owner's accounts (ask before starting)**

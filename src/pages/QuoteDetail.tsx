@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import PreSendCheck from '../components/PreSendCheck'
+import QuoteLinkPanel from '../components/QuoteLinkPanel'
 import { quoteIssues } from '../lib/checks'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import AiPolish from '../components/AiPolish'
@@ -35,6 +36,11 @@ export default function QuoteDetail() {
     if (draft) openTab({ path: `/quotes/${draft.id}`, title: `Quote #${draft.id}` })
   }, [draft?.id, openTab]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Refresh from the latest data while there are no unsaved edits, so a decision made elsewhere (for example the
+  // customer accepting online) shows up and cannot be overwritten by saving a stale copy.
+  if (stored && draft && !dirty && stored.id === draft.id && (stored.updatedAt !== draft.updatedAt || stored.status !== draft.status || stored.timeline.length !== draft.timeline.length)) {
+    setDraft(stored)
+  }
   if (!draft) return <p>Quote not found.</p>
 
   const customer = db.customers.find((c) => c.id === draft.customerId)
@@ -141,6 +147,7 @@ export default function QuoteDetail() {
       </div>
 
       <PreSendCheck issues={quoteIssues(db, draft)} />
+      <QuoteLinkPanel quote={draft} />
 
       <div className="strip">
         <div><small>Customer</small><br />{customer?.name}</div>

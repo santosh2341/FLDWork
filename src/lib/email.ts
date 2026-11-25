@@ -11,7 +11,7 @@ async function readError(error: unknown): Promise<string> {
   return 'Could not reach the email service. Try again in a moment.'
 }
 
-export async function sendDocument(p: { kind: 'quote' | 'invoice'; id: number; subject: string; message: string; copyMe: boolean }): Promise<{ to: string }> {
+export async function sendDocument(p: { kind: 'quote' | 'invoice'; id: number; subject: string; message: string; copyMe: boolean; pdf?: string; linkToken?: string }): Promise<{ to: string }> {
   if (!supabase) throw new Error('Sending email needs the Supabase connection.')
   const { data, error } = await supabase.functions.invoke('send-document', { body: p })
   if (error) throw new Error(await readError(error))

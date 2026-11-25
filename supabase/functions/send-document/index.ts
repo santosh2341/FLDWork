@@ -1,4 +1,6 @@
 // Fieldwork: emails a quote or invoice to the customer on record, as a clean HTML email, via Resend.
+// Optional: the PDF made in the app (attached, max ~4 MB) and, for quotes, a button to the customer's
+// "accept online" page (/q/<token>; the token must belong to this quote and still be active).
 // Runs as the signed-in user (reads under their permissions). The recipient is ALWAYS the customer's email on file,
 // so this cannot be used to send mail to arbitrary addresses. Limit: 50 emails per company per day.
 // Secrets: RESEND_API_KEY, EMAIL_FROM (an address on a domain verified in Resend, e.g. quotes@yourcompany.com.au).
@@ -44,6 +46,9 @@ Deno.serve(async (req) => {
     const kind = body.kind as 'quote' | 'invoice'
     const id = Number(body.id)
     if (!['quote', 'invoice'].includes(kind) || !Number.isFinite(id)) return json({ error: 'Unknown document.' }, 400)
+    const pdf = typeof body.pdf === 'string' ? body.pdf : ''
+    if (pdf && (pdf.length > 5_600_000 || !pdf.startsWith('JVBER'))) return json({ error: 'The PDF is too large or not a PDF.' }, 400)
+    const linkToken = typeof body.linkToken === 'string' && /^[0-9a-f]{64}$/.test(body.linkToken) ? body.linkToken : ''
     const message = String(body.message ?? '').slice(0, 4000)
     const subject = String(body.subject ?? '').trim().slice(0, 200)
     if (!subject) return json({ error: 'Add a subject.' }, 400)
@@ -67,7 +72,6 @@ Deno.serve(async (req) => {
       groups = (q.cost_centers ?? []).sort((a: { sort: number }, b: { sort: number }) => a.sort - b.sort).map((c: { name: string; line_items: Item[] }) => ({ name: c.name, items: c.line_items ?? [] }))
       discount = Number(q.discount ?? 0); taxRate = Number(q.tax_rate ?? 0)
       if (q.description) scope = `<p style="white-space:pre-wrap">${esc(q.description)}</p>`
-      if (q.notes) after = `<h4 style="margin:16px 0 4px">Notes</h4><p style="white-space:pre-wrap">${esc(q.notes)}</p>`
       subtotal = groups.reduce((a, g) => a + g.items.reduce((b, i) => b + i.quantity * i.unit_sell, 0), 0)
     } else {
       const { data: inv, error } = await sb.from('invoices').select('*, invoice_sections(name, sort, invoice_items(description, quantity, unit_sell, kind, sort)), payments(amount), credits(amount)').eq('id', id).single()
@@ -89,6 +93,15 @@ Deno.serve(async (req) => {
     const { data: cust } = await sb.from('customers').select('name, contact_name, email, address').eq('id', customerId).single()
     if (!cust?.email || !/^\S+@\S+\.\S+$/.test(cust.email)) return json({ error: 'This customer has no valid email address on file. Add one on the customer page first.' }, 400)
     const { data: site } = siteId ? await sb.from('sites').select('name, address').eq('id', siteId).single() : { data: null }
+
+    // Quote: a button to accept online, using a link that belongs to this quote and is still usable
+    let acceptUrl = ''
+    if (kind === 'quote' && linkToken) {
+      const { data: link } = await sb.from('quote_links').select('token, expires_at').eq('token', linkToken).eq('quote_id', id).is('revoked_at', null).is('decision', null).maybeSingle()
+      const origin = (req.headers.get('origin') ?? Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
+      if (link && new Date(link.expires_at as string) > new Date() && /^https?:\/\/[\w.-]+(:\d+)?$/.test(origin)) acceptUrl = `${origin}/q/${linkToken}`
+    }
+    if (acceptUrl) after = `<p style="margin:22px 0"><a href="${esc(acceptUrl)}" style="background:#0f766e;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;display:inline-block">View and accept this quote online</a></p>` + after
 
     const net = subtotal - discount
     const tax = net * (taxRate / 100)
@@ -120,7 +133,8 @@ Deno.serve(async (req) => {
         ...(p.email ? { reply_to: p.email } : {}),
         subject,
         html,
-        text: `${message}\n\n${title} #${number} – total ${money(total)}${balance !== null ? `, balance due ${money(balance)}` : ''}`,
+        ...(pdf ? { attachments: [{ filename: `${title.replace(/\s+/g, '-')}-${number}.pdf`, content: pdf }] } : {}),
+        text: `${message}\n\n${title} #${number} – total ${money(total)}${balance !== null ? `, balance due ${money(balance)}` : ''}${acceptUrl ? `\n\nView and accept online: ${acceptUrl}` : ''}`,
       }),
     })
     if (!res.ok) {
