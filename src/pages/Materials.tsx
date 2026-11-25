@@ -39,7 +39,11 @@ export function Inventory() {
 }
 
 export function PurchaseOrders() {
-  const { db, createPO, setPOStatus, receivePO } = useStore()
+  const { db, createPO, setPOStatus, receivePO, setPOJob } = useStore()
+  const [jobId, setJobId] = useState('')
+  const [jobErr, setJobErr] = useState<{ po: number; msg: string } | null>(null)
+  const openJobs = db.jobs.filter((j) => j.status !== 'invoiced')
+  const jobLabel = (id?: number | null) => { const j = db.jobs.find((x) => x.id === id); return j ? `${j.id} – ${j.name}` : `job ${id}` }
   const { shown: shownPOs, more: morePOs } = usePaged(db.purchaseOrders)
   const [vendor, setVendor] = useState('')
   const [lines, setLines] = useState<{ partId: string; qty: number; unitCost: number }[]>([])
@@ -53,8 +57,9 @@ export function PurchaseOrders() {
     if (!vendor.trim()) return setErr('Enter or choose a vendor.')
     if (lines.length === 0) return setErr('Add at least one line.')
     if (lines.some((l) => !l.partId || !(l.qty > 0))) return setErr('Every line needs a part and a quantity above zero.')
-    void createPO(vendor.trim(), lines)
+    void createPO(vendor.trim(), lines, jobId ? Number(jobId) : null)
     setLines([])
+    setJobId('')
     setErr('')
   }
 
@@ -66,8 +71,13 @@ export function PurchaseOrders() {
         <div className="row wrap">
           <input list="vendor-list" placeholder="Vendor (pick or type) *" value={vendor} onChange={(e) => setVendor(e.target.value)} />
           <datalist id="vendor-list">{vendors.map((v) => <option key={v} value={v} />)}</datalist>
+          <select value={jobId} onChange={(e) => setJobId(e.target.value)} aria-label="For job">
+            <option value="">For stock (no job)</option>
+            {openJobs.map((j) => <option key={j.id} value={j.id}>For job {j.id} – {j.name}</option>)}
+          </select>
           <button onClick={() => setLines([...lines, { partId: '', qty: 1, unitCost: 0 }])}>+ Line</button>
         </div>
+        <p className="muted">{jobId ? "Goods received on this PO are added to the job's cost and do not go into stock." : 'Goods received on this PO go into stock.'}</p>
         {lines.map((l, i) => (
           <div key={i} className="row wrap qrow">
             <select
@@ -101,6 +111,19 @@ export function PurchaseOrders() {
               )}
             </div>
           </div>
+          <div className="row wrap" style={{ marginBottom: 8 }}>
+            {(po.status === 'draft' || po.status === 'ordered') && po.lines.every((l) => l.received === 0) ? (
+              <select value={po.jobId ?? ''} aria-label={`Job for PO ${po.id}`} onChange={async (e) => {
+                const err = await setPOJob(po.id, e.target.value ? Number(e.target.value) : null)
+                setJobErr(err ? { po: po.id, msg: err } : null)
+              }}>
+                <option value="">For stock (no job)</option>
+                {openJobs.map((j) => <option key={j.id} value={j.id}>For job {j.id} – {j.name}</option>)}
+              </select>
+            ) : po.jobId != null ? <span>For job <Link to={`/jobs/${po.jobId}/costing`}>{jobLabel(po.jobId)}</Link></span> : <span className="muted">Stock PO</span>}
+            {po.jobId != null && <span className="muted">Received goods go to the job's cost, not stock.</span>}
+          </div>
+          {jobErr?.po === po.id && <p className="error">{jobErr.msg}</p>}
           <table>
             <thead><tr><th>Part</th><th className="num">Ordered</th><th className="num">Received</th><th className="num">Unit cost</th>{po.status === 'ordered' && <th>Receive now</th>}</tr></thead>
             <tbody>

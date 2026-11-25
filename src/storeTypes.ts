@@ -32,6 +32,8 @@ export interface Actions {
   logAssetService: (assetId: string, date: string, notes: string, by: string, jobId?: number) => void
   clockOn: (jobId: number, employeeId: string) => void
   clockOff: (jobId: number, employeeId: string) => void
+  setClockApproved: (ids: string[], approved: boolean, by: string) => Promise<string | null> // approve or reopen clocked hours
+  setEmployeeRate: (employeeId: string, rate: number | null) => Promise<string | null> // hourly cost; null clears it
   createInvoiceFromJob: (jobId: number) => Promise<number>
   createProgressClaim: (jobId: number, label: string, pct: number) => Promise<{ id?: number; error?: string }>
   saveInvoice: (inv: Invoice) => void
@@ -47,7 +49,8 @@ export interface Actions {
   deleteAudit: (id: string) => void
   saveAuditResult: (r: Omit<AuditResult, 'id' | 'completedAt'>) => void
   upsertPreBuild: (p: PreBuild) => void
-  createPO: (vendor: string, lines: { partId: string; qty: number; unitCost: number }[]) => Promise<number>
+  createPO: (vendor: string, lines: { partId: string; qty: number; unitCost: number }[], jobId?: number | null) => Promise<number>
+  setPOJob: (id: number, jobId: number | null) => Promise<string | null> // link a PO to a job (or make it a stock PO again)
   setPOStatus: (id: number, status: 'ordered' | 'cancelled') => void
   receivePO: (id: number, received: Record<string, number>) => void
   createCount: () => Promise<string>

@@ -7,6 +7,7 @@ import { useFilter } from '../components/useFilter'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
 import { claimedPct, claimsFor, CLAIM_LABELS, quoteNet } from '../lib/claims'
+import { isOverBudget } from '../lib/jobcost'
 import type { Job, JobStatus, Quote } from '../types'
 
 // Bill part of a job now (deposit, progress, completion) instead of one invoice at the end.
@@ -69,10 +70,10 @@ function PhotosToggle({ jobId, count, author, canAdd }: { jobId: number; count: 
 export default function Jobs() {
   const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite, profile } = useStore()
   const nav = useNavigate()
-  const pend = useFilter() === 'pending'
-  const rows = pend ? db.jobs.filter((j) => j.status === 'pending') : db.jobs
+  const filter = useFilter()
+  const rows = filter === 'pending' ? db.jobs.filter((j) => j.status === 'pending') : filter === 'over_budget' ? db.jobs.filter((j) => isOverBudget(db, j)) : db.jobs
   const labels = db.settings.jobStatusLabels
-  const { shown, more } = usePaged(rows)
+  const { shown, more } = usePaged(rows, filter)
   const changeStatus = (j: Job, status: JobStatus) => {
     if (status === 'complete' && db.settings.requireAuditsToComplete) {
       const q = db.quotes.find((x) => x.id === j.quoteId)
@@ -90,7 +91,7 @@ export default function Jobs() {
       {db.jobs.length === 0 && (
         <p className="muted">No jobs yet. Approve a quote, then use "Create job" on the quote.</p>
       )}
-      <FilterBar label="jobs waiting to be scheduled" shown={rows.length} total={db.jobs.length} />
+      <FilterBar label={filter === 'over_budget' ? 'open jobs that have cost more than quoted' : 'jobs waiting to be scheduled'} shown={rows.length} total={db.jobs.length} />
       {db.jobs.length > 0 && (
         <table>
           <thead>

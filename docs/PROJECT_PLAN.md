@@ -50,7 +50,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Job photos (private storage, shrunk on device) | 🟡 | works in code; live storage not exercised from the build sandbox |
 | Equipment register: assets per site/customer, service history, due dates, "services due" list, log service from phone, create service quote | ✅ | |
 | Recurring jobs (copy a quote into a new pending job when due) | 🟡 | run manually; no background scheduler yet |
-| Clock hours in timesheet approval | 🟡 | clock hours show as a summary column only |
+| Clock hours in timesheet approval: clocked vs scheduled per person per week, approve/reopen; approved entries are locked for technicians | ✅ | approval is per person per week on Timesheets → Summary |
 | Route optimisation, GPS tracking, offline mode / PWA install, push notifications | ⬜ | |
 | Customer sign-off signature on a job | ⬜ | |
 
@@ -60,10 +60,10 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Invoices from completed jobs; unpaid/paid/all/payments/credits tabs, sortable, ageing, CSV export, log and notes | ✅ | |
 | Approve / unlock / void, payments (overpayment asks to confirm), credit notes, retainage (percent per invoice, held/released list) | ✅ | |
 | Progress invoicing: bill a job in stages (deposit/progress/completion) as % of the quote, capped at 100%; job becomes invoiced when fully claimed; printed claim shows contract price, claimed to date, remaining | ✅ | claims bill a percentage of quote price, not work-in-progress valuation |
-| Actual job costing: costs recorded against a job (materials, subcontractor, other) plus clocked labour, versus quote estimate; live profit and margin | ✅ | labour uses the quote's average labour cost per hour; no per-employee pay rates |
-| Purchase orders (draft/ordered/received/cancelled), receiving, receipts, vendor quotes (request, enter prices, accept into PO, expiry) | ✅ | POs are not linked to jobs yet |
+| Actual job costing: costs recorded against a job (materials, subcontractor, other) plus clocked labour, versus quote estimate; live profit and margin | ✅ | labour is each person's clocked hours × their hourly cost (Settings → Employees), falling back to the quote's average; shows cost committed on open job POs |
+| Purchase orders (draft/ordered/received/cancelled), receiving, receipts, vendor quotes (request, enter prices, accept into PO, expiry) | ✅ | a PO can be for a job: received goods post to that job's cost (not stock) |
 | Inventory, stock counts (apply adjusts stock), catalog of parts | ✅ | |
-| Reports: the ten standard reports plus technician hours, filters, CSV, print | ✅ | |
+| Reports: the ten standard reports plus technician hours, job profitability and customer profitability; filters, CSV, print | ✅ | dashboard "Jobs over budget" alert opens Jobs filtered to them |
 | CSV exports: Xero sales-invoice import format, customers, parts | ✅ | MYOB layout not done |
 | Live accounting sync (Xero, MYOB) | ⬜ | needs the owner's Xero developer account (OAuth app) |
 | Online card payments (Stripe) and payment links | ⬜ | needs a Stripe account |
@@ -100,10 +100,10 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 4. ~~Add a small Playwright smoke script to the repo (`scripts/smoke.mjs`) that seeds local mode and walks quote → job → claim → cost → schedule, so regressions are caught before pushing.~~ Done: `npm run smoke`.
 
 **B. Costing and purchasing depth**
-5. Per-employee hourly cost rates (an Employees/Team screen with rate), used for actual labour cost instead of the quote average.
-6. Link purchase orders and receipts to jobs; received PO lines post to job cost automatically.
-7. Job profitability report (estimate vs actual, per job and per customer) and a "jobs over budget" dashboard alert.
-8. Fold clock hours into the timesheet approval flow.
+5. ~~Per-employee hourly cost rates (an Employees/Team screen with rate), used for actual labour cost instead of the quote average.~~ Done (migration 023).
+6. ~~Link purchase orders and receipts to jobs; received PO lines post to job cost automatically.~~ Done (migration 024).
+7. ~~Job profitability report (estimate vs actual, per job and per customer) and a "jobs over budget" dashboard alert.~~ Done.
+8. ~~Fold clock hours into the timesheet approval flow.~~ Done (migration 025).
 
 **C. Customer-facing**
 9. Send documents with a PDF attachment (render server-side or via a print service) and customer-facing quote acceptance by link (accept/decline, typed signature, logged).

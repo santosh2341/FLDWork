@@ -5,6 +5,7 @@ import MapView from '../components/MapView'
 import type { Pin } from '../components/MapView'
 import { addDays, today } from '../lib/dates'
 import { daysOverdue, isUnpaid } from '../lib/invoicing'
+import { isOverBudget } from '../lib/jobcost'
 import Icon from '../components/Icon'
 import type { IconName } from '../components/Icon'
 import CountUp from '../components/CountUp'
@@ -26,6 +27,7 @@ export default function Dashboard() {
     { label: 'Customers on hold', n: db.customers.filter((c) => c.onHold).length, to: '/customers?filter=hold', icon: 'users', tone: 'warn', hint: 'Review' },
     { label: 'Overdue invoices', n: db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length, to: '/invoices?filter=overdue', icon: 'receipt', tone: 'danger', hint: 'Chase up' },
     { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory?filter=low', icon: 'box', tone: 'warn', hint: 'Reorder' },
+    { label: 'Jobs over budget', n: db.jobs.filter((j) => isOverBudget(db, j)).length, to: '/jobs?filter=over_budget', icon: 'wrench', tone: 'danger', hint: 'Review' },
     { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs?filter=pending', icon: 'wrench', tone: 'brand', hint: 'Assign' },
     { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes?filter=to_be_completed', icon: 'quote', tone: 'brand', hint: 'Finish' },
   ]

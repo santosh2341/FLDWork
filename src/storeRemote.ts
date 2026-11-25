@@ -197,6 +197,12 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     clockOff: (jobId, employeeId) => {
       void write(() => sb.from('clock_entries').update({ ended_at: new Date().toISOString() }).eq('job_id', jobId).eq('employee_id', employeeId).is('ended_at', null))
     },
+    setClockApproved: async (ids, approved, by) =>
+      ids.length === 0 ? null : write(() => sb.from('clock_entries').update({ approved_at: approved ? new Date().toISOString() : null, approved_by: approved ? by : '' }).in('id', ids)),
+    setEmployeeRate: async (employeeId, rate) =>
+      rate == null
+        ? write(() => sb.from('employee_rates').delete().eq('employee_id', employeeId))
+        : write(() => sb.from('employee_rates').upsert({ employee_id: employeeId, cost_rate: rate, updated_at: new Date().toISOString() }, { onConflict: 'employee_id' })),
     setJobStatus: (jobId, status) => {
       setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) }))
       void write(() => sb.from('jobs').update({ status }).eq('id', jobId))
@@ -266,7 +272,8 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     upsertPreBuild: (p) => {
       void write(() => sb.rpc('save_pre_build', { p }))
     },
-    createPO: async (vendor, lines) => num(await call<number>('create_po', { p_vendor: vendor, p_lines: lines })),
+    createPO: async (vendor, lines, jobId) => num(await call<number>('create_po', { p_vendor: vendor, p_lines: lines, p_job_id: jobId ?? null })),
+    setPOJob: async (id, jobId) => write(() => sb.from('purchase_orders').update({ job_id: jobId }).eq('id', id)),
     setPOStatus: (id, status) => {
       void write(() => sb.from('purchase_orders').update({ status }).eq('id', id))
     },

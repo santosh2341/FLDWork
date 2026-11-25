@@ -66,8 +66,8 @@ export const seed: Db = {
       ],
     },
   ],  employees: [
-    { id: 'e1', name: 'Jordan McDonald' },
-    { id: 'e2', name: 'Luke Zancanaro' },
+    { id: 'e1', name: 'Jordan McDonald', costRate: 58 },
+    { id: 'e2', name: 'Luke Zancanaro', costRate: 52 },
   ],
   schedule: [],
   timesheetLock: { on: false, until: '' },

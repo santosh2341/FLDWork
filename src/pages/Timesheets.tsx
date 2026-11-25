@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
-import { addDays, DAY_NAMES, hoursBetween, layoutLanes, minutes, parseDate, today, weekStart } from '../lib/dates'
+import { addDays, DAY_NAMES, fmtDate, hoursBetween, layoutLanes, minutes, parseDate, today, weekStart } from '../lib/dates'
 import type { ScheduleEntry } from '../types'
 
 type View = 'calendar' | 'summary' | 'breakdown'
@@ -13,7 +13,8 @@ const HOURS = Array.from({ length: LAST_HOUR - FIRST_HOUR }, (_, i) => FIRST_HOU
 const label = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'am' : 'pm'}`
 
 export default function Timesheets() {
-  const { db, addScheduleEntry, deleteScheduleEntry, setTimesheetLock, createJobFromQuote, canWrite } = useStore()
+  const { db, addScheduleEntry, deleteScheduleEntry, setTimesheetLock, createJobFromQuote, canWrite, setClockApproved, profile } = useStore()
+  const [approveMsg, setApproveMsg] = useState<{ text: string; bad: boolean } | null>(null)
   const [from, setFrom] = useState(weekStart(today()))
   const [employeeId, setEmployeeId] = useState('all')
   const [view, setView] = useState<View>('calendar')
@@ -58,13 +59,24 @@ export default function Timesheets() {
         const byDay = days.map((d) =>
           weekEntries.filter((e) => e.employeeId === p.id && e.date === d).reduce((a, e) => a + hoursBetween(e.start, e.end), 0),
         )
-        const clocked = db.clock
-          .filter((c) => c.employeeId === p.id && c.end && c.start.slice(0, 10) >= days[0] && c.start.slice(0, 10) <= days[6])
-          .reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
-        return { person: p, byDay, total: byDay.reduce((a, b) => a + b, 0), clocked }
+        // local date of the clock-on (an ISO timestamp is UTC: slicing it would put early-morning Monday work in last week)
+        const mine = db.clock.filter((c) => { const d = fmtDate(new Date(c.start)); return c.employeeId === p.id && d >= days[0] && d <= days[6] })
+        const done = mine.filter((c) => c.end)
+        const clocked = done.reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
+        const waiting = done.filter((c) => !c.approvedAt)
+        return {
+          person: p, byDay, total: byDay.reduce((a, b) => a + b, 0), clocked,
+          openCount: mine.length - done.length, waitingIds: waiting.map((c) => c.id), approvedIds: done.filter((c) => c.approvedAt).map((c) => c.id),
+          approvedBy: done.find((c) => c.approvedAt)?.approvedBy ?? '',
+        }
       }),
     [people, days, weekEntries, db.clock],
   )
+
+  const approve = async (name: string, ids: string[], approved: boolean) => {
+    const err = await setClockApproved(ids, approved, profile?.fullName || 'Office')
+    setApproveMsg(err ? { text: err, bad: true } : { text: approved ? `Approved ${name}'s clocked hours for this week.` : `Reopened ${name}'s clocked hours for this week.`, bad: false })
+  }
 
   return (
     <>
@@ -193,10 +205,12 @@ export default function Timesheets() {
           </div>
         ))}
 
+      {view === 'summary' && approveMsg && <div className={`dnd-msg ${approveMsg.bad ? 'warn' : ''}`} role="status" onClick={() => setApproveMsg(null)}>{approveMsg.text}</div>}
+      {view === 'summary' && <p className="muted">Clocked hours come from technicians clocking on and off in My day. Approving a week locks those entries so technicians cannot change them.</p>}
       {view === 'summary' && (
         <table>
           <thead>
-            <tr><th>Employee</th>{days.map((d, i) => <th key={d} className="num">{DAY_NAMES[i]} {parseDate(d).getDate()}</th>)}<th className="num">Scheduled</th><th className="num" title="Time clocked on and off from My day">Clocked</th></tr>
+            <tr><th>Employee</th>{days.map((d, i) => <th key={d} className="num">{DAY_NAMES[i]} {parseDate(d).getDate()}</th>)}<th className="num">Scheduled</th><th className="num" title="Time clocked on and off from My day">Clocked</th><th className="num">Difference</th><th>Clocked hours</th></tr>
           </thead>
           <tbody>
             {summary.map((s) => (
@@ -205,6 +219,19 @@ export default function Timesheets() {
                 {s.byDay.map((h, i) => <td key={i} className="num">{h ? h.toFixed(2) : '–'}</td>)}
                 <td className="num"><b>{s.total.toFixed(2)}</b></td>
                 <td className="num">{s.clocked ? s.clocked.toFixed(2) : '–'}</td>
+                <td className={`num ${s.clocked - s.total > 0.25 ? 'jc-over' : ''}`}>{s.clocked || s.total ? (s.clocked - s.total > 0 ? '+' : '') + (s.clocked - s.total).toFixed(2) : '–'}</td>
+                <td>
+                  {s.waitingIds.length === 0 && s.approvedIds.length === 0 ? <span className="muted">{s.openCount ? 'Still clocked on' : 'Nothing clocked'}</span>
+                    : s.waitingIds.length === 0 ? (
+                      <span className="row">
+                        <span className="pill">Approved{s.approvedBy ? ` by ${s.approvedBy}` : ''}</span>
+                        {canWrite && <button className="link-btn" onClick={() => void approve(s.person.name, s.approvedIds, false)}>Reopen</button>}
+                      </span>
+                    ) : canWrite ? (
+                      <button className="primary" onClick={() => void approve(s.person.name, s.waitingIds, true)}>Approve {s.waitingIds.length} {s.waitingIds.length === 1 ? 'entry' : 'entries'}</button>
+                    ) : <span className="muted">{s.waitingIds.length} waiting for approval</span>}
+                  {s.openCount > 0 && (s.waitingIds.length > 0 || s.approvedIds.length > 0) && <div className="muted">{s.openCount} still clocked on</div>}
+                </td>
               </tr>
             ))}
           </tbody>

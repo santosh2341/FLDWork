@@ -22,7 +22,7 @@ export function ReportsHub() {
 }
 
 const fmt = (c: Column, v: Cell | undefined) => {
-  if (v === undefined) return ''
+  if (v === undefined || v === '') return '' // blank means 'not applicable', not zero
   if (c.kind === 'money') return money(Number(v))
   if (c.kind === 'pct') return `${Number(v).toFixed(1)}%`
   return String(v)
@@ -53,6 +53,7 @@ export function ReportPage() {
     <>
       <h1>{def.title}</h1>
       <p className="muted">{def.description}</p>
+      {result.note && <p className="muted">{result.note}</p>}
       <div className="card no-print">
         <div className="row wrap">
           <label>From <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} /></label>

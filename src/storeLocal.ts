@@ -86,6 +86,16 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       })),
     clockOn: (jobId, employeeId) => setDb((d) => (d.clock.some((c) => c.jobId === jobId && c.employeeId === employeeId && !c.end) ? d : { ...d, clock: [{ id: uid(), jobId, employeeId, start: new Date().toISOString() }, ...d.clock] })),
     clockOff: (jobId, employeeId) => setDb((d) => ({ ...d, clock: d.clock.map((c) => (c.jobId === jobId && c.employeeId === employeeId && !c.end ? { ...c, end: new Date().toISOString() } : c)) })),
+    setClockApproved: async (ids, approved, by) => {
+      const at = approved ? new Date().toISOString() : null
+      setDb((d) => ({ ...d, clock: d.clock.map((c) => (ids.includes(c.id) ? { ...c, approvedAt: at, approvedBy: approved ? by : '' } : c)) }))
+      return null
+    },
+    setEmployeeRate: async (employeeId, rate) => {
+      if (rate != null && !(rate >= 0)) return 'Enter an hourly cost of zero or more.'
+      setDb((d) => ({ ...d, employees: d.employees.map((e) => (e.id === employeeId ? { ...e, costRate: rate } : e)) }))
+      return null
+    },
     setJobStatus: (jobId, status) => setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) })),
     createInvoiceFromJob: async (jobId) => {
       const existing = db.invoices.find((i) => i.jobId === jobId && !i.voided && i.claimPct == null)
@@ -174,16 +184,21 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       setDb((d) => ({ ...d, auditResults: [{ ...r, id: uid(), completedAt: new Date().toISOString() }, ...d.auditResults] })),
     upsertPreBuild: (p) =>
       setDb((d) => ({ ...d, preBuilds: d.preBuilds.some((x) => x.id === p.id) ? d.preBuilds.map((x) => (x.id === p.id ? p : x)) : [...d.preBuilds, p] })),
-    createPO: async (vendor, lines) => {
+    createPO: async (vendor, lines, jobId) => {
       const id = Math.max(5000, ...db.purchaseOrders.map((p) => p.id)) + 1
       setDb((d) => ({
         ...d,
         purchaseOrders: [
-          { id, vendor, status: 'draft', createdAt: today(), lines: lines.map((l) => ({ ...l, id: uid(), received: 0 })) },
+          { id, vendor, status: 'draft', createdAt: today(), jobId: jobId ?? null, lines: lines.map((l) => ({ ...l, id: uid(), received: 0 })) },
           ...d.purchaseOrders,
         ],
       }))
       return id
+    },
+    setPOJob: async (id, jobId) => {
+      if (jobId != null && !db.jobs.some((j) => j.id === jobId)) return 'That job does not exist.'
+      setDb((d) => ({ ...d, purchaseOrders: d.purchaseOrders.map((p) => (p.id === id ? { ...p, jobId } : p)) }))
+      return null
     },
     setPOStatus: (id, status) => setDb((d) => ({ ...d, purchaseOrders: d.purchaseOrders.map((p) => (p.id === id ? { ...p, status } : p)) })),
     receivePO: (id, received) =>
@@ -195,15 +210,20 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
         const lines = po.lines.map((l) => {
           const n = Math.max(0, Math.min(received[l.id] ?? 0, l.qty - l.received))
           if (n > 0) {
-            stockAdd[l.partId] = (stockAdd[l.partId] ?? 0) + n
+            if (po.jobId == null) stockAdd[l.partId] = (stockAdd[l.partId] ?? 0) + n
             got.push({ partId: l.partId, qty: n, unitCost: l.unitCost })
           }
           return { ...l, received: l.received + n }
         })
         const done = lines.every((l) => l.received >= l.qty)
+        const rid = Math.max(6000, ...d.receipts.map((r) => r.id)) + 1
+        const posted = got.length > 0 && po.jobId != null
+          ? [{ id: uid(), jobId: po.jobId, date: today(), kind: 'material' as const, supplier: po.vendor, description: `Received on PO ${id} (receipt R-${rid})`, amount: got.reduce((a, l) => a + l.qty * l.unitCost, 0), receiptId: rid }]
+          : []
         return {
           ...d,
-          receipts: got.length > 0 ? [{ id: Math.max(6000, ...d.receipts.map((r) => r.id)) + 1, poId: id, date: today(), lines: got }, ...d.receipts] : d.receipts,
+          receipts: got.length > 0 ? [{ id: rid, poId: id, date: today(), lines: got }, ...d.receipts] : d.receipts,
+          jobCosts: [...posted, ...d.jobCosts],
           purchaseOrders: d.purchaseOrders.map((p) => (p.id === id ? { ...p, lines, status: done ? 'received' : p.status } : p)),
           catalog: d.catalog.map((c) => (stockAdd[c.id] ? { ...c, stock: c.stock + stockAdd[c.id] } : c)),
         }

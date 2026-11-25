@@ -1,7 +1,8 @@
 import type { Db } from '../types'
 import { computeCosting } from './costing'
 import { daysOverdue, invoiceState, invoiceTotals, isUnpaid } from './invoicing'
-import { hoursBetween } from './dates'
+import { fmtDate, hoursBetween } from './dates'
+import { jobCostSummary } from './jobcost'
 
 export type Cell = string | number
 export interface Column {
@@ -196,6 +197,72 @@ export const REPORTS: ReportDef[] = [
     }),
   },
   {
+    id: 'job-profitability',
+    title: 'Job Profitability',
+    description: 'Quoted against actual cost per job: clocked labour at each person\'s rate, recorded costs and goods received on job POs. Filtered by the date the job was created.',
+    run: (db, f) => ({
+      columns: [
+        { key: 'job', label: 'Job' },
+        { key: 'customer', label: 'Customer' },
+        { key: 'status', label: 'Status' },
+        { key: 'revenue', label: 'Quote price', kind: 'money' },
+        { key: 'est', label: 'Estimated cost', kind: 'money' },
+        { key: 'act', label: 'Actual cost', kind: 'money' },
+        { key: 'variance', label: 'Over (+) / under', kind: 'money' },
+        { key: 'committed', label: 'Committed on POs', kind: 'money' },
+        { key: 'estMargin', label: 'Quoted margin', kind: 'pct' },
+        { key: 'margin', label: 'Actual margin', kind: 'pct' },
+      ],
+      rows: db.jobs
+        .filter((j) => custOk(j.customerId, f) && inRange(fmtDate(new Date(j.createdAt)), f))
+        .flatMap((j) => {
+          const s = jobCostSummary(db, j)
+          if (!s) return []
+          return [{
+            job: `${j.id} – ${j.name}`, customer: cname(db, j.customerId), status: db.settings.jobStatusLabels?.[j.status] ?? j.status,
+            revenue: round2(s.revenue), est: round2(s.estTotal), act: round2(s.actTotal), variance: s.actTotal > 0 ? round2(s.actTotal - s.estTotal) : '',
+            committed: round2(s.committed), estMargin: round2(s.estMargin), margin: s.actTotal > 0 ? round2(s.margin) : '',
+          }]
+        })
+        .sort((a, b) => (b.variance === '' ? -Infinity : Number(b.variance)) - (a.variance === '' ? -Infinity : Number(a.variance))),
+      note: 'Sorted by most over budget first. Over/under and actual margin stay blank until something is costed against the job.',
+    }),
+  },
+  {
+    id: 'customer-profitability',
+    title: 'Customer Profitability',
+    description: 'Jobs, quoted price and actual cost added up per customer. Over/under and margin so far use only jobs that have costs recorded. Filtered by the date the job was created.',
+    run: (db, f) => {
+      const by = new Map<string, { jobs: number; revenue: number; est: number; act: number; costedEst: number; costedRevenue: number }>()
+      for (const j of db.jobs) {
+        if (!custOk(j.customerId, f) || !inRange(fmtDate(new Date(j.createdAt)), f)) continue
+        const s = jobCostSummary(db, j)
+        if (!s) continue
+        const t = by.get(j.customerId) ?? { jobs: 0, revenue: 0, est: 0, act: 0, costedEst: 0, costedRevenue: 0 }
+        t.jobs += 1; t.revenue += s.revenue; t.est += s.estTotal; t.act += s.actTotal
+        if (s.actTotal > 0) { t.costedEst += s.estTotal; t.costedRevenue += s.revenue } // over/under and margin only use jobs with costs so far
+        by.set(j.customerId, t)
+      }
+      return {
+        columns: [
+          { key: 'customer', label: 'Customer' },
+          { key: 'jobs', label: 'Jobs', kind: 'num' },
+          { key: 'revenue', label: 'Quoted', kind: 'money' },
+          { key: 'est', label: 'Estimated cost', kind: 'money' },
+          { key: 'act', label: 'Actual cost', kind: 'money' },
+          { key: 'variance', label: 'Over (+) / under', kind: 'money' },
+          { key: 'margin', label: 'Margin so far', kind: 'pct' },
+        ],
+        rows: [...by.entries()]
+          .map(([id, t]) => ({
+            customer: cname(db, id), jobs: t.jobs, revenue: round2(t.revenue), est: round2(t.est), act: round2(t.act),
+            variance: t.act > 0 ? round2(t.act - t.costedEst) : '', margin: t.costedRevenue > 0 ? round2(((t.costedRevenue - t.act) / t.costedRevenue) * 100) : '',
+          }))
+          .sort((a, b) => Number(b.revenue) - Number(a.revenue)),
+      }
+    },
+  },
+  {
     id: 'technician-hours',
     title: 'Technician Hours',
     description: 'Scheduled hours and clocked-on hours per employee, within the date range (by visit date).',
@@ -211,7 +278,7 @@ export const REPORTS: ReportDef[] = [
         const visits = db.schedule.filter((s) => s.employeeId === e.id && inRange(s.date, f))
         const scheduled = visits.reduce((a, s) => a + hoursBetween(s.start, s.end), 0)
         const clocked = db.clock
-          .filter((c) => c.employeeId === e.id && c.end && inRange(c.start.slice(0, 10), f))
+          .filter((c) => c.employeeId === e.id && c.end && inRange(fmtDate(new Date(c.start)), f))
           .reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
         return { employee: e.name, visits: visits.length, scheduled: round2(scheduled), clocked: round2(clocked), diff: round2(clocked - scheduled) }
       }),

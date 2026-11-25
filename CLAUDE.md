@@ -14,7 +14,7 @@ Fieldwork is an Australian field service management web app (quotes → jobs →
 2. **Reads come from one RPC, `load_all()`.** It builds the whole `Db` as JSON with explicit field names (camelCase). A new table or column is invisible to the app until `load_all` returns it. Patch it with a `DO` block: read `pg_get_functiondef('public.load_all'::regproc)`, `replace()` a known anchor (for example `'recurring', coalesce(`), then `execute`. Migrations 020/021/022 show the pattern. Verify afterwards with `position('yourKey' in pg_get_functiondef(...))`.
 3. **Writes** are table inserts/updates or `security invoker` SQL functions (`create_progress_claim`, `create_invoice_from_job`, `save_quote`, ...), followed by a reload. `write()` in storeRemote returns an error string or null and shows a red banner on failure. Business rules (timesheet lock, "required audits before complete", role checks) live in the database; mirror them client-side only for friendly messages.
 4. **Security.** Every table has RLS scoped by `company_id = current_company()`. Writes need `can_write()` (roles admin, accounts, sales, dispatcher). `technician` may only: update jobs, insert audit results, job notes, clock entries, job photos, and call `log_asset_service`. `readonly` cannot write. New functions must `revoke execute ... from public, anon` and `grant ... to authenticated` (see migration 017; `invite_info` is deliberately open for invite sign-up). Run the Supabase security advisor after schema changes.
-5. **Migrations.** Add `supabase/migrations/NNN_name.sql` to the repo AND apply it to the live project (Supabase MCP `apply_migration`, or the dashboard SQL editor). Numbers are sequential (next is 023). `supabase/schema.sql` is an outdated sketch; the migrations plus the live database are the truth.
+5. **Migrations.** Add `supabase/migrations/NNN_name.sql` to the repo AND apply it to the live project (Supabase MCP `apply_migration`, or the dashboard SQL editor). Numbers are sequential (next is 026). `supabase/schema.sql` is an outdated sketch; the migrations plus the live database are the truth.
 6. **Money and tax.** AUD, GST 10% (rate stored per quote/invoice). Amounts in the Db are ex GST unless named otherwise. Invoice totals come from `src/lib/invoicing.ts` (`invoiceTotals`), quote costing from `src/lib/costing.ts`. Do not duplicate these formulas.
 7. **Australian conventions.** Structured addresses (`AddressFields`, `formatAddress`), ABN, BSB, dd/mm/yyyy display, "Tax invoice" wording.
 
@@ -38,7 +38,8 @@ Fieldwork is an Australian field service management web app (quotes → jobs →
 
 ## Gotchas
 - `useResponsiveTables` observes DOM additions only; do not make it react to attribute changes.
-- `load_all` field names are hand-written; a column added to a table is not returned until patched.
+- `load_all` field names are hand-written; a column added to a table is not returned until patched. It also wraps everything in `jsonb_strip_nulls`, so a null column arrives as a missing key: treat `undefined` as "not set".
+- Pay rates live in `employee_rates` (office roles read, admin/accounts write), not on `employees`, so technicians never receive them; `Employee.costRate` is simply absent for them.
 - Technician-facing features must work with the technician RLS above; test the policy, not just the UI.
 - Photos are in the private bucket `job-photos` (signed URLs, company-folder policies); a `quote-attachments` bucket exists but the app does not use it yet (quote attachments are still stored inline, 400 KB max each).
 - The dashboard alert tiles filter via `?filter=`; keep keys in sync between `Dashboard.tsx` and the list page.

@@ -192,6 +192,7 @@ export interface JobCost {
   supplier: string
   description: string
   amount: number // ex GST
+  receiptId?: number | null // posted automatically when goods on a job PO were received
 }
 
 export interface AssetService {
@@ -238,11 +239,14 @@ export interface ClockEntry {
   employeeId?: string
   start: string // ISO timestamp
   end?: string // set when clocked off
+  approvedAt?: string | null // set when an office user approves the week's clocked hours
+  approvedBy?: string
 }
 
 export interface Employee {
   id: string
   name: string
+  costRate?: number | null // $/hour this person costs the business, ex GST. Only office roles receive it.
 }
 
 export interface ScheduleEntry {
@@ -319,6 +323,7 @@ export interface PurchaseOrder {
   vendor: string
   status: 'draft' | 'ordered' | 'received' | 'cancelled'
   createdAt: string
+  jobId?: number | null // a job PO: received goods go to the job's cost instead of stock
   lines: PoLine[]
 }
 

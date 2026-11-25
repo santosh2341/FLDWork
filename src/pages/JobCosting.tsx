@@ -30,8 +30,14 @@ export default function JobCosting() {
   const costs = db.jobCosts.filter((c) => c.jobId === job.id)
   const amt = Number(amount)
   const over = s.actTotal > s.estTotal
+  const ratedHours = s.hours - s.unratedHours
+  const labourNote = s.hours === 0 ? 'No time clocked yet'
+    : s.unratedHours < 0.005 ? `${s.hours.toFixed(1)} h clocked, at each person's hourly cost`
+    : ratedHours < 0.005 ? `${s.hours.toFixed(1)} h clocked at the quote average ${money(s.rate)}/h (no personal rates set)`
+    : `${s.hours.toFixed(1)} h clocked: ${ratedHours.toFixed(1)} h at personal rates, ${s.unratedHours.toFixed(1)} h at the quote average ${money(s.rate)}/h`
+  const jobPOs = db.purchaseOrders.filter((p) => p.jobId === job.id && p.status !== 'cancelled')
   const lines: { label: string; est: number | null; act: number; note?: string }[] = [
-    { label: 'Labour', est: s.estLabour, act: s.actLabour, note: `${s.hours.toFixed(1)} h clocked at ${money(s.rate)}/h` },
+    { label: 'Labour', est: s.estLabour, act: s.actLabour, note: labourNote },
     { label: 'Materials', est: s.estMaterials, act: s.actMaterials },
     { label: 'Subcontractors', est: null, act: s.actSubcontract },
     { label: 'Other', est: null, act: s.actOther },
@@ -58,6 +64,7 @@ export default function JobCosting() {
         <div><span className="muted">Quote price</span><b>{money(s.revenue)}</b></div>
         <div><span className="muted">Invoiced</span><b>{money(s.invoiced)}</b><span className="muted">{s.revenue > 0 ? pctTxt((s.invoiced / s.revenue) * 100) : ''} of quote</span></div>
         <div><span className="muted">Actual cost</span><b>{money(s.actTotal)}</b><span className={over ? 'jc-over' : 'muted'}>{over ? `${money(s.actTotal - s.estTotal)} over estimate` : `${money(s.estTotal - s.actTotal)} under estimate`}</span></div>
+        {s.committed > 0 && <div><span className="muted">Committed on POs</span><b>{money(s.committed)}</b><span className="muted">ordered, not received yet</span></div>}
       </div>
 
       <table className="keep-table">
@@ -74,7 +81,10 @@ export default function JobCosting() {
           <tr className="jc-total"><td><b>Total cost</b></td><td className="num"><b>{money(s.estTotal)}</b></td><td className="num"><b>{money(s.actTotal)}</b></td><td className={`num ${over ? 'jc-over' : ''}`}><b>{money(s.actTotal - s.estTotal)}</b></td></tr>
         </tbody>
       </table>
-      {s.rate === 0 && <p className="muted">The quote has no labour cost rate, so clocked hours are not costed. Add labour lines with a cost to the quote to include them.</p>}
+      {s.rate === 0 && s.unratedHours > 0 && <p className="muted">Some clocked hours have no cost: the person has no hourly cost set (Settings → Employees) and the quote has no labour cost rate to fall back on.</p>}
+      {jobPOs.length > 0 && (
+        <p className="muted">Purchase orders for this job: {jobPOs.map((p, i) => <span key={p.id}>{i > 0 && ', '}<Link to="/materials/purchase-orders">PO {p.id}</Link> ({p.status})</span>)}. Goods received on them are added below automatically.</p>
+      )}
 
       <h3>Costs recorded against this job</h3>
       {canWrite && (
@@ -102,7 +112,7 @@ export default function JobCosting() {
                 <td>{c.supplier}</td>
                 <td>{c.description}</td>
                 <td className="num">{money(c.amount)}</td>
-                <td>{canWrite && (confirmId === c.id ? <span className="row"><button onClick={() => { deleteJobCost(c.id); setConfirmId('') }}>Remove</button><button className="link-btn" onClick={() => setConfirmId('')}>Keep</button></span> : <button className="link-btn" onClick={() => setConfirmId(c.id)}>Remove</button>)}</td>
+                <td>{c.receiptId != null ? <span className="muted" title="Posted when the goods were received; it follows the purchase order">From PO</span> : canWrite && (confirmId === c.id ? <span className="row"><button onClick={() => { deleteJobCost(c.id); setConfirmId('') }}>Remove</button><button className="link-btn" onClick={() => setConfirmId('')}>Keep</button></span> : <button className="link-btn" onClick={() => setConfirmId(c.id)}>Remove</button>)}</td>
               </tr>
             ))}
           </tbody>

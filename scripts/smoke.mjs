@@ -23,7 +23,8 @@ const ROUTES = [
   '/schedules/work-orders', '/leads', '/recurring', '/settings/general', '/settings/statuses', '/settings/audits',
   '/settings/invoicing', '/settings/team', '/materials/inventory', '/materials/counts', '/materials/pre-builds',
   '/materials/purchase-orders', '/materials/vendor-quotes', '/materials/receipts', '/materials/catalog', '/reports',
-  '/reports/aged-receivables', '/reports/profit-loss-job',
+  '/reports/aged-receivables', '/reports/profit-loss-job', '/reports/job-profitability', '/reports/customer-profitability',
+  '/settings/employees',
 ]
 
 let step = 'start'
@@ -107,6 +108,32 @@ async function workflow(page) {
   if (!hero.includes('$1,500.00')) fail('actual cost should be $1,500.00 after adding a $1,500 cost')
   if (!hero.includes('Profit so far')) fail('profit label should read "Profit so far" once a cost is recorded')
   log('job cost recorded and profit updated')
+
+  step = 'employee hourly cost'
+  await go(page, '/settings/employees')
+  const rate = page.getByLabel(/^Hourly cost for /).first()
+  await rate.fill('60')
+  await page.getByRole('button', { name: 'Save' }).first().click()
+  await page.getByText('Saved').first().waitFor({ timeout: 5000 }).catch(() => fail('saving an hourly cost did not say "Saved"'))
+  log('hourly cost saved in Settings → Employees')
+
+  step = 'purchase order for the job'
+  await go(page, '/materials/purchase-orders')
+  await page.getByPlaceholder('Vendor (pick or type) *').fill('Smoke Electrical')
+  await page.getByLabel('For job').selectOption(jobId)
+  await page.getByRole('button', { name: '+ Line' }).click()
+  const line = page.locator('.qrow').first()
+  await line.locator('select').selectOption({ index: 1 })
+  await line.locator('input[type=number]').first().fill('2')
+  await page.getByRole('button', { name: 'Create PO' }).click()
+  const poCard = page.locator('.card', { hasText: 'Smoke Electrical' }).first()
+  await poCard.getByRole('button', { name: 'Mark as ordered' }).click()
+  await poCard.locator('tbody input[type=number]').first().fill('2')
+  await poCard.getByRole('button', { name: 'Receive items' }).click()
+  await poCard.getByText(`For job ${jobId}`).waitFor({ timeout: 5000 }).catch(() => fail('received job PO should show "For job …"'))
+  await go(page, costHref)
+  await page.getByText(/^Received on PO \d+/).first().waitFor({ timeout: 5000 }).catch(() => fail('goods received on the job PO were not added to the job cost'))
+  log('job PO received and its cost posted to the job')
 
   step = 'book on schedule'
   await go(page, '/schedules/day')
