@@ -31,7 +31,8 @@ Fieldwork is an Australian field service management web app (quotes → jobs →
 - Breadcrumbs only link to pages that exist (`PAGES` list in `Shell.tsx`); add new routes there as well as in `App.tsx`.
 
 ## Testing
-- There is no unit-test suite. Verify by running the built app (`npm run build && npx vite preview --port 4176`) and driving it with Playwright (Chromium is installed in the cloud sandbox). Seed local mode by writing `fieldwork.db.v1` JSON to `localStorage` before navigating. Take screenshots at 390px (iPhone 13) and 1366px, light and dark.
+- **Smoke test: `npm run smoke` before every push.** It builds, starts `vite preview` on 4176 and, at 1366px and 390px, walks quote → approve → job → 30% claim → job cost → book on the schedule, then loads 40 pages checking for errors and sideways overflow (`scripts/smoke.mjs`; failure screenshots go to `scripts/smoke-output/`). It uses Playwright's Chromium if installed, else Edge/Chrome (`SMOKE_BROWSER` to choose). Extend it when you add a workflow.
+- There is no unit-test suite. For anything the smoke test does not cover, verify by running the built app (`npm run build && npx vite preview --port 4176`) and driving it with Playwright (Chromium is installed in the cloud sandbox). Seed local mode by writing `fieldwork.db.v1` JSON to `localStorage` before navigating. Take screenshots at 390px (iPhone 13) and 1366px, light and dark.
 - Supabase mode cannot be exercised from the sandbox (network allowlist), so database functions are checked with `execute_sql` and by reading them back. Say plainly what was and was not tested in live mode.
 - iPhone Safari crashed once on a 205-job list; cause unconfirmed. `main.tsx` has a crash guard: if a page dies, the next load runs in "safe mode" (no `mobile.css`, no table helper). Keep heavy lists paged and avoid `:has()`-heavy or very large DOM on phones.
 

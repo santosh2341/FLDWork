@@ -97,7 +97,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 1. ~~Page every list that can exceed ~100 rows (`usePaged`); verify at 390px with 300+ rows.~~ Done (reports are not paged so they print in full).
 2. ~~Clear the lint warnings without changing behaviour.~~ Done.
 3. ~~Phone pass over every page at 390px and in dark mode; fix overflow and spacing. Add tap-to-move (a "Move to…" sheet) for schedule visits on phones.~~ Done (Timesheets calendar scrolls in its card, page headers wrap).
-4. Add a small Playwright smoke script to the repo (`scripts/smoke.mjs`) that seeds local mode and walks quote → job → claim → cost → schedule, so regressions are caught before pushing.
+4. ~~Add a small Playwright smoke script to the repo (`scripts/smoke.mjs`) that seeds local mode and walks quote → job → claim → cost → schedule, so regressions are caught before pushing.~~ Done: `npm run smoke`.
 
 **B. Costing and purchasing depth**
 5. Per-employee hourly cost rates (an Employees/Team screen with rate), used for actual labour cost instead of the quote average.
@@ -129,7 +129,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 
 ## 7. Definition of done for any feature
 - Works in local mode and Supabase mode; the type, store (local and remote), `load_all`, migration (in repo and applied live) and RLS are all in place.
-- `npx tsc -b`, `npx oxlint src`, `npm run build` clean.
+- `npx tsc -b`, `npx oxlint src`, `npm run build` clean, and `npm run smoke` passes.
 - Checked with Playwright at 390px and 1366px, light and dark; empty, error and long-list states handled; technician and read-only roles respected.
 - Plain, specific wording; no `alert()`/`confirm()`; breadcrumbs and `PAGES` updated for new routes.
 - Committed with a clear message and pushed to `main`; the final note says what was and was not tested live.
