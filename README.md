@@ -1,5 +1,7 @@
 # Fieldwork
 
+Start with `CLAUDE.md` (rules for working in this repo) and `docs/PROJECT_PLAN.md` (plan and status).
+
 Field service management web app (React + Vite + TypeScript), built from the page-by-page guide.
 
 ## Run
@@ -42,9 +44,8 @@ for the connected project; copy `.env.example` to `.env.local` and fill them in 
   Authentication, Providers, Email in the Supabase dashboard.
 - `supabase/schema.sql` is an outdated first sketch; the real schema is in the project's migrations.
 
-## Not built yet
-Accounting integrations, emailing and PDF invoices, contractor and vendor invoices, automatic (background) recurring jobs,
-BI reporting, file uploads to Supabase Storage (attachments are still stored inline, 400 KB max), per-role hiding of buttons.
+## What is not built yet
+See `docs/PROJECT_PLAN.md` (section 3 for status, section 5 for the roadmap). In short: Xero/MYOB sync, Stripe payments, SMS, customer portal, PDF email attachments, background jobs, per-employee pay rates, AI ask-your-data.
 
 ## Design system
 

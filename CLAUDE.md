@@ -1,0 +1,42 @@
+# Fieldwork: guide for Claude Code
+
+Fieldwork is an Australian field service management web app (quotes → jobs → schedule → invoices, plus technician phone screens). Read `docs/PROJECT_PLAN.md` for the full plan, what is built and what is not. This file is the short operating manual.
+
+## Stack and commands
+- React 19 + Vite 8 + TypeScript (strict) + React Router 7. Supabase (Postgres, Auth, Storage, Edge Functions). Deployed on Vercel (project `fld-work`, auto-deploys from `main`).
+- `npm install`, `npm run dev`, `npm run build` (runs `tsc -b` then vite), `npm run lint` (oxlint). Before every commit: `npx tsc -b`, `npx oxlint src`, `npm run build` must be clean (lint warnings that already exist are tolerated; no new errors).
+- Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (`.env.local`, not committed; also set on Vercel). **No keys set = local demo mode** (browser-only data in localStorage, `src/storeLocal.ts`). Keys set = Supabase mode (`src/storeRemote.ts`).
+- Supabase project ref: `xmvocohxzitwxtmtbrsd` (region ap-northeast-2). Never commit secrets. Edge Function secrets (`ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`) live in the Supabase dashboard.
+- Commit style: small, one feature per commit, message says what and why. Push to `main` (`git push origin main`). The owner (Santosh) pushes from GitHub too, so `git pull --ff-only` first.
+
+## Architecture rules (follow these or things break)
+1. **Dual-mode store.** Every action exists in three places: the `Actions` interface (`src/storeTypes.ts`), the local implementation (`src/storeLocal.ts`) and the remote implementation (`src/storeRemote.ts`). Add all three, plus the type in `src/types.ts` (`Db` has every collection; add defaults in `src/data/mock.ts` and `src/lib/remote.ts`).
+2. **Reads come from one RPC, `load_all()`.** It builds the whole `Db` as JSON with explicit field names (camelCase). A new table or column is invisible to the app until `load_all` returns it. Patch it with a `DO` block: read `pg_get_functiondef('public.load_all'::regproc)`, `replace()` a known anchor (for example `'recurring', coalesce(`), then `execute`. Migrations 020/021/022 show the pattern. Verify afterwards with `position('yourKey' in pg_get_functiondef(...))`.
+3. **Writes** are table inserts/updates or `security invoker` SQL functions (`create_progress_claim`, `create_invoice_from_job`, `save_quote`, ...), followed by a reload. `write()` in storeRemote returns an error string or null and shows a red banner on failure. Business rules (timesheet lock, "required audits before complete", role checks) live in the database; mirror them client-side only for friendly messages.
+4. **Security.** Every table has RLS scoped by `company_id = current_company()`. Writes need `can_write()` (roles admin, accounts, sales, dispatcher). `technician` may only: update jobs, insert audit results, job notes, clock entries, job photos, and call `log_asset_service`. `readonly` cannot write. New functions must `revoke execute ... from public, anon` and `grant ... to authenticated` (see migration 017; `invite_info` is deliberately open for invite sign-up). Run the Supabase security advisor after schema changes.
+5. **Migrations.** Add `supabase/migrations/NNN_name.sql` to the repo AND apply it to the live project (Supabase MCP `apply_migration`, or the dashboard SQL editor). Numbers are sequential (next is 023). `supabase/schema.sql` is an outdated sketch; the migrations plus the live database are the truth.
+6. **Money and tax.** AUD, GST 10% (rate stored per quote/invoice). Amounts in the Db are ex GST unless named otherwise. Invoice totals come from `src/lib/invoicing.ts` (`invoiceTotals`), quote costing from `src/lib/costing.ts`. Do not duplicate these formulas.
+7. **Australian conventions.** Structured addresses (`AddressFields`, `formatAddress`), ABN, BSB, dd/mm/yyyy display, "Tax invoice" wording.
+
+## UI conventions
+- Design identity: a tradie's run sheet. Ink-navy on cool concrete grey, brand teal `#0f766e`, status colours borrowed from utility line-marking paint (`--mark-red/yellow/blue/green`), Archivo for headings and numbers, Public Sans for text. Flat bordered surfaces (no soft shadows), a coloured 4-5px left edge to encode status.
+- CSS lives in `src/index.css` (tokens, base, components), `src/sidebar.css`, `src/desktop.css` (min-width 769px refinements, imported after index.css in `main.tsx`) and `src/mobile.css` (≤768px, loaded dynamically from `main.tsx`). Always use CSS variables (`--panel`, `--ink`, `--line`, `--brand`, ...) so dark mode works. Test light and dark.
+- Pages render inside `<main className="page"><div className="page-anim">`. A page header is `<div className="row between"><h1/>…<div className="row">buttons</div></div>`; selectors target `.page-anim > .row.between`.
+- Phone: `MobileChrome` (top bar, bottom tab bar, quick-add and search sheets) shows only ≤768px. `useResponsiveTables` turns every `<table>` into labelled cards on phones (tables with typed text inputs keep scrolling instead, via `keep-table`). Use `td` headings from `<thead>` so labels work; put row actions in a last cell with no heading.
+- Long lists: use `usePaged` (`src/components/Paged.tsx`, 40 rows at a time). Jobs and Quotes use it; apply to any list that can reach hundreds of rows.
+- List filtering: `?filter=` plus `FilterBar`; `?new=1` opens a create form (`useStartOpen`). Heavy pages are `React.lazy` routes in `App.tsx`.
+- Writing: sentence case, plain verbs, specific button labels ("Create claim"), errors say what to do next. Do not use `alert()`/`confirm()` for new work; show in-page messages.
+- Breadcrumbs only link to pages that exist (`PAGES` list in `Shell.tsx`); add new routes there as well as in `App.tsx`.
+
+## Testing
+- There is no unit-test suite. Verify by running the built app (`npm run build && npx vite preview --port 4176`) and driving it with Playwright (Chromium is installed in the cloud sandbox). Seed local mode by writing `fieldwork.db.v1` JSON to `localStorage` before navigating. Take screenshots at 390px (iPhone 13) and 1366px, light and dark.
+- Supabase mode cannot be exercised from the sandbox (network allowlist), so database functions are checked with `execute_sql` and by reading them back. Say plainly what was and was not tested in live mode.
+- iPhone Safari crashed once on a 205-job list; cause unconfirmed. `main.tsx` has a crash guard: if a page dies, the next load runs in "safe mode" (no `mobile.css`, no table helper). Keep heavy lists paged and avoid `:has()`-heavy or very large DOM on phones.
+
+## Gotchas
+- `useResponsiveTables` observes DOM additions only; do not make it react to attribute changes.
+- `load_all` field names are hand-written; a column added to a table is not returned until patched.
+- Technician-facing features must work with the technician RLS above; test the policy, not just the UI.
+- Photos are in the private bucket `job-photos` (signed URLs, company-folder policies); a `quote-attachments` bucket exists but the app does not use it yet (quote attachments are still stored inline, 400 KB max each).
+- The dashboard alert tiles filter via `?filter=`; keep keys in sync between `Dashboard.tsx` and the list page.
+- Safe default for anything unclear: ask the owner (Santosh, Hyderabad, works with Australian field-service clients). He wants a professional, distinctive UI and finished features, not scaffolding. AI features are deliberately postponed until he decides to pay for them.
