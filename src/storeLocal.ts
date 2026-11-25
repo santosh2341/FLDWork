@@ -1,5 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react'
 import { withLog } from './lib/invoicing'
+import { claimedPct, quoteNet } from './lib/claims'
 import { advance } from './lib/recurring'
 import { uid } from './lib/id'
 import { addMonths } from './lib/assets'
@@ -84,7 +85,8 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     clockOff: (jobId, employeeId) => setDb((d) => ({ ...d, clock: d.clock.map((c) => (c.jobId === jobId && c.employeeId === employeeId && !c.end ? { ...c, end: new Date().toISOString() } : c)) })),
     setJobStatus: (jobId, status) => setDb((d) => ({ ...d, jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status } : j)) })),
     createInvoiceFromJob: async (jobId) => {
-      const existing = db.invoices.find((i) => i.jobId === jobId && !i.voided)
+      const existing = db.invoices.find((i) => i.jobId === jobId && !i.voided && i.claimPct == null)
+      if (!existing && claimedPct(db.invoices, jobId) > 0) return 0
       if (existing) return existing.id
       const job = db.jobs.find((j) => j.id === jobId)
       const q = job && db.quotes.find((x) => x.id === job.quoteId)
@@ -99,6 +101,28 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }
       setDb((d) => ({ ...d, invoices: [inv, ...d.invoices], jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status: 'invoiced' } : j)) }))
       return id
+    },
+    createProgressClaim: async (jobId, label, pct) => {
+      const job = db.jobs.find((j) => j.id === jobId)
+      const q = job && db.quotes.find((x) => x.id === job.quoteId)
+      if (!job || !q) return { error: 'Job not found.' }
+      if (!(pct > 0 && pct <= 100)) return { error: 'Claim percentage must be between 1 and 100.' }
+      if (db.invoices.some((i) => i.jobId === jobId && !i.voided && i.claimPct == null)) return { error: 'This job already has a full invoice.' }
+      const done = claimedPct(db.invoices, jobId)
+      if (done + pct > 100.0001) return { error: `Only ${Math.round((100 - done) * 100) / 100} percent is left to claim on this job.` }
+      const id = Math.max(1700, ...db.invoices.map((i) => i.id)) + 1
+      const issued = new Date()
+      const due = new Date(issued.getTime() + db.settings.paymentTermsDays * 86400000)
+      const name = label.trim() || 'Progress claim'
+      const inv: Invoice = {
+        id, jobId, customerId: job.customerId, siteId: job.siteId,
+        issuedAt: issued.toISOString().slice(0, 10), dueAt: due.toISOString().slice(0, 10), stage: 'draft',
+        sections: [{ id: uid(), name: 'Progress claim', items: [{ id: uid(), kind: 'part', description: `${name} – ${pct}% of quote ${q.id}`, quantity: 1, unitCost: 0, unitSell: Math.round(quoteNet(q) * pct) / 100 }] }],
+        taxRate: q.taxRate, discount: 0, payments: [], voided: false, claimLabel: name, claimPct: pct,
+      }
+      const complete = done + pct >= 99.9999
+      setDb((d) => ({ ...d, invoices: [inv, ...d.invoices], jobs: complete ? d.jobs.map((j) => (j.id === jobId ? { ...j, status: 'invoiced' } : j)) : d.jobs }))
+      return { id }
     },
     saveInvoice: (inv) => setDb((d) => ({ ...d, invoices: d.invoices.map((x) => (x.id === inv.id ? inv : x)) })),
     recordPayment: (invoiceId, p) =>

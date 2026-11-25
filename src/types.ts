@@ -172,6 +172,8 @@ export interface Invoice {
   log?: LogEntry[]
   retainagePct?: number // percent of the total held back until released
   retainageReleased?: boolean
+  claimLabel?: string // set when this invoice is one progress claim on the job
+  claimPct?: number // percent of the quote this claim bills
 }
 
 export interface JobNote {

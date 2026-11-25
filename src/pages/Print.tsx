@@ -1,3 +1,4 @@
+import { claimsFor, quoteNet } from '../lib/claims'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
@@ -154,6 +155,19 @@ export function InvoicePrint() {
         <Parties customerName={customer?.name} contact={customer?.contactName} address={customer?.address} siteName={site?.name} siteAddress={site?.address} />
         <h3 className="doc-job">{job?.name}</h3>
         <Lines sections={inv.sections} />
+        {inv.claimPct != null && (() => {
+          const q = db.quotes.find((x) => x.id === job?.quoteId)
+          const upTo = claimsFor(db.invoices, inv.jobId).filter((c) => c.id <= inv.id).reduce((a, c) => a + (c.claimPct ?? 0), 0)
+          if (!q) return null
+          return (
+            <table className="doc-totals"><tbody>
+              <tr><td>Contract price (ex GST)</td><td>{money(quoteNet(q))}</td></tr>
+              <tr><td>This claim: {inv.claimLabel} ({inv.claimPct}%)</td><td>{money(t.subTotal)}</td></tr>
+              <tr><td>Claimed to date</td><td>{Math.round(upTo * 100) / 100}% ({money(quoteNet(q) * upTo / 100)})</td></tr>
+              <tr><td>Remaining to claim</td><td>{Math.round((100 - upTo) * 100) / 100}%</td></tr>
+            </tbody></table>
+          )
+        })()}
         <table className="doc-totals"><tbody>
           <tr><td>Subtotal (ex GST)</td><td>{money(t.subTotal + inv.discount)}</td></tr>
           {inv.discount > 0 && <tr><td>Discount</td><td>-{money(inv.discount)}</td></tr>}

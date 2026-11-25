@@ -31,6 +31,7 @@ export interface Actions {
   clockOn: (jobId: number, employeeId: string) => void
   clockOff: (jobId: number, employeeId: string) => void
   createInvoiceFromJob: (jobId: number) => Promise<number>
+  createProgressClaim: (jobId: number, label: string, pct: number) => Promise<{ id?: number; error?: string }>
   saveInvoice: (inv: Invoice) => void
   recordPayment: (invoiceId: number, p: Omit<Payment, 'id'>) => void
   addScheduleEntry: (e: Omit<ScheduleEntry, 'id'>) => Promise<string | null> // resolves to an error message

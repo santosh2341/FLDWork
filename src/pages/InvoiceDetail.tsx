@@ -56,7 +56,7 @@ export default function InvoiceDetail() {
   return (
     <>
       <div className="row between">
-        <h1>Invoice #{inv.id}</h1>
+        <h1>Invoice #{inv.id}{inv.claimPct != null && <span className="pill" style={{ marginLeft: 10, verticalAlign: 'middle' }}>{inv.claimLabel} · {inv.claimPct}%</span>}</h1>
         <div className="row">
           <Link className="btn" to={`/invoices/${inv.id}/print`}>Print / PDF</Link>
           <span className="pill">Total: {money(t.total)}</span>

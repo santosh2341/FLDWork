@@ -195,6 +195,9 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       void write(() => sb.from('jobs').update({ status }).eq('id', jobId))
     },
     createInvoiceFromJob: async (jobId) => num(await call<number>('create_invoice_from_job', { p_job_id: jobId })),
+    createProgressClaim: async (jobId, label, pct) => {
+      try { return { id: num(await call<number>('create_progress_claim', { p_job_id: jobId, p_label: label, p_pct: pct })) } } catch (e) { return { error: e instanceof Error ? e.message : 'Could not create the claim.' } }
+    },
     saveInvoice: (inv) => {
       setDb((d) => ({ ...d, invoices: d.invoices.map((x) => (x.id === inv.id ? inv : x)) }))
       void write(() =>

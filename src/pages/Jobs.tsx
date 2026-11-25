@@ -5,7 +5,8 @@ import { usePaged } from '../components/Paged'
 import FilterBar, { useFilter } from '../components/FilterBar'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
-import type { Job, JobStatus } from '../types'
+import { claimedPct, claimsFor, CLAIM_LABELS, quoteNet } from '../lib/claims'
+import type { Job, JobStatus, Quote } from '../types'
 
 export const JOB_LABEL: Record<JobStatus, string> = {
   pending: 'Pending',
@@ -13,6 +14,51 @@ export const JOB_LABEL: Record<JobStatus, string> = {
   in_progress: 'In Progress',
   complete: 'Complete',
   invoiced: 'Invoiced',
+}
+
+// Bill part of a job now (deposit, progress, completion) instead of one invoice at the end.
+function ClaimForm({ job, quote }: { job: Job; quote: Quote }) {
+  const { db, createProgressClaim } = useStore()
+  const nav = useNavigate()
+  const done = claimedPct(db.invoices, job.id)
+  const left = Math.round((100 - done) * 100) / 100
+  const [open, setOpen] = useState(false)
+  const [label, setLabel] = useState(done === 0 ? 'Deposit' : left <= 50 ? 'Completion' : 'Progress claim')
+  const [pct, setPct] = useState(String(done === 0 ? 30 : left))
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const n = Number(pct)
+  const net = quoteNet(quote)
+  const amt = Math.round(net * n) / 100
+  if (left <= 0) return null
+  if (!open) return <button className="link-btn" onClick={() => setOpen(true)}>{done > 0 ? `+ Claim (${left}% left)` : 'Bill in stages'}</button>
+  const go = async () => {
+    setBusy(true); setErr('')
+    const r = await createProgressClaim(job.id, label, n)
+    setBusy(false)
+    if (r.error) setErr(r.error)
+    else if (r.id) nav(`/invoices/${r.id}`)
+  }
+  return (
+    <div className="claim-form">
+      <b>New progress claim</b>
+      <label className="block">Stage
+        <select value={CLAIM_LABELS.includes(label) ? label : 'Other'} onChange={(e) => setLabel(e.target.value === 'Other' ? '' : e.target.value)}>
+          {CLAIM_LABELS.map((l) => <option key={l}>{l}</option>)}<option>Other</option>
+        </select>
+      </label>
+      {!CLAIM_LABELS.includes(label) && <input placeholder="Stage name, e.g. Rough-in" value={label} onChange={(e) => setLabel(e.target.value)} />}
+      <label className="block">Percent of quote ({left}% left)
+        <input type="number" min={1} max={left} step="any" value={pct} onChange={(e) => setPct(e.target.value)} />
+      </label>
+      <p className="muted">{n > 0 ? `${money(amt)} + GST = ${money(amt * (1 + quote.taxRate / 100))}` : 'Enter a percentage'}</p>
+      {err && <p className="error">{err}</p>}
+      <div className="row">
+        <button className="primary" disabled={busy || !(n > 0 && n <= left)} onClick={go}>Create claim</button>
+        <button onClick={() => setOpen(false)}>Cancel</button>
+      </div>
+    </div>
+  )
 }
 
 // Photos load only after the row is opened, so a long job list does not fetch or decode every picture up front.
@@ -59,7 +105,8 @@ export default function Jobs() {
           <tbody>
             {shown.map((j) => {
               const q = db.quotes.find((x) => x.id === j.quoteId)
-              const inv = db.invoices.find((i) => i.jobId === j.id && !i.voided)
+              const inv = db.invoices.find((i) => i.jobId === j.id && !i.voided && i.claimPct == null)
+              const claims = claimsFor(db.invoices, j.id)
               return (
                 <tr key={j.id}>
                   <td>{j.id} – {j.name}{(() => {
@@ -88,9 +135,15 @@ export default function Jobs() {
                     {inv ? (
                       <Link to={`/invoices/${inv.id}`}>Invoice #{inv.id}</Link>
                     ) : (
-                      <button disabled={j.status !== 'complete'} title={j.status !== 'complete' ? 'Mark the job complete first' : ''} onClick={async () => { const id = await createInvoiceFromJob(j.id); if (id) nav(`/invoices/${id}`) }}>
-                        Create invoice
-                      </button>
+                      <>
+                        {claims.map((c) => <div key={c.id}><Link to={`/invoices/${c.id}`}>#{c.id}</Link> <span className="muted">{c.claimLabel} {c.claimPct}%</span></div>)}
+                        {claims.length === 0 && (
+                          <button disabled={j.status !== 'complete'} title={j.status !== 'complete' ? 'Mark the job complete first' : ''} onClick={async () => { const id = await createInvoiceFromJob(j.id); if (id) nav(`/invoices/${id}`) }}>
+                            Create invoice
+                          </button>
+                        )}
+                        {canWrite && q && j.status !== 'invoiced' && <ClaimForm job={j} quote={q} />}
+                      </>
                     )}
                   </td>
                   <td>
