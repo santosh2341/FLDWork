@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
+import { useFilter, useStartOpen } from '../components/useFilter'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import AddressFields from '../components/AddressFields'

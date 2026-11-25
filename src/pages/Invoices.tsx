@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
+import { useFilter } from '../components/useFilter'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { daysOverdue, invoiceState, invoiceTotals, isUnpaid, STATE_COLOR, STATE_LABEL, withLog } from '../lib/invoicing'

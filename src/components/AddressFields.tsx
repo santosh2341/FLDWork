@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { addBaseLayers } from '../lib/mapLayers'
@@ -27,9 +27,12 @@ export default function AddressFields({ value, onChange, label = 'Address', allo
   const map = useRef<L.Map | null>(null)
   const marker = useRef<L.Marker | null>(null)
   const latest = useRef(value)
-  latest.current = value
   const emit = useRef(onChange)
-  emit.current = onChange
+  // keep the newest value and callback for the map's drag handler, without touching refs during render
+  useLayoutEffect(() => {
+    latest.current = value
+    emit.current = onChange
+  })
 
   const set = (k: keyof AddressParts) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     onChange({ parts: { ...parts, [k]: e.target.value as never }, point })

@@ -4,7 +4,7 @@ Fieldwork is an Australian field service management web app (quotes → jobs →
 
 ## Stack and commands
 - React 19 + Vite 8 + TypeScript (strict) + React Router 7. Supabase (Postgres, Auth, Storage, Edge Functions). Deployed on Vercel (project `fld-work`, auto-deploys from `main`).
-- `npm install`, `npm run dev`, `npm run build` (runs `tsc -b` then vite), `npm run lint` (oxlint). Before every commit: `npx tsc -b`, `npx oxlint src`, `npm run build` must be clean (lint warnings that already exist are tolerated; no new errors).
+- `npm install`, `npm run dev`, `npm run build` (runs `tsc -b` then vite), `npm run lint` (oxlint). Before every commit: `npx tsc -b`, `npx oxlint src`, `npm run build` must be clean. Lint is at zero warnings: keep it there (a justified `// oxlint-disable-next-line rule -- reason` is fine for a real false positive).
 - Env: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (`.env.local`, not committed; also set on Vercel). **No keys set = local demo mode** (browser-only data in localStorage, `src/storeLocal.ts`). Keys set = Supabase mode (`src/storeRemote.ts`).
 - Supabase project ref: `xmvocohxzitwxtmtbrsd` (region ap-northeast-2). Never commit secrets. Edge Function secrets (`ANTHROPIC_API_KEY`, `RESEND_API_KEY`, `EMAIL_FROM`) live in the Supabase dashboard.
 - Commit style: small, one feature per commit, message says what and why. Push to `main` (`git push origin main`). The owner (Santosh) pushes from GitHub too, so `git pull --ff-only` first.
@@ -24,7 +24,9 @@ Fieldwork is an Australian field service management web app (quotes → jobs →
 - Pages render inside `<main className="page"><div className="page-anim">`. A page header is `<div className="row between"><h1/>…<div className="row">buttons</div></div>`; selectors target `.page-anim > .row.between`.
 - Phone: `MobileChrome` (top bar, bottom tab bar, quick-add and search sheets) shows only ≤768px. `useResponsiveTables` turns every `<table>` into labelled cards on phones (tables with typed text inputs keep scrolling instead, via `keep-table`). Use `td` headings from `<thead>` so labels work; put row actions in a last cell with no heading.
 - Long lists: use `usePaged` (`src/components/Paged.tsx`, 40 rows at a time). Jobs and Quotes use it; apply to any list that can reach hundreds of rows.
-- List filtering: `?filter=` plus `FilterBar`; `?new=1` opens a create form (`useStartOpen`). Heavy pages are `React.lazy` routes in `App.tsx`.
+- List filtering: `?filter=` plus `FilterBar`; `?new=1` opens a create form (`useStartOpen`). The hooks `useFilter`/`useStartOpen` live in `src/components/useFilter.ts`.
+- Files that export a component export only components (fast refresh). Context + hook live in `store.ts`/`auth.ts`; the providers are `StoreProvider.tsx`/`AuthProvider.tsx`.
+- "Today" is the local date: use `today()`/`fmtDate()` from `src/lib/dates.ts`, never `toISOString().slice(0, 10)` (that is UTC, i.e. yesterday in Australia before 10am). Heavy pages are `React.lazy` routes in `App.tsx`.
 - Writing: sentence case, plain verbs, specific button labels ("Create claim"), errors say what to do next. Do not use `alert()`/`confirm()` for new work; show in-page messages.
 - Breadcrumbs only link to pages that exist (`PAGES` list in `Shell.tsx`); add new routes there as well as in `App.tsx`.
 

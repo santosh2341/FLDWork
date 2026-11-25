@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useStartOpen } from '../components/FilterBar'
+import { useStartOpen } from '../components/useFilter'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
 import type { LeadStatus } from '../types'

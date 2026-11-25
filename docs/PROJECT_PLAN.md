@@ -12,7 +12,7 @@ A web app for Australian trade and field-service businesses (electrical, plumbin
 
 ## 2. Architecture in one page
 - **Frontend:** React 19, TypeScript strict, Vite, React Router, hand-written CSS with design tokens (light and dark). Map: Leaflet with OpenStreetMap. No UI framework.
-- **State:** a single store (`src/store.tsx`) exposing `db` (all data) and `Actions`. Two implementations: local (`storeLocal.ts`) and remote (`storeRemote.ts`). Reads: one RPC `load_all()`. Writes: table writes and SQL functions, then reload.
+- **State:** a single store (context and `useStore` in `src/store.ts`, provider in `src/StoreProvider.tsx`) exposing `db` (all data) and `Actions`. Two implementations: local (`storeLocal.ts`) and remote (`storeRemote.ts`). Reads: one RPC `load_all()`. Writes: table writes and SQL functions, then reload.
 - **Database (Postgres, RLS on every table, company-scoped):** customers, sites, catalog_parts, quotes, cost_centers, line_items, quote_tasks, quote_audits, quote_attachments, timeline_events, jobs, schedule_entries, clock_entries, job_notes, job_photos, job_costs, invoices, invoice_sections, invoice_items, invoice_log, payments, credits, audits (audits, audit_groups, audit_questions, audit_results), purchase_orders, po_lines, receipts, receipt_lines, vendor_quotes, vendor_quote_lines, pre_builds, pre_build_items, inventory_counts, inventory_count_lines, leads, recurring_jobs, reminders, assets, asset_services, employees, profiles, companies, invites, ai_usage, email_log.
 - **Database functions:** create_quote, save_quote, create_job_from_quote, create_invoice_from_job, create_progress_claim, log_payment, log_credit, create_po, receive_po, save_vendor_quote, accept_vendor_quote, create_inventory_count, apply_inventory_count, save_audit, save_pre_build, convert_lead, run_recurring, log_asset_service, list_team, set_member_role, invite_info, ai_take_credit, seed_demo_data, load_all, plus triggers (timesheet lock, required audits before job complete, invoice log, updated_at).
 - **Storage:** private bucket `job-photos` (signed URLs). Bucket `quote-attachments` exists but is unused.
@@ -85,7 +85,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 ## 4. Known issues and risks
 1. **iPhone Safari crash on /jobs** (205 jobs, card layout) was reported. Mitigations shipped: paging (40 rows) on Jobs and Quotes, safe mode after a crash, lighter CSS. Root cause never reproduced (the sandbox has no WebKit). Ask the owner to confirm Jobs opens normally on the phone. Page the other long lists (Invoices, Customers, Sites, Materials tables, Leads, Timesheets) the same way.
 2. **Live (Supabase) paths are not testable from the sandbox.** Edge Functions, email, AI, storage uploads and the RPCs were checked by reading definitions and local-mode tests only. Treat first real use as a test; look at Supabase logs (`get_logs`) and the advisors.
-3. Ten oxlint warnings remain (impure `Date` during render in MyDay/Materials/Dashboard, setState in effects in Shell, a non-component export in Jobs, a missing dependency in Timesheets). No errors.
+3. Lint is clean (0 warnings, 0 errors) since 26 Nov 2026.
 4. Drag-and-drop does not work on touch screens.
 5. `supabase/schema.sql` is outdated; do not rely on it.
 6. Demo data sometimes shows a quote title that drops part of the customer name; this is how the seed data is written.
@@ -94,8 +94,8 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 ## 5. Roadmap (build in this order unless the owner says otherwise)
 
 **A. Hardening (do first, about a day)**
-1. Page every list that can exceed ~100 rows (`usePaged`); verify at 390px with 300+ rows.
-2. Clear the lint warnings without changing behaviour.
+1. ~~Page every list that can exceed ~100 rows (`usePaged`); verify at 390px with 300+ rows.~~ Done (reports are not paged so they print in full).
+2. ~~Clear the lint warnings without changing behaviour.~~ Done.
 3. Phone pass over every page at 390px and in dark mode; fix overflow and spacing. Add tap-to-move (a "Move to…" sheet) for schedule visits on phones.
 4. Add a small Playwright smoke script to the repo (`scripts/smoke.mjs`) that seeds local mode and walks quote → job → claim → cost → schedule, so regressions are caught before pushing.
 

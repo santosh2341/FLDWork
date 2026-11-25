@@ -1,3 +1,5 @@
+import { Fragment } from 'react'
+import { today } from '../lib/dates'
 import { claimsFor, quoteNet } from '../lib/claims'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
@@ -45,8 +47,8 @@ function Lines({ sections }: { sections: CostCenter[] }) {
       <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>
       <tbody>
         {sections.map((cc) => (
-          <>
-            {sections.length > 1 && <tr key={cc.id} className="doc-section"><td colSpan={4}>{cc.name}</td></tr>}
+          <Fragment key={cc.id}>
+            {sections.length > 1 && <tr className="doc-section"><td colSpan={4}>{cc.name}</td></tr>}
             {cc.items.map((i) => (
               <tr key={i.id}>
                 <td>{i.description}</td>
@@ -55,7 +57,7 @@ function Lines({ sections }: { sections: CostCenter[] }) {
                 <td className="num">{money(i.quantity * i.unitSell)}</td>
               </tr>
             ))}
-          </>
+          </Fragment>
         ))}
       </tbody>
     </table>
@@ -237,7 +239,7 @@ export function StatementPrint() {
   const invs = db.invoices.filter((i) => i.customerId === c.id && !i.voided && i.stage !== 'draft').sort((a, b) => a.issuedAt.localeCompare(b.issuedAt))
   const rows = invs.map((i) => ({ i, t: invoiceTotals(i) }))
   const owing = rows.reduce((a, r) => a + r.t.balance, 0)
-  const todayIso = new Date().toISOString().slice(0, 10)
+  const todayIso = today()
   return (
     <>
       <Toolbar back={`/customers/${c.id}`} />

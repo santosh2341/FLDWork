@@ -4,7 +4,7 @@ import { usePaged } from '../components/Paged'
 import { invoiceTotals, withLog } from '../lib/invoicing'
 import { money } from '../lib/costing'
 
-export const retainageHeld = (total: number, pct: number) => Math.round(total * pct) / 100
+const retainageHeld = (total: number, pct: number) => Math.round(total * pct) / 100
 
 export default function RetainageTable() {
   const { db, saveInvoice } = useStore()

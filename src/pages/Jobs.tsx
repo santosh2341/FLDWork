@@ -2,19 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import JobPhotos from '../components/JobPhotos'
 import { usePaged } from '../components/Paged'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
+import { useFilter } from '../components/useFilter'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
 import { claimedPct, claimsFor, CLAIM_LABELS, quoteNet } from '../lib/claims'
 import type { Job, JobStatus, Quote } from '../types'
-
-export const JOB_LABEL: Record<JobStatus, string> = {
-  pending: 'Pending',
-  scheduled: 'Scheduled',
-  in_progress: 'In Progress',
-  complete: 'Complete',
-  invoiced: 'Invoiced',
-}
 
 // Bill part of a job now (deposit, progress, completion) instead of one invoice at the end.
 function ClaimForm({ job, quote }: { job: Job; quote: Quote }) {

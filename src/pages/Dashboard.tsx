@@ -29,10 +29,11 @@ export default function Dashboard() {
     { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs?filter=pending', icon: 'wrench', tone: 'brand', hint: 'Assign' },
     { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes?filter=to_be_completed', icon: 'quote', tone: 'brand', hint: 'Finish' },
   ]
-  const hour = new Date().getHours()
+  const [now] = useState(() => new Date())
+  const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const first = profile?.fullName?.split(' ')[0]
-  const longDate = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+  const longDate = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
 
   const reminders = db.reminders.filter((r) => !r.done && (!r.snoozedUntil || r.snoozedUntil <= today()))
   const dayEntries = db.schedule.filter((e) => e.date === date)

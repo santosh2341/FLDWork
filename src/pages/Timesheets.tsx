@@ -63,7 +63,7 @@ export default function Timesheets() {
           .reduce((a, c) => a + (new Date(c.end as string).getTime() - new Date(c.start).getTime()) / 3600000, 0)
         return { person: p, byDay, total: byDay.reduce((a, b) => a + b, 0), clocked }
       }),
-    [people, days, weekEntries],
+    [people, days, weekEntries, db.clock],
   )
 
   return (

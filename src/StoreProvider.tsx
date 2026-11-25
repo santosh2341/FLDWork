@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { useAuth } from './auth'
 import { seed } from './data/mock'
@@ -8,6 +8,8 @@ import type { Profile } from './lib/remote'
 import { makeLocalActions } from './storeLocal'
 import { makeRemoteActions } from './storeRemote'
 import type { Actions } from './storeTypes'
+import { StoreCtx } from './store'
+import type { Ctx, OpenTab } from './store'
 import type { Db } from './types'
 
 const KEY = 'fieldwork.db.v1'
@@ -22,25 +24,6 @@ function loadLocal(): Db {
   return seed
 }
 
-export interface OpenTab {
-  path: string
-  title: string
-}
-
-interface Ctx extends Actions {
-  db: Db
-  tabs: OpenTab[]
-  openTab: (t: OpenTab) => void
-  closeTab: (path: string) => void
-  remote: boolean // true when connected to Supabase
-  canWrite: boolean // false for technician / read-only users (the database enforces this too)
-  profile: Profile | null // signed-in user's name and role (remote only)
-  notice: string // last error from the database, shown as a banner
-  dismissNotice: () => void
-  seedDemoData: () => Promise<void> // fills an empty company with sample records (remote only)
-}
-
-const StoreCtx = createContext<Ctx | null>(null)
 const MAX_TABS = 8
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -84,6 +67,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   // remote mode: load on sign-in, and again whenever the tab regains focus (picks up other people's changes)
   useEffect(() => {
     if (!remote || !userId) return
+    // oxlint-disable-next-line react/set-state-in-effect -- reload() sets state only after awaiting the network
     void reload()
     const onVisible = () => {
       if (document.visibilityState === 'visible') void reload()
@@ -113,12 +97,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setTabs((cur) => cur.filter((x) => x.path !== path))
   }, [])
 
+  const getDb = useCallback(() => dbRef.current, [])
   const remoteActions = useMemo(
     () =>
       remote && supabase
-        ? makeRemoteActions({ getDb: () => dbRef.current, setDb, sb: supabase, companyId, reload, fail: setNotice })
+        // oxlint-disable-next-line react/refs -- getDb is only called inside action handlers, never during render
+        ? makeRemoteActions({ getDb, setDb, sb: supabase, companyId, reload, fail: setNotice })
         : null,
-    [remote, companyId, reload],
+    [remote, companyId, reload, getDb],
   )
   const localActions = useMemo(() => (remote ? null : makeLocalActions(db, setDb)), [remote, db])
   const actions = (remoteActions ?? localActions) as Actions
@@ -150,10 +136,4 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   if (remote && loading) return <div className="center muted">Loading your data…</div>
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>
-}
-
-export function useStore() {
-  const c = useContext(StoreCtx)
-  if (!c) throw new Error('useStore outside StoreProvider')
-  return c
 }

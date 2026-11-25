@@ -16,7 +16,8 @@ export default function MyDay() {
     return db.employees.find((e) => n && e.name.trim().toLowerCase() === n)?.id ?? ''
   }, [db.employees, profile])
   const [empId, setEmpId] = useState(me || db.employees[0]?.id || '')
-  const [date, setDate] = useState(iso(new Date()))
+  const [todayIso] = useState(() => iso(new Date()))
+  const [date, setDate] = useState(todayIso)
   const [runFor, setRunFor] = useState<{ job: Job; audit: Audit } | null>(null)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState('')
@@ -107,7 +108,7 @@ export default function MyDay() {
       <h1>My day</h1>
       <div className="md-date">
         <button onClick={() => setDate(addDays(date, -1))} aria-label="Previous day">‹</button>
-        <div><b>{date === iso(new Date()) ? 'Today' : nice(date)}</b><small>{nice(date)}</small></div>
+        <div><b>{date === todayIso ? 'Today' : nice(date)}</b><small>{nice(date)}</small></div>
         <button onClick={() => setDate(addDays(date, 1))} aria-label="Next day">›</button>
       </div>
       {(!me || db.employees.length > 1) && (

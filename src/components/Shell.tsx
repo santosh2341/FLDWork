@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { Link, matchPath, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
@@ -87,7 +87,11 @@ export default function Shell() {
   const initials = (profile?.fullName || 'U').split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase()
 
   // Close the mobile menu whenever the page changes.
-  useEffect(() => setDrawer(false), [loc.pathname])
+  const [drawerPath, setDrawerPath] = useState(loc.pathname)
+  if (drawerPath !== loc.pathname) {
+    setDrawerPath(loc.pathname)
+    setDrawer(false)
+  }
 
   // Which sidebar link matches the current page: the longest matching path wins.
   const { activeSection, activeTo } = useMemo(() => {
@@ -99,9 +103,11 @@ export default function Shell() {
     return { activeSection: hit?.sec, activeTo: hit?.to }
   }, [loc.pathname])
   // Keep the section you are in open.
-  useEffect(() => {
+  const [openFor, setOpenFor] = useState<string | undefined>(undefined)
+  if (openFor !== activeSection) {
+    setOpenFor(activeSection)
     if (activeSection) setOpenKey(activeSection)
-  }, [activeSection])
+  }
 
   const notices = useMemo(() => {
     const out: { text: string; to: string }[] = []

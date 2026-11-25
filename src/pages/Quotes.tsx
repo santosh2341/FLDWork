@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { usePaged } from '../components/Paged'
-import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
+import { useFilter, useStartOpen } from '../components/useFilter'
 import { Link, useNavigate } from 'react-router-dom'
 import { QuoteForm } from './Simple'
 import AiQuoteDraft from '../components/AiQuoteDraft'

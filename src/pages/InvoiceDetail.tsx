@@ -1,3 +1,4 @@
+import { today } from '../lib/dates'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
@@ -38,7 +39,7 @@ export default function InvoiceDetail() {
     const n = Number(amount)
     if (!(n > 0)) return
     if (n > t.balance + 0.005 && !confirm('This payment is more than the balance due. Record it anyway?')) return
-    recordPayment(inv.id, { amount: n, date: new Date().toISOString().slice(0, 10), method })
+    recordPayment(inv.id, { amount: n, date: today(), method })
     setAmount('')
   }
 

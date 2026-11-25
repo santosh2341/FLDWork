@@ -36,7 +36,12 @@ export default function MobileChrome(p: Props) {
   const nav = useNavigate()
   const [sheet, setSheet] = useState<'' | 'create' | 'more' | 'search' | 'alerts'>('')
   const input = useRef<HTMLInputElement>(null)
-  useEffect(() => setSheet(''), [loc.pathname, loc.search])
+  const here = loc.pathname + loc.search
+  const [sheetFor, setSheetFor] = useState(here)
+  if (sheetFor !== here) { // close any open sheet when the page changes
+    setSheetFor(here)
+    setSheet('')
+  }
   useEffect(() => { if (sheet === 'search') setTimeout(() => input.current?.focus(), 50) }, [sheet])
   useEffect(() => {
     document.body.style.overflow = sheet ? 'hidden' : ''

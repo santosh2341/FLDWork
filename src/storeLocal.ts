@@ -1,3 +1,4 @@
+import { fmtDate, today } from './lib/dates'
 import type { Dispatch, SetStateAction } from 'react'
 import { withLog } from './lib/invoicing'
 import { claimedPct, quoteNet } from './lib/claims'
@@ -98,7 +99,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       const due = new Date(issued.getTime() + db.settings.paymentTermsDays * 86400000)
       const inv: Invoice = {
         id, jobId, customerId: job.customerId, siteId: job.siteId,
-        issuedAt: issued.toISOString().slice(0, 10), dueAt: due.toISOString().slice(0, 10), stage: 'draft',
+        issuedAt: fmtDate(issued), dueAt: fmtDate(due), stage: 'draft',
         sections: JSON.parse(JSON.stringify(q.costCenters)), taxRate: q.taxRate, discount: q.discount, payments: [], voided: false,
       }
       setDb((d) => ({ ...d, invoices: [inv, ...d.invoices], jobs: d.jobs.map((j) => (j.id === jobId ? { ...j, status: 'invoiced' } : j)) }))
@@ -118,7 +119,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       const name = label.trim() || 'Progress claim'
       const inv: Invoice = {
         id, jobId, customerId: job.customerId, siteId: job.siteId,
-        issuedAt: issued.toISOString().slice(0, 10), dueAt: due.toISOString().slice(0, 10), stage: 'draft',
+        issuedAt: fmtDate(issued), dueAt: fmtDate(due), stage: 'draft',
         sections: [{ id: uid(), name: 'Progress claim', items: [{ id: uid(), kind: 'part', description: `${name} – ${pct}% of quote ${q.id}`, quantity: 1, unitCost: 0, unitSell: Math.round(quoteNet(q) * pct) / 100 }] }],
         taxRate: q.taxRate, discount: 0, payments: [], voided: false, claimLabel: name, claimPct: pct,
       }
@@ -178,7 +179,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       setDb((d) => ({
         ...d,
         purchaseOrders: [
-          { id, vendor, status: 'draft', createdAt: new Date().toISOString().slice(0, 10), lines: lines.map((l) => ({ ...l, id: uid(), received: 0 })) },
+          { id, vendor, status: 'draft', createdAt: today(), lines: lines.map((l) => ({ ...l, id: uid(), received: 0 })) },
           ...d.purchaseOrders,
         ],
       }))
@@ -202,7 +203,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
         const done = lines.every((l) => l.received >= l.qty)
         return {
           ...d,
-          receipts: got.length > 0 ? [{ id: Math.max(6000, ...d.receipts.map((r) => r.id)) + 1, poId: id, date: new Date().toISOString().slice(0, 10), lines: got }, ...d.receipts] : d.receipts,
+          receipts: got.length > 0 ? [{ id: Math.max(6000, ...d.receipts.map((r) => r.id)) + 1, poId: id, date: today(), lines: got }, ...d.receipts] : d.receipts,
           purchaseOrders: d.purchaseOrders.map((p) => (p.id === id ? { ...p, lines, status: done ? 'received' : p.status } : p)),
           catalog: d.catalog.map((c) => (stockAdd[c.id] ? { ...c, stock: c.stock + stockAdd[c.id] } : c)),
         }
@@ -210,7 +211,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     createCount: async () => {
       const id = uid()
       const c: InventoryCount = {
-        id, date: new Date().toISOString().slice(0, 10), applied: false,
+        id, date: today(), applied: false,
         lines: db.catalog.map((p) => ({ partId: p.id, expected: p.stock, counted: p.stock })),
       }
       setDb((d) => ({ ...d, counts: [c, ...d.counts] }))
@@ -239,17 +240,17 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
         ...d,
         invoices: d.invoices.map((x) =>
           x.id === invoiceId
-            ? withLog({ ...x, credits: [...(x.credits ?? []), { id: uid(), amount, reason, date: new Date().toISOString().slice(0, 10) }] }, `Credit of ${amount.toFixed(2)} issued: ${reason}`)
+            ? withLog({ ...x, credits: [...(x.credits ?? []), { id: uid(), amount, reason, date: today() }] }, `Credit of ${amount.toFixed(2)} issued: ${reason}`)
             : x,
         ),
       })),
     addLead: (l) =>
-      setDb((d) => ({ ...d, leads: [{ ...l, id: uid(), status: 'new', createdAt: new Date().toISOString().slice(0, 10) }, ...d.leads] })),
+      setDb((d) => ({ ...d, leads: [{ ...l, id: uid(), status: 'new', createdAt: today() }, ...d.leads] })),
     updateLead: (l) => setDb((d) => ({ ...d, leads: d.leads.map((x) => (x.id === l.id ? l : x)) })),
     createVendorQuote: async (vendor, validUntil, lines) => {
       const id = Math.max(7000, ...db.vendorQuotes.map((q) => q.id)) + 1
       const q: VendorQuote = {
-        id, vendor, status: 'requested', createdAt: new Date().toISOString().slice(0, 10), validUntil,
+        id, vendor, status: 'requested', createdAt: today(), validUntil,
         lines: lines.map((l) => ({ ...l, id: uid() })),
       }
       setDb((d) => ({ ...d, vendorQuotes: [q, ...d.vendorQuotes] }))
@@ -263,7 +264,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       setDb((d) => ({
         ...d,
         purchaseOrders: [
-          { id: poId, vendor: q.vendor, status: 'draft', createdAt: new Date().toISOString().slice(0, 10), lines: q.lines.map((l) => ({ id: uid(), partId: l.partId, qty: l.qty, unitCost: l.unitCost, received: 0 })) },
+          { id: poId, vendor: q.vendor, status: 'draft', createdAt: today(), lines: q.lines.map((l) => ({ id: uid(), partId: l.partId, qty: l.qty, unitCost: l.unitCost, received: 0 })) },
           ...d.purchaseOrders,
         ],
         vendorQuotes: d.vendorQuotes.map((x) => (x.id === id ? { ...x, status: 'accepted', poId } : x)),

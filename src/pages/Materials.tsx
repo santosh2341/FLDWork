@@ -1,5 +1,7 @@
+import { today } from '../lib/dates'
 import { useState } from 'react'
-import FilterBar, { useFilter } from '../components/FilterBar'
+import FilterBar from '../components/FilterBar'
+import { useFilter } from '../components/useFilter'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
@@ -232,7 +234,7 @@ export function VendorQuotes() {
   const [err, setErr] = useState('')
   const vendors = [...new Set(db.catalog.map((p) => p.vendor).filter(Boolean))]
   const part = (id: string) => db.catalog.find((p) => p.id === id)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = today()
 
   const create = () => {
     if (!vendor.trim()) return setErr('Enter or choose a vendor.')

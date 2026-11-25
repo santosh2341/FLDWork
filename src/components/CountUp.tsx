@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 
 // Animates a whole number from its previous value to the new one.
 export default function CountUp({ value, duration = 700 }: { value: number; duration?: number }) {
+  const [reduced] = useState(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   const [shown, setShown] = useState(0)
   const from = useRef(0)
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setShown(value)
+    if (reduced) {
       from.current = value
       return
     }
@@ -23,6 +23,6 @@ export default function CountUp({ value, duration = 700 }: { value: number; dura
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [value, duration])
-  return <>{shown}</>
+  }, [value, duration, reduced])
+  return <>{reduced ? value : shown}</>
 }
