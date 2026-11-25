@@ -102,7 +102,7 @@ export default function JobCosting() {
                 <td>{c.supplier}</td>
                 <td>{c.description}</td>
                 <td className="num">{money(c.amount)}</td>
-                <td>{canWrite && confirmId === c.id ? <span className="row"><button onClick={() => { deleteJobCost(c.id); setConfirmId('') }}>Remove</button><button className="link-btn" onClick={() => setConfirmId('')}>Keep</button></span> : <button className="link-btn" onClick={() => setConfirmId(c.id)}>Remove</button>}</td>
+                <td>{canWrite && (confirmId === c.id ? <span className="row"><button onClick={() => { deleteJobCost(c.id); setConfirmId('') }}>Remove</button><button className="link-btn" onClick={() => setConfirmId('')}>Keep</button></span> : <button className="link-btn" onClick={() => setConfirmId(c.id)}>Remove</button>)}</td>
               </tr>
             ))}
           </tbody>

@@ -151,7 +151,8 @@ export default function QuoteDetail() {
           <select value={draft.status} onChange={(e) => {
             // a status change saves straight away, so "Approved" can't be left unsaved (jobs need an approved, saved quote)
             const status = e.target.value as QuoteStatus
-            const withLog: Quote = { ...draft, status, timeline: [{ id: uid(), type: 'System', message: `Status changed to ${STATUS_LABEL[status]}`, at: new Date().toISOString() }, ...draft.timeline] }
+            const now = new Date().toISOString()
+            const withLog: Quote = { ...draft, status, updatedAt: now, timeline: [{ id: uid(), type: 'System', message: `Status changed to ${STATUS_LABEL[status]}`, at: now }, ...draft.timeline] }
             saveQuote(withLog)
             setDraft(withLog)
             setDirty(false)
