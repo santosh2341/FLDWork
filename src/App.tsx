@@ -11,6 +11,7 @@ const Catalog = lazy(() => import('./pages/Catalog'))
 const Quotes = lazy(() => import('./pages/Quotes'))
 const QuoteDetail = lazy(() => import('./pages/QuoteDetail'))
 const Jobs = lazy(() => import('./pages/Jobs'))
+const JobCosting = lazy(() => import('./pages/JobCosting'))
 const Invoices = lazy(() => import('./pages/Invoices'))
 const InvoiceDetail = lazy(() => import('./pages/InvoiceDetail'))
 const Timesheets = lazy(() => import('./pages/Timesheets'))
@@ -83,6 +84,7 @@ function AppRoutes() {
             <Route path="quotes/:id" element={<QuoteDetail />} />
             <Route path="quotes/:id/print" element={<QuotePrint />} />
             <Route path="jobs" element={<Jobs />} />
+            <Route path="jobs/:id/costing" element={<JobCosting />} />
             <Route path="invoices" element={<Invoices key="unpaid" initial="unpaid" />} />
             <Route path="invoices/paid" element={<Invoices key="paid" initial="paid" />} />
             <Route path="invoices/all" element={<Invoices key="all" initial="all" />} />

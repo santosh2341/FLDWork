@@ -119,7 +119,7 @@ export default function Jobs() {
                   <td><Link to={`/quotes/${j.quoteId}`}>{j.quoteId}</Link></td>
                   <td>{db.customers.find((c) => c.id === j.customerId)?.name}</td>
                   <td>{db.sites.find((s) => s.id === j.siteId)?.name}</td>
-                  <td>{q ? money(computeCosting(q).total) : ''}</td>
+                  <td>{q ? money(computeCosting(q).total) : ''}{q && <><br /><Link className="muted" to={`/jobs/${j.id}/costing`}>Job cost</Link></>}</td>
                   <td>
                     <select
                       value={j.status}

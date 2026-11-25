@@ -184,6 +184,16 @@ export interface JobNote {
   at: string // ISO timestamp
 }
 
+export interface JobCost {
+  id: string
+  jobId: number
+  date: string // YYYY-MM-DD
+  kind: 'material' | 'subcontract' | 'other'
+  supplier: string
+  description: string
+  amount: number // ex GST
+}
+
 export interface AssetService {
   id: string
   jobId?: number
@@ -390,6 +400,7 @@ export interface Db {
   purchaseOrders: PurchaseOrder[]
   counts: InventoryCount[]
   jobNotes: JobNote[]
+  jobCosts: JobCost[]
   clock: ClockEntry[]
   jobPhotos: JobPhoto[]
   assets: Asset[]

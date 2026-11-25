@@ -56,7 +56,9 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
     },
     fillQuote: async (id, fill) => setDb((d) => ({ ...d, quotes: d.quotes.map((q) => (q.id === id ? { ...q, description: fill.description, costCenters: [{ ...(q.costCenters[0] ?? { id: uid(), name: 'General' }), items: fill.items }, ...q.costCenters.slice(1)], timeline: [{ id: uid(), type: 'System', message: 'Items drafted with AI and reviewed', at: new Date().toISOString() }, ...q.timeline] } : q)) })),
     deleteQuote: (id) => setDb((d) => ({ ...d, quotes: d.quotes.filter((q) => q.id !== id), leads: d.leads.map((l) => (l.quoteId === id ? { ...l, quoteId: undefined } : l)), recurring: d.recurring.filter((r) => r.quoteId !== id) })),
-    deleteJob: (id) => setDb((d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id), schedule: d.schedule.filter((e) => e.jobId !== id), auditResults: d.auditResults.filter((r) => r.jobId !== id), jobPhotos: d.jobPhotos.filter((p) => p.jobId !== id), jobNotes: d.jobNotes.filter((n) => n.jobId !== id), clock: d.clock.filter((c) => c.jobId !== id) })),
+    deleteJob: (id) => setDb((d) => ({ ...d, jobs: d.jobs.filter((j) => j.id !== id), schedule: d.schedule.filter((e) => e.jobId !== id), auditResults: d.auditResults.filter((r) => r.jobId !== id), jobPhotos: d.jobPhotos.filter((p) => p.jobId !== id), jobNotes: d.jobNotes.filter((n) => n.jobId !== id), jobCosts: d.jobCosts.filter((n) => n.jobId !== id), clock: d.clock.filter((c) => c.jobId !== id) })),
+    addJobCost: (c) => setDb((d) => ({ ...d, jobCosts: [{ ...c, id: uid() }, ...d.jobCosts] })),
+    deleteJobCost: (id) => setDb((d) => ({ ...d, jobCosts: d.jobCosts.filter((x) => x.id !== id) })),
     addJobNote: (jobId, text, author) => setDb((d) => ({ ...d, jobNotes: [{ id: uid(), jobId, author, text, at: new Date().toISOString() }, ...d.jobNotes] })),
     addJobPhoto: async (jobId, file, author) => {
       try {

@@ -132,6 +132,13 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       })
     },
     createJobFromQuote: async (quoteId) => num(await call<number>('create_job_from_quote', { p_quote_id: quoteId })),
+    addJobCost: (c) => {
+      void write(async () => sb.from('job_costs').insert({ job_id: c.jobId, cost_date: c.date, kind: c.kind, supplier: c.supplier, description: c.description, amount: c.amount }))
+    },
+    deleteJobCost: (id) => {
+      setDb((d) => ({ ...d, jobCosts: d.jobCosts.filter((x) => x.id !== id) }))
+      void write(() => sb.from('job_costs').delete().eq('id', id))
+    },
     addJobNote: (jobId, text, author) => {
       void write(() => sb.from('job_notes').insert({ job_id: jobId, text, author }))
     },

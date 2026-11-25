@@ -30,6 +30,7 @@ export function emptyDb(): Db {
     purchaseOrders: [],
     counts: [],
     jobNotes: [],
+    jobCosts: [],
     clock: [],
     jobPhotos: [],
     assets: [],
