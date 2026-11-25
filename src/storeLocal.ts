@@ -145,6 +145,16 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }))
       return null
     },
+    moveScheduleEntry: async (id, to) => {
+      const e = db.schedule.find((x) => x.id === id)
+      if (!e) return 'That visit no longer exists.'
+      const start = to.start ?? e.start, end = to.end ?? e.end
+      if (!(start < end)) return 'End time must be after start time.'
+      const lock = db.timesheetLock
+      if (lock.on && lock.until && (e.date <= lock.until || to.date <= lock.until)) return `Timesheets are locked up to ${lock.until}.`
+      setDb((d) => ({ ...d, schedule: d.schedule.map((x) => (x.id === id ? { ...x, date: to.date, employeeId: to.employeeId, start, end } : x)) }))
+      return null
+    },
     deleteScheduleEntry: async (id) => {
       const e = db.schedule.find((x) => x.id === id)
       if (e && db.timesheetLock.on && db.timesheetLock.until && e.date <= db.timesheetLock.until)

@@ -38,6 +38,7 @@ export interface Actions {
   recordPayment: (invoiceId: number, p: Omit<Payment, 'id'>) => void
   addScheduleEntry: (e: Omit<ScheduleEntry, 'id'>) => Promise<string | null> // resolves to an error message
   deleteScheduleEntry: (id: string) => Promise<string | null>
+  moveScheduleEntry: (id: string, to: { date: string; employeeId: string; start?: string; end?: string }) => Promise<string | null>
   setTimesheetLock: (on: boolean, until: string) => void
   addReminder: (text: string) => void
   toggleReminder: (id: string) => void

@@ -575,3 +575,12 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .jc-form label input, .jc-form label select { width: 100%; font-weight: 400; }
 .jc-form .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
 .page h3 { margin-top: 22px; }
+.dnd-item { cursor: grab; }
+.dnd-item:active { cursor: grabbing; }
+.dnd-zone[data-over] { outline: 2px dashed var(--brand); outline-offset: -3px; background: var(--brand-soft); }
+.sched-week td.dnd-zone { min-width: 120px; min-height: 64px; }
+.sched-week td.dnd-zone > div { margin-bottom: 4px; padding: 4px 6px; border: 1px solid var(--line); border-left: 4px solid var(--mark-blue, #2f6fdf); border-radius: 6px; background: var(--panel); }
+.dnd-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.dnd-chips > span { padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); font-size: .9rem; }
+.dnd-msg { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); border-left: 5px solid #1d9b62; background: var(--panel); cursor: pointer; }
+.dnd-msg.warn { border-left-color: #e6a800; }

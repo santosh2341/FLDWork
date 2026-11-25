@@ -221,6 +221,16 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
       if (!(e.start < e.end)) return 'End time must be after start time.'
       return write(() => sb.from('schedule_entries').insert({ job_id: e.jobId, employee_id: e.employeeId, date: e.date, start_time: e.start, end_time: e.end }))
     },
+    moveScheduleEntry: async (id, to) => {
+      const e = getDb().schedule.find((x) => x.id === id)
+      if (!e) return 'That visit no longer exists.'
+      const start = to.start ?? e.start, end = to.end ?? e.end
+      if (!(start < end)) return 'End time must be after start time.'
+      const lock = getDb().timesheetLock
+      if (lock.on && lock.until && (e.date <= lock.until || to.date <= lock.until)) return `Timesheets are locked up to ${lock.until}.`
+      setDb((d) => ({ ...d, schedule: d.schedule.map((x) => (x.id === id ? { ...x, date: to.date, employeeId: to.employeeId, start, end } : x)) }))
+      return write(() => sb.from('schedule_entries').update({ date: to.date, employee_id: to.employeeId, start_time: start, end_time: end }).eq('id', id))
+    },
     deleteScheduleEntry: (id) => write(() => sb.from('schedule_entries').delete().eq('id', id)),
     setTimesheetLock: (on, until) => {
       setDb((d) => ({ ...d, timesheetLock: { on, until } }))
