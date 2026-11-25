@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
+import { usePaged } from '../components/Paged'
 import { invoiceTotals, withLog } from '../lib/invoicing'
 import { money } from '../lib/costing'
 
@@ -8,6 +9,7 @@ export const retainageHeld = (total: number, pct: number) => Math.round(total * 
 export default function RetainageTable() {
   const { db, saveInvoice } = useStore()
   const rows = db.invoices.filter((i) => !i.voided && (i.retainagePct ?? 0) > 0)
+  const { shown, more } = usePaged(rows)
   const held = rows.filter((i) => !i.retainageReleased).reduce((a, i) => a + retainageHeld(invoiceTotals(i).total, i.retainagePct ?? 0), 0)
   return (
     <>
@@ -15,7 +17,7 @@ export default function RetainageTable() {
       <table>
         <thead><tr><th>Invoice</th><th>Customer</th><th className="num">Total</th><th className="num">Retainage %</th><th className="num">Amount</th><th>Status</th><th /></tr></thead>
         <tbody>
-          {rows.map((i) => {
+          {shown.map((i) => {
             const total = invoiceTotals(i).total
             return (
               <tr key={i.id}>
@@ -36,6 +38,7 @@ export default function RetainageTable() {
           {rows.length === 0 && <tr><td colSpan={7} className="muted">No invoices have retainage.</td></tr>}
         </tbody>
       </table>
+      {more}
     </>
   )
 }

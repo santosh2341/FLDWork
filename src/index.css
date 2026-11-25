@@ -558,7 +558,9 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .pill.due-ok { background: #e6f4ec; color: #1c6b3c; border: 1px solid #b9dfc8; }
 .asset-row { display: grid; gap: 6px; background: var(--surface-2); padding: 8px 10px; border-radius: 8px; }
 .asset-row > button { min-height: 44px; justify-self: start; }
-.more-rows { display: flex; gap: 10px; align-items: center; justify-content: center; margin: 14px 0 6px; }
+.more-rows { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; justify-content: center; margin: 14px 0 6px; }
+.more-rows > .muted { flex-basis: 100%; text-align: center; font-size: .85rem; }
+.more-rows > button { white-space: nowrap; }
 .claim-form { margin-top: 8px; padding: 12px; border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface-2); min-width: 220px; text-align: left; }
 .claim-form .error { color: #b42318; margin: 6px 0; }
 .jc-hero { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); margin: 14px 0 18px; overflow: hidden; }

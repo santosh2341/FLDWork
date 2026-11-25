@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
+import { usePaged } from '../components/Paged'
 import { hoursBetween, minutes, parseDate, today } from '../lib/dates'
 
 export function WorkOrders() {
@@ -11,6 +12,7 @@ export function WorkOrders() {
     .filter((e) => (past ? true : e.date >= today()))
     .filter((e) => employeeId === 'all' || e.employeeId === employeeId)
     .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))
+  const { shown, more } = usePaged(rows, `${employeeId}|${past}`)
   return (
     <>
       <h1>Work orders ({rows.length})</h1>
@@ -25,7 +27,7 @@ export function WorkOrders() {
       <table>
         <thead><tr><th>WO</th><th>Date</th><th>Time</th><th>Job</th><th>Customer</th><th>Technician</th></tr></thead>
         <tbody>
-          {rows.map((e) => {
+          {shown.map((e) => {
             const j = db.jobs.find((x) => x.id === e.jobId)
             return (
               <tr key={e.id}>
@@ -40,6 +42,7 @@ export function WorkOrders() {
           {rows.length === 0 && <tr><td colSpan={6} className="muted">No visits to show. Schedule a job in Timesheets first.</td></tr>}
         </tbody>
       </table>
+      {more}
     </>
   )
 }

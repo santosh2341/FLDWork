@@ -2,6 +2,7 @@ import { useState } from 'react'
 import FilterBar, { useFilter } from '../components/FilterBar'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
+import { usePaged } from '../components/Paged'
 import { money, sellFromCost } from '../lib/costing'
 import type { PreBuild } from '../types'
 import { uid } from '../lib/id'
@@ -12,6 +13,7 @@ export function Inventory() {
   const total = db.catalog.reduce((a, p) => a + p.stock * p.cost, 0)
   const low = useFilter() === 'low'
   const rows = low ? db.catalog.filter((p) => p.stock < 5) : db.catalog
+  const { shown, more } = usePaged(rows, low)
   return (
     <>
       <h1>Inventory</h1>
@@ -20,7 +22,7 @@ export function Inventory() {
       <table>
         <thead><tr><th>Part no.</th><th>Description</th><th>Vendor</th><th className="num">In stock</th><th className="num">Cost</th><th className="num">Value</th></tr></thead>
         <tbody>
-          {rows.map((p) => (
+          {shown.map((p) => (
             <tr key={p.id}>
               <td>{p.partNo}</td><td>{p.description}</td><td>{p.vendor}</td>
               <td className={`num ${p.stock < 5 ? 'low' : ''}`}>{p.stock}</td>
@@ -29,12 +31,14 @@ export function Inventory() {
           ))}
         </tbody>
       </table>
+      {more}
     </>
   )
 }
 
 export function PurchaseOrders() {
   const { db, createPO, setPOStatus, receivePO } = useStore()
+  const { shown: shownPOs, more: morePOs } = usePaged(db.purchaseOrders)
   const [vendor, setVendor] = useState('')
   const [lines, setLines] = useState<{ partId: string; qty: number; unitCost: number }[]>([])
   const [recv, setRecv] = useState<Record<string, number>>({})
@@ -83,7 +87,7 @@ export function PurchaseOrders() {
         {err && <p className="error">{err}</p>}
       </div>
 
-      {db.purchaseOrders.map((po) => (
+      {shownPOs.map((po) => (
         <div key={po.id} className="card">
           <div className="row between">
             <h3>PO {po.id} – {po.vendor} <span className="muted">{po.createdAt} · {po.status} · {money(po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0))}</span></h3>
@@ -121,6 +125,7 @@ export function PurchaseOrders() {
           {recvErr?.po === po.id && <p className="error">{recvErr.msg}</p>}
         </div>
       ))}
+      {morePOs}
     </>
   )
 }
@@ -220,6 +225,7 @@ const QUOTE_LABEL = { requested: 'Requested', received: 'Received', accepted: 'A
 
 export function VendorQuotes() {
   const { db, createVendorQuote, saveVendorQuote, acceptVendorQuote } = useStore()
+  const { shown: shownVQs, more: moreVQs } = usePaged(db.vendorQuotes)
   const [vendor, setVendor] = useState('')
   const [validUntil, setValidUntil] = useState('')
   const [lines, setLines] = useState<{ partId: string; qty: number; unitCost: number }[]>([])
@@ -263,7 +269,7 @@ export function VendorQuotes() {
         {err && <p className="error">{err}</p>}
       </div>
 
-      {db.vendorQuotes.map((q) => {
+      {shownVQs.map((q) => {
         const expired = !!q.validUntil && q.validUntil < todayStr
         const total = q.lines.reduce((a, l) => a + l.qty * l.unitCost, 0)
         return (
@@ -304,6 +310,7 @@ export function VendorQuotes() {
           </div>
         )
       })}
+      {moreVQs}
       {db.vendorQuotes.length === 0 && <p className="muted">No vendor quotes yet.</p>}
     </>
   )
@@ -312,6 +319,7 @@ export function VendorQuotes() {
 export function Receipts() {
   const { db } = useStore()
   const part = (id: string) => db.catalog.find((p) => p.id === id)?.description ?? id
+  const { shown, more } = usePaged(db.receipts)
   return (
     <>
       <h1>Receipts ({db.receipts.length})</h1>
@@ -319,7 +327,7 @@ export function Receipts() {
       <table>
         <thead><tr><th>Receipt</th><th>Date</th><th>PO</th><th>Vendor</th><th>Items received</th><th className="num">Value</th></tr></thead>
         <tbody>
-          {db.receipts.map((r) => (
+          {shown.map((r) => (
             <tr key={r.id}>
               <td>R-{r.id}</td>
               <td>{r.date}</td>
@@ -332,6 +340,7 @@ export function Receipts() {
           {db.receipts.length === 0 && <tr><td colSpan={6} className="muted">Nothing received yet.</td></tr>}
         </tbody>
       </table>
+      {more}
     </>
   )
 }

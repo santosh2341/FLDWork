@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useStore } from '../store'
 import { money, sellFromCost } from '../lib/costing'
 import type { CatalogPart } from '../types'
+import { usePaged } from '../components/Paged'
 
 const blank: Omit<CatalogPart, 'id'> = { partNo: '', description: '', vendor: '', category: '', cost: 0, markupPct: 30, stock: 0 }
 
@@ -11,6 +12,7 @@ export default function Catalog() {
   const [q, setQ] = useState('')
   const [edit, setEdit] = useState<(Omit<CatalogPart, 'id'> & { id?: string }) | null>(null)
   const rows = db.catalog.filter((p) => `${p.partNo} ${p.description} ${p.vendor} ${p.category}`.toLowerCase().includes(q.toLowerCase()))
+  const { shown, more } = usePaged(rows, q)
 
   return (
     <>
@@ -22,7 +24,7 @@ export default function Catalog() {
       <table>
         <thead><tr><th>Part no.</th><th>Description</th><th>Vendor</th><th>Category</th><th>Cost</th><th>Markup</th><th>Sell</th><th>Stock</th><th /></tr></thead>
         <tbody>
-          {rows.map((p) => (
+          {shown.map((p) => (
             <tr key={p.id}>
               <td>{p.partNo}</td><td>{p.description}</td><td>{p.vendor}</td><td>{p.category}</td>
               <td>{money(p.cost)}</td><td>{p.markupPct}%</td><td>{money(sellFromCost(p.cost, p.markupPct))}</td>
@@ -32,6 +34,7 @@ export default function Catalog() {
           ))}
         </tbody>
       </table>
+      {more}
 
       {edit && (
         <div className="modal-bg" onClick={() => setEdit(null)}>

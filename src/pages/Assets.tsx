@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
+import { usePaged } from '../components/Paged'
 import FilterBar, { useFilter, useStartOpen } from '../components/FilterBar'
 import { CATEGORIES, DUE_LABEL, addMonths, dueState, todayIso } from '../lib/assets'
 import type { Asset } from '../types'
@@ -80,6 +81,7 @@ export default function Assets() {
     .filter((a) => !dueOnly || ['overdue', 'soon'].includes(dueState(a)))
     .filter((a) => `${a.name} ${a.make} ${a.model} ${a.serial} ${a.location} ${a.category}`.toLowerCase().includes(q.trim().toLowerCase()))
     .sort((a, b) => (a.nextDue ?? '9999').localeCompare(b.nextDue ?? '9999'))
+  const { shown, more } = usePaged(rows, `${cust}|${dueOnly}|${q}`)
   const cname = (id: string) => db.customers.find((c) => c.id === id)?.name ?? ''
 
   const save = (d: Draft) => {
@@ -115,7 +117,7 @@ export default function Assets() {
         <table>
           <thead><tr><th>Equipment</th><th>Customer / site</th><th>Type</th><th>Last serviced</th><th>Next due</th><th></th></tr></thead>
           <tbody>
-            {rows.map((a) => {
+            {shown.map((a) => {
               const st = dueState(a)
               const open = openId === a.id
               return (
@@ -161,6 +163,7 @@ export default function Assets() {
           </tbody>
         </table>
       )}
+      {more}
     </>
   )
 }

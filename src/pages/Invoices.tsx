@@ -9,6 +9,7 @@ import { downloadCsv } from '../lib/csv'
 import { exportXeroInvoices } from '../lib/accounting'
 import type { Invoice } from '../types'
 import RetainageTable from './Retainages'
+import { usePaged } from '../components/Paged'
 
 type Filter = 'unpaid' | 'paid' | 'all' | 'payments' | 'credits' | 'retainages'
 
@@ -80,6 +81,10 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
     .flatMap((i) => (i.credits ?? []).map((c) => ({ date: c.date, invoice: i.id, customer: custName(i.customerId), reason: c.reason, amount: c.amount })))
     .filter((r) => match(`${r.invoice} ${r.customer} ${r.reason}`))
   const flatVal = (r: Record<string, Cell>, key: string): Cell => r[key] ?? ''
+  const pageKey = `${filter}|${overdueOnly}|${q}|${sort.key}|${sort.dir}`
+  const invPage = usePaged(sortRows(invoiceRows, sort, invVal), pageKey)
+  const payPage = usePaged(sortRows<(typeof payRows)[number]>(payRows, sort, flatVal), pageKey)
+  const creditPage = usePaged(sortRows<(typeof creditRows)[number]>(creditRows, sort, flatVal), pageKey)
 
   const heading = { unpaid: 'Unpaid Invoices', paid: 'Paid Invoices', all: 'All Invoices', payments: 'Payments', credits: 'Credits', retainages: 'Retainages' }[filter]
   const count = filter === 'payments' ? payRows.length : filter === 'credits' ? creditRows.length : filter === 'retainages' ? db.invoices.filter((x) => !x.voided && (x.retainagePct ?? 0) > 0).length : invoiceRows.length
@@ -133,7 +138,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
             </tr>
           </thead>
           <tbody>
-            {sortRows(invoiceRows, sort, invVal).map((r) => (
+            {invPage.shown.map((r) => (
               <tr key={r.inv.id}>
                 <td><Link to={`/invoices/${r.inv.id}`}>{r.inv.id}</Link></td>
                 <td><i className="dot" title={STATE_LABEL[r.st]} style={{ background: STATE_COLOR[r.st] }} />{STATE_LABEL[r.st]}</td>
@@ -159,12 +164,13 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           </tbody>
         </table>
       )}
+      {invPage.more}
 
       {filter === 'payments' && (
         <table>
           <thead><tr>{th('date', 'Date')}{th('invoice', 'Invoice')}{th('customer', 'Customer')}{th('method', 'Method')}{th('amount', 'Amount', 'num')}</tr></thead>
           <tbody>
-            {sortRows<(typeof payRows)[number]>(payRows, sort, flatVal).map((r, i) => (
+            {payPage.shown.map((r, i) => (
               <tr key={i}>
                 <td>{r.date}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
                 <td>{r.customer}</td><td>{r.method}</td><td className="num">{money(r.amount)}</td>
@@ -174,6 +180,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           </tbody>
         </table>
       )}
+      {payPage.more}
 
       {filter === 'retainages' && <RetainageTable />}
 
@@ -181,7 +188,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
         <table>
           <thead><tr>{th('date', 'Date')}{th('invoice', 'Invoice')}{th('customer', 'Customer')}{th('reason', 'Reason')}{th('amount', 'Amount', 'num')}</tr></thead>
           <tbody>
-            {sortRows<(typeof creditRows)[number]>(creditRows, sort, flatVal).map((r, i) => (
+            {creditPage.shown.map((r, i) => (
               <tr key={i}>
                 <td>{r.date}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
                 <td>{r.customer}</td><td>{r.reason}</td><td className="num">{money(r.amount)}</td>
@@ -191,6 +198,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           </tbody>
         </table>
       )}
+      {creditPage.more}
     </>
   )
 }

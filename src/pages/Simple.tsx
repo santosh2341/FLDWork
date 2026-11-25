@@ -7,6 +7,7 @@ import type { AddressValue } from '../components/AddressFields'
 import { emptyAddress, formatAddress, isBlank, normalizeParts, parseAddress, validateAddress } from '../lib/address'
 import { exportCustomers } from '../lib/accounting'
 import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
+import { usePaged } from '../components/Paged'
 
 export function Soon() {
   const { slug } = useParams()
@@ -73,7 +74,13 @@ export function Customers() {
   const startOpen = useStartOpen()
   const [open, setOpen] = useState(startOpen)
   const hold = useFilter() === 'hold'
-  const rows = hold ? db.customers.filter((c) => c.onHold) : db.customers
+  const [q, setQ] = useState('')
+  const needle = q.trim().toLowerCase()
+  const rows = (hold ? db.customers.filter((c) => c.onHold) : db.customers)
+    .filter((c) => !needle || `${c.name} ${c.contactName} ${c.phone} ${c.email} ${c.address}`.toLowerCase().includes(needle))
+  const siteCount = new Map<string, number>()
+  for (const s of db.sites) siteCount.set(s.customerId, (siteCount.get(s.customerId) ?? 0) + 1)
+  const { shown, more } = usePaged(rows, `${hold}|${needle}`)
   return (
     <>
       <div className="row between"><h1>Customers ({db.customers.length})</h1><div className="row"><button onClick={() => exportCustomers(db.customers)}>Export CSV</button>{canWrite && <button onClick={() => setOpen(true)}>+ New customer</button>}</div></div>
@@ -89,21 +96,24 @@ export function Customers() {
         />
       )}
       <FilterBar label="customers on hold" shown={rows.length} total={db.customers.length} />
+      <input className="wide" placeholder="Search customers by name, contact, phone or address…" value={q} onChange={(e) => setQ(e.target.value)} />
       <table>
         <thead><tr><th>Name</th><th>Contact</th><th>Phone</th><th>Location</th><th>Sites</th><th>Status</th></tr></thead>
         <tbody>
-          {rows.map((c) => (
+          {shown.map((c) => (
             <tr key={c.id}>
               <td><Link to={`/customers/${c.id}`}>{c.name}</Link></td>
               <td>{c.contactName}</td>
               <td>{c.phone}</td>
               <td>{[c.addressParts?.suburb, c.addressParts?.state].filter(Boolean).join(' ') || c.address}</td>
-              <td>{db.sites.filter((s) => s.customerId === c.id).length}</td>
+              <td>{siteCount.get(c.id) ?? 0}</td>
               <td>{c.onHold ? 'On hold' : 'Active'}</td>
             </tr>
           ))}
+          {rows.length === 0 && <tr><td colSpan={5} className="muted">No sites match.</td></tr>}
         </tbody>
       </table>
+      {more}
     </>
   )
 }
@@ -304,6 +314,11 @@ export function CustomerDetail() {
 export function Sites() {
   const { db, addSite, canWrite } = useStore()
   const [open, setOpen] = useState(false)
+  const [q, setQ] = useState('')
+  const needle = q.trim().toLowerCase()
+  const custName = new Map(db.customers.map((c) => [c.id, c.name]))
+  const rows = db.sites.filter((s) => !needle || `${s.name} ${s.address} ${s.propertyType ?? ''} ${custName.get(s.customerId) ?? ''}`.toLowerCase().includes(needle))
+  const { shown, more } = usePaged(rows, needle)
   return (
     <>
       <div className="row between"><h1>Sites ({db.sites.length})</h1>
@@ -316,14 +331,16 @@ export function Sites() {
           onSubmit={(customerId, name, addr, x) => { addSite({ customerId, name, ...addrFields(addr), ...x }); setOpen(false) }}
         />
       )}
+      <input className="wide" placeholder="Search sites by name, address or customer…" value={q} onChange={(e) => setQ(e.target.value)} />
       <table>
         <thead><tr><th>Site</th><th>Customer</th><th>Type</th><th>Address</th><th>Map</th></tr></thead>
         <tbody>
-          {db.sites.map((s) => (
-            <tr key={s.id}><td>{s.name}</td><td><Link to={`/customers/${s.customerId}`}>{db.customers.find((c) => c.id === s.customerId)?.name}</Link></td><td>{s.propertyType}</td><td>{s.address}{s.accessNotes && <><br /><span className="muted">Access: {s.accessNotes}</span></>}</td><td>{s.lat != null ? '📍' : '⚠️ not mapped'}</td></tr>
+          {shown.map((s) => (
+            <tr key={s.id}><td>{s.name}</td><td><Link to={`/customers/${s.customerId}`}>{custName.get(s.customerId)}</Link></td><td>{s.propertyType}</td><td>{s.address}{s.accessNotes && <><br /><span className="muted">Access: {s.accessNotes}</span></>}</td><td>{s.lat != null ? '📍' : '⚠️ not mapped'}</td></tr>
           ))}
         </tbody>
       </table>
+      {more}
     </>
   )
 }

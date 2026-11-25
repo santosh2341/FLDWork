@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStartOpen } from '../components/FilterBar'
 import { useStore } from '../store'
+import { usePaged } from '../components/Paged'
 import type { LeadStatus } from '../types'
 import AddressFields from '../components/AddressFields'
 import type { AddressValue } from '../components/AddressFields'
@@ -31,6 +32,7 @@ export default function Leads() {
   const rows = db.leads
     .filter((l) => filter === 'all' || l.status === filter)
     .filter((l) => `${l.name} ${l.contactName} ${l.email} ${l.phone}`.toLowerCase().includes(q.trim().toLowerCase()))
+  const { shown, more } = usePaged(rows, `${filter}|${q}`)
 
   const save = () => {
     if (!form.name.trim()) return setError('A lead needs a name.')
@@ -91,7 +93,7 @@ export default function Leads() {
       <table>
         <thead><tr><th>Lead</th><th>Contact</th><th>Phone</th><th>Source</th><th>Created</th><th>Status</th><th /></tr></thead>
         <tbody>
-          {rows.map((l) => (
+          {shown.map((l) => (
             <tr key={l.id}>
               <td><b>{l.name}</b><br /><span className="muted">{l.notes}</span></td>
               <td>{l.contactName}<br /><span className="muted">{l.email}</span></td>
@@ -117,6 +119,7 @@ export default function Leads() {
           {rows.length === 0 && <tr><td colSpan={7} className="muted">No leads match.</td></tr>}
         </tbody>
       </table>
+      {more}
     </>
   )
 }
