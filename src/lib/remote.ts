@@ -32,6 +32,7 @@ export function emptyDb(): Db {
     jobNotes: [],
     jobCosts: [],
     quoteLinks: [],
+    customerLinks: [],
     clock: [],
     jobPhotos: [],
     assets: [],

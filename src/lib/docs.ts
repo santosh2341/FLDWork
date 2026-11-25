@@ -153,3 +153,40 @@ export async function makePdf(doc: DocModel): Promise<Uint8Array> {
   const { docPdf } = await import('./pdf')
   return docPdf(doc)
 }
+
+// The invoice as the customer sees it, from plain parts (used by the customer portal).
+export function invoiceDocFrom(parts: {
+  company: { name: string; lines: string[] }; abn: string
+  id: number; issuedAt: string; dueAt: string; job: string; taxRate: number; discount: number
+  claimLabel?: string | null; claimPct?: number | null
+  sections: { name: string; items: SellItem[] }[]
+  paid: number; credited: number
+  customer: { name: string; contactName?: string; address?: string }
+  site: { name: string; address?: string } | null
+  pay: string[]; footer: string
+}): DocModel {
+  const t = sellTotals(parts.sections, parts.discount, parts.taxRate)
+  const balance = t.total - parts.paid - parts.credited
+  const title = parts.taxRate > 0 && parts.abn ? 'TAX INVOICE' : 'INVOICE'
+  return {
+    title, number: parts.id, company: parts.company,
+    meta: [['Issued', auDate(parts.issuedAt)], ['Due', auDate(parts.dueAt)]],
+    billTo: { name: parts.customer.name, lines: [parts.customer.contactName && `Attn: ${parts.customer.contactName}`, ...addressLines(parts.customer.address)].filter(Boolean) as string[] },
+    site: parts.site && parts.site.name ? { name: parts.site.name, lines: addressLines(parts.site.address) } : null,
+    heading: [parts.job, parts.claimPct != null ? `${parts.claimLabel ?? 'Progress claim'} (${parts.claimPct}%)` : ''].filter(Boolean).join(' – '), scope: '',
+    sections: docSections(parts.sections), claim: [],
+    totals: [
+      { label: 'Subtotal (ex GST)', value: money(t.gross) },
+      ...(parts.discount > 0 ? [{ label: 'Discount', value: `-${money(parts.discount)}` }] : []),
+      { label: `GST (${parts.taxRate}%)`, value: money(t.tax) },
+      { label: 'Total (inc GST)', value: money(t.total), strong: true },
+      ...(parts.paid > 0 ? [{ label: 'Paid', value: `-${money(parts.paid)}` }] : []),
+      ...(parts.credited > 0 ? [{ label: 'Credits', value: `-${money(parts.credited)}` }] : []),
+      { label: 'Balance due', value: money(balance), strong: true },
+    ],
+    pay: parts.pay, notes: '',
+    footer: [parts.footer, 'All amounts are in Australian dollars.'].filter(Boolean),
+    voided: false,
+    fileName: `${title === 'TAX INVOICE' ? 'Tax-invoice' : 'Invoice'}-${parts.id}.pdf`,
+  }
+}

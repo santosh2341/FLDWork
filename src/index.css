@@ -617,3 +617,17 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
   .qp-doc .doc-table th, .qp-doc .doc-table td { padding-left: 3px; padding-right: 3px; }
   .qp-doc .doc-table th { font-size: .7rem; }
 }
+/* Customer portal (/p/<token>) */
+.cp-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.cp-stats > div { display: grid; gap: 2px; }
+.cp-stats b { font-family: Archivo, system-ui, sans-serif; font-size: 1.45rem; }
+.cp-pay { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px; }
+.cp-tabs { margin-bottom: 12px; }
+.cp-list { display: grid; gap: 0; }
+.cp-item { border-left-color: var(--mark-blue, #2f6fdf); }
+.cp-item.paid { border-left-color: var(--mark-green, #1d9b62); }
+.cp-item.late { border-left-color: var(--mark-red, #d1453b); }
+.cp-amt { display: grid; text-align: right; }
+.cp-item .row > button, .cp-item > button, .cp-item .btn { min-height: 40px; justify-self: start; }
+@media print { .qp { background: #fff; } .cp-summary, .cp-tabs, .qp-foot { display: none !important; } }
+@media (max-width: 520px) { .qp-doc { overflow-x: auto; } .qp-doc .doc-table { min-width: 340px; } }

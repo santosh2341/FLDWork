@@ -36,7 +36,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Email a quote or invoice to the customer from inside the app | 🟡 | deployed with PDF attachment and, for quotes, an "accept online" button; needs `RESEND_API_KEY` + `EMAIL_FROM` secrets and a verified domain. "Open in my email app" fallback works |
 | Statement of account (printable) | ✅ | |
 | Online quote acceptance by link: customer views at selling prices, downloads PDF, accepts with typed name or declines with a reason; quote status and timeline update | ✅ | migration 026; links expire after 60 days and can be withdrawn |
-| Customer portal (view quotes/invoices, pay) | ⬜ | |
+| Customer portal by private link (/p/): balance owing, invoices with PDFs, quotes with "view and accept", statement, bank details; read-only | ✅ | migration 027; links last 180 days and can be withdrawn. Online card payment needs Stripe (D12) |
 
 ### Jobs, scheduling and field work
 | Feature | Status | Notes |
@@ -107,7 +107,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 
 **C. Customer-facing**
 9. ~~Send documents with a PDF attachment and customer-facing quote acceptance by link (accept/decline, typed signature, logged).~~ Done (migration 026).
-10. Customer portal (read-only first: quotes, invoices, statements).
+10. ~~Customer portal (read-only first: quotes, invoices, statements).~~ Done (migration 027).
 
 **D. Needs the owner's accounts (ask before starting)**
 11. Xero sync: OAuth app; push invoices, payments and customers; map GST codes and accounts. MYOB layout for CSV after.

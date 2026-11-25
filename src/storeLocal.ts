@@ -78,6 +78,17 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }))
       return { token }
     },
+    createCustomerLink: async (customerId, by) => {
+      if (!db.customers.some((c) => c.id === customerId)) return { error: 'Customer not found.' }
+      const token = Array.from(crypto.getRandomValues(new Uint8Array(32)), (b) => b.toString(16).padStart(2, '0')).join('')
+      const now = new Date()
+      setDb((d) => ({ ...d, customerLinks: [{ token, customerId, createdAt: now.toISOString(), createdBy: by, expiresAt: new Date(now.getTime() + 180 * 86400000).toISOString(), viewCount: 0 }, ...(d.customerLinks ?? [])] }))
+      return { token }
+    },
+    revokeCustomerLink: async (token) => {
+      setDb((d) => ({ ...d, customerLinks: (d.customerLinks ?? []).map((l) => (l.token === token ? { ...l, revokedAt: new Date().toISOString() } : l)) }))
+      return null
+    },
     revokeQuoteLink: async (token) => {
       setDb((d) => ({ ...d, quoteLinks: (d.quoteLinks ?? []).map((l) => (l.token === token ? { ...l, revokedAt: new Date().toISOString() } : l)) }))
       return null

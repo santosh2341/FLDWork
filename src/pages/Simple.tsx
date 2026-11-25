@@ -9,6 +9,7 @@ import { emptyAddress, formatAddress, isBlank, normalizeParts, parseAddress, val
 import { exportCustomers } from '../lib/accounting'
 import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 import { usePaged } from '../components/Paged'
+import CustomerLinkPanel from '../components/CustomerLinkPanel'
 
 export function Soon() {
   const { slug } = useParams()
@@ -227,6 +228,7 @@ export function CustomerDetail() {
         <Link className="btn" to={`/customers/${c.id}/statement`}>Statement</Link>
         <label><input type="checkbox" disabled={!canWrite} checked={c.onHold} onChange={(e) => updateCustomer({ ...c, onHold: e.target.checked })} /> On hold</label>
       </div>
+      <CustomerLinkPanel customerId={c.id} />
       <div className="grid2">
         {editing ? (
           <CustomerForm

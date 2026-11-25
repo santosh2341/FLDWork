@@ -147,6 +147,19 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
         return { error: m }
       }
     },
+    createCustomerLink: async (customerId, by) => {
+      try {
+        const { data, error } = await sb.from('customer_links').insert({ customer_id: customerId, created_by: by }).select('token').single()
+        if (error) { fail(error.message); return { error: error.message } }
+        await reload()
+        return { token: data.token as string }
+      } catch (e) {
+        const m = errMsg(e)
+        fail(m)
+        return { error: m }
+      }
+    },
+    revokeCustomerLink: async (token) => write(() => sb.from('customer_links').update({ revoked_at: new Date().toISOString() }).eq('token', token)),
     revokeQuoteLink: async (token) => write(() => sb.from('quote_links').update({ revoked_at: new Date().toISOString() }).eq('token', token)),
     deleteJobCost: (id) => {
       setDb((d) => ({ ...d, jobCosts: d.jobCosts.filter((x) => x.id !== id) }))

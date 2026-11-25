@@ -99,6 +99,22 @@ async function workflow(page) {
   await page.getByText('Accepted online by Smoke Customer').first().waitFor({ timeout: 5000 }).catch(() => fail('the timeline should say who accepted online'))
   log('customer accepted the quote online and it is approved')
 
+  step = 'customer portal'
+  await go(page, '/customers/c3')
+  await page.getByRole('button', { name: 'Create portal link' }).click()
+  const portalUrl = await page.locator('.qlink-url').inputValue()
+  if (!/\/p\/[0-9a-f]{64}$/.test(portalUrl)) fail(`portal link looks wrong: ${portalUrl}`)
+  const visitor = await page.context().newPage()
+  await visitor.goto(portalUrl)
+  await visitor.getByText('Balance owing').waitFor({ timeout: 8000 }).catch(() => fail('the customer portal did not load'))
+  if (/Materials cost|markup|PRIVATE/i.test(await visitor.locator('body').innerText())) fail('the portal shows costs, markups or private notes')
+  await visitor.getByRole('tab', { name: /^Quotes/ }).click()
+  await visitor.getByText('Quote #1290').waitFor({ timeout: 5000 }).catch(() => fail('the portal should list quote 1290'))
+  await visitor.getByRole('tab', { name: 'Statement' }).click()
+  await visitor.getByText('Total owing (inc GST)').waitFor({ timeout: 5000 }).catch(() => fail('the portal statement did not show'))
+  await visitor.close()
+  log('customer portal shows quotes and statement')
+
   step = 'quote PDF'
   await go(page, '/quotes/1290/print')
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'Download PDF' }).click()])

@@ -25,6 +25,8 @@ export interface Actions {
   deleteJobCost: (id: string) => void
   createQuoteLink: (quoteId: number, by: string) => Promise<{ token?: string; error?: string }> // marks a quote being written as sent
   revokeQuoteLink: (token: string) => Promise<string | null>
+  createCustomerLink: (customerId: string, by: string) => Promise<{ token?: string; error?: string }>
+  revokeCustomerLink: (token: string) => Promise<string | null>
   addJobPhoto: (jobId: number, file: File, author: string) => Promise<string | null> // resolves to an error message, or null
   deleteJobPhoto: (id: string) => void
   photoUrls: (photos: { id: string; path?: string; dataUrl?: string }[]) => Promise<Record<string, string>>

@@ -45,11 +45,14 @@ const Customers = lazy(() => import('./pages/Simple').then((m) => ({ default: m.
 const Sites = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Sites })))
 const Soon = lazy(() => import('./pages/Simple').then((m) => ({ default: m.Soon })))
 const QuotePortal = lazy(() => import('./pages/QuotePortal'))
+const CustomerPortal = lazy(() => import('./pages/CustomerPortal'))
 
 export default function App() {
   // Customer links (/q/<token>) open on their own: no sign-in, no menus.
   const portal = /^\/q\/([^/]*)\/?$/.exec(window.location.pathname)
   if (portal) return <Suspense fallback={<div className="center muted">Loading…</div>}><QuotePortal token={portal[1]} /></Suspense>
+  const account = /^\/p\/([^/]*)\/?$/.exec(window.location.pathname)
+  if (account) return <Suspense fallback={<div className="center muted">Loading…</div>}><CustomerPortal token={account[1]} /></Suspense>
   return (
     <AuthProvider>
       <Gate />

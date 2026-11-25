@@ -70,3 +70,51 @@ export async function decideQuote(token: string, decision: 'accepted' | 'decline
   try { localStorage.setItem(KEY, JSON.stringify(db)) } catch { return 'Could not save your answer in this browser.' }
   return null
 }
+
+// ---- customer portal (/p/<token>): read-only invoices, quotes and statement
+type SellSection = { name: string; items: SellItem[] }
+export interface AccountData {
+  state: 'ok' | 'not_found' | 'revoked' | 'expired'
+  company?: { name: string; abn: string; licence: string; phone: string; email: string; website: string; address: string; bankName: string; accountName: string; bsb: string; accountNumber: string; invoiceFooter: string }
+  customer?: { name: string; contactName: string; address: string }
+  expiresAt?: string
+  invoices?: { id: number; issuedAt: string; dueAt: string; taxRate: number; discount: number; claimLabel?: string | null; claimPct?: number | null; job: string; site: { name?: string; address?: string }; sections: SellSection[]; payments: { amount: number; date: string }[]; credits: { amount: number; date: string }[] }[]
+  quotes?: { id: number; name: string; status: string; description: string; date: string; discount: number; taxRate: number; site: { name?: string; address?: string }; acceptToken?: string | null; sections: SellSection[] }[]
+}
+
+export async function loadCustomerPortal(token: string): Promise<AccountData> {
+  if (!valid(token)) return { state: 'not_found' }
+  if (supabase) {
+    const { data, error } = await supabase.rpc('customer_portal', { p_token: token })
+    if (error) throw new Error('We could not load your account. Check your connection and try again.')
+    return data as AccountData
+  }
+  const db = readLocal()
+  const l = db?.customerLinks?.find((x) => x.token === token)
+  if (!db || !l) return { state: 'not_found' }
+  if (l.revokedAt) return { state: 'revoked' }
+  if (new Date(l.expiresAt).getTime() < Date.now()) return { state: 'expired' }
+  const cu = db.customers.find((c) => c.id === l.customerId)
+  if (!cu) return { state: 'not_found' }
+  const p = db.settings.company
+  const sell = (cc: { name: string; items: { description: string; quantity: number; unitSell: number; kind: string }[] }[]) =>
+    cc.map((c) => ({ name: c.name, items: c.items.map((i) => ({ description: i.description, quantity: i.quantity, unitSell: i.unitSell, kind: i.kind })) }))
+  const siteOf = (id: string) => { const s = db.sites.find((x) => x.id === id); return s ? { name: s.name, address: s.address } : {} }
+  const now = Date.now()
+  return {
+    state: 'ok',
+    company: { name: p?.tradingName || db.settings.companyName, abn: p?.abn ?? '', licence: p?.licence ?? '', phone: p?.phone ?? '', email: p?.email ?? '', website: p?.website ?? '', address: p?.address ?? '', bankName: p?.bankName ?? '', accountName: p?.accountName ?? '', bsb: p?.bsb ?? '', accountNumber: p?.accountNumber ?? '', invoiceFooter: db.settings.invoiceFooter ?? '' },
+    customer: { name: cu.name, contactName: cu.contactName ?? '', address: cu.address ?? '' },
+    expiresAt: l.expiresAt,
+    invoices: db.invoices.filter((i) => i.customerId === cu.id && i.stage !== 'draft' && !i.voided).sort((a, b) => b.issuedAt.localeCompare(a.issuedAt) || b.id - a.id).map((i) => ({
+      id: i.id, issuedAt: i.issuedAt, dueAt: i.dueAt, taxRate: i.taxRate, discount: i.discount, claimLabel: i.claimLabel, claimPct: i.claimPct,
+      job: db.jobs.find((j) => j.id === i.jobId)?.name ?? '', site: siteOf(i.siteId), sections: sell(i.sections),
+      payments: i.payments.map((x) => ({ amount: x.amount, date: x.date })), credits: (i.credits ?? []).map((x) => ({ amount: x.amount, date: x.date })),
+    })),
+    quotes: db.quotes.filter((q) => q.customerId === cu.id && q.status !== 'to_be_completed').map((q) => ({
+      id: q.id, name: q.name, status: q.status, description: q.description, date: q.timeline[q.timeline.length - 1]?.at ?? q.updatedAt,
+      discount: q.discount, taxRate: q.taxRate, site: siteOf(q.siteId), sections: sell(q.costCenters),
+      acceptToken: (db.quoteLinks ?? []).find((k) => k.quoteId === q.id && !k.revokedAt && !k.decision && new Date(k.expiresAt).getTime() > now)?.token ?? null,
+    })),
+  }
+}

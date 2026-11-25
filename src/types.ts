@@ -211,6 +211,18 @@ export interface QuoteLink {
   signerNote?: string
 }
 
+// A private read-only portal link for a customer (/p/<token>): their invoices, quotes and statement. Migration 027.
+export interface CustomerLink {
+  token: string
+  customerId: string
+  createdAt: string
+  createdBy?: string
+  expiresAt: string
+  revokedAt?: string | null
+  viewCount: number
+  lastViewedAt?: string | null
+}
+
 export interface AssetService {
   id: string
   jobId?: number
@@ -423,6 +435,7 @@ export interface Db {
   jobNotes: JobNote[]
   jobCosts: JobCost[]
   quoteLinks: QuoteLink[]
+  customerLinks: CustomerLink[]
   clock: ClockEntry[]
   jobPhotos: JobPhoto[]
   assets: Asset[]
