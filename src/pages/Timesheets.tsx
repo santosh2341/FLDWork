@@ -149,6 +149,7 @@ export default function Timesheets() {
         people.map((p) => (
           <div key={p.id} className="card">
             <h3>{p.name} <span className="muted">{days[0]} to {days[6]}</span></h3>
+            <div className="scroll-x">
             <div className="cal">
               <div className="cal-axis">
                 <div className="cal-head" />
@@ -187,6 +188,7 @@ export default function Timesheets() {
                   </div>
                 )
               })}
+            </div>
             </div>
           </div>
         ))}

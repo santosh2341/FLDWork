@@ -31,18 +31,38 @@ function DateNav({ date, setDate, unit }: { date: string; setDate: (d: string) =
   )
 }
 
-// ---- drag and drop: a visit can be moved to another person or day, and a waiting job dropped onto a person's day to schedule it ----
+// ---- moving visits: drag and drop with a mouse, or tap a visit / waiting job to open a "Move" sheet (phones, keyboards) ----
 type Drag = { t: 'entry'; id: string } | { t: 'job'; id: number }
+type Slot = { employeeId: string; date: string; start: string; end: string }
 const DEFAULT_START = '09:00'
 const DEFAULT_END = '11:00'
 
-function useScheduler(db: Db) {
-  const { canWrite, moveScheduleEntry, addScheduleEntry } = useStore()
+function useScheduler(db: Db, defaultDate: string) {
+  const { canWrite, moveScheduleEntry, addScheduleEntry, deleteScheduleEntry, setJobStatus } = useStore()
   const [over, setOver] = useState('')
   const [msg, setMsg] = useState<{ text: string; bad: boolean } | null>(null)
+  const [sheet, setSheet] = useState<Drag | null>(null)
+
+  // Book a waiting job or move a visit, then say where it went (and warn about an overlap).
+  const place = async (d: Drag, to: Slot): Promise<string | null> => {
+    const label = jobInfo(db, d.t === 'entry' ? db.schedule.find((x) => x.id === d.id)?.jobId ?? 0 : d.id).name
+    const err = d.t === 'entry' ? await moveScheduleEntry(d.id, to) : await addScheduleEntry({ jobId: d.id, ...to })
+    if (err) return err
+    const clash = db.schedule.find((x) => x.employeeId === to.employeeId && x.date === to.date && (d.t !== 'entry' || x.id !== d.id) && minutes(x.start) < minutes(to.end) && minutes(to.start) < minutes(x.end))
+    const who = db.employees.find((x) => x.id === to.employeeId)?.name
+    setMsg({ text: `${label} is now with ${who} on ${parseDate(to.date).toDateString()} (${to.start}–${to.end}).${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
+    return null
+  }
+
+  const open = (d: Drag) => () => setSheet(d)
   const dragProps = (d: Drag) => canWrite ? {
     draggable: true,
     onDragStart: (ev: React.DragEvent) => { ev.dataTransfer.setData('application/x-fieldwork', JSON.stringify(d)); ev.dataTransfer.effectAllowed = 'move' },
+    onClick: open(d),
+    onKeyDown: (ev: React.KeyboardEvent) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); setSheet(d) } },
+    role: 'button',
+    tabIndex: 0,
+    'aria-haspopup': 'dialog' as const,
     className: 'dnd-item',
   } : {}
   const zoneProps = (key: string, empId: string, date: string) => canWrite ? {
@@ -52,26 +72,112 @@ function useScheduler(db: Db) {
       ev.preventDefault(); setOver('')
       let d: Drag
       try { d = JSON.parse(ev.dataTransfer.getData('application/x-fieldwork')) } catch { return }
-      let start = DEFAULT_START, end = DEFAULT_END, label = ''
-      let err: string | null
+      let start = DEFAULT_START, end = DEFAULT_END
       if (d.t === 'entry') {
         const e = db.schedule.find((x) => x.id === d.id)
         if (!e || (e.employeeId === empId && e.date === date)) return
-        start = e.start; end = e.end; label = jobInfo(db, e.jobId).name
-        err = await moveScheduleEntry(d.id, { date, employeeId: empId })
-      } else {
-        label = jobInfo(db, d.id).name
-        err = await addScheduleEntry({ jobId: d.id, employeeId: empId, date, start, end })
+        start = e.start; end = e.end
       }
-      if (err) { setMsg({ text: err, bad: true }); return }
-      const clash = db.schedule.find((x) => x.employeeId === empId && x.date === date && (d.t !== 'entry' || x.id !== d.id) && minutes(x.start) < minutes(end) && minutes(start) < minutes(x.end))
-      const who = db.employees.find((x) => x.id === empId)?.name
-      setMsg({ text: `${label} is now with ${who} on ${parseDate(date).toDateString()} (${start}–${end}).${d.t === 'job' ? ' Default time; change it in Day view.' : ''}${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
+      const err = await place(d, { employeeId: empId, date, start, end })
+      if (err) setMsg({ text: err, bad: true })
     },
     'data-over': over === key ? '1' : undefined,
   } : {}
   const note = msg && <div className={`dnd-msg ${msg.bad ? 'warn' : ''}`} role="status" onClick={() => setMsg(null)}>{msg.text}</div>
-  return { dragProps, zoneProps, note, canWrite, flash: (text: string) => setMsg({ text, bad: true }) }
+  const sheetEl = sheet && (
+    <MoveSheet
+      key={`${sheet.t}:${sheet.id}`}
+      db={db}
+      what={sheet}
+      defaultDate={defaultDate}
+      onCancel={() => setSheet(null)}
+      onSave={async (to) => { const err = await place(sheet, to); if (!err) setSheet(null); return err }}
+      onRemove={sheet.t === 'entry' ? async () => {
+        const e = db.schedule.find((x) => x.id === sheet.id)
+        const err = await deleteScheduleEntry(sheet.id)
+        if (err) return err
+        // last visit gone: put a scheduled job back on the waiting list instead of leaving it "scheduled" with nothing booked
+        const job = e && db.jobs.find((j) => j.id === e.jobId)
+        const backToWaiting = !!job && job.status === 'scheduled' && !db.schedule.some((x) => x.jobId === job.id && x.id !== e.id)
+        if (job && backToWaiting) setJobStatus(job.id, 'pending')
+        setSheet(null)
+        setMsg({ text: `Removed ${e ? jobInfo(db, e.jobId).name : 'the visit'} from the schedule.${backToWaiting ? ' It is back on the waiting list.' : ''}`, bad: false })
+        return null
+      } : undefined}
+    />
+  )
+  return { dragProps, zoneProps, note, sheet: sheetEl, open, canWrite, flash: (text: string) => setMsg({ text, bad: true }) }
+}
+
+// The tap-friendly way to schedule: pick person, day and times. Opens for a visit (move) or a waiting job (book).
+function MoveSheet({ db, what, defaultDate, onSave, onCancel, onRemove }: {
+  db: Db
+  what: Drag
+  defaultDate: string
+  onSave: (to: Slot) => Promise<string | null>
+  onCancel: () => void
+  onRemove?: () => Promise<string | null>
+}) {
+  const entry = what.t === 'entry' ? db.schedule.find((x) => x.id === what.id) : undefined
+  const jobId = entry ? entry.jobId : what.t === 'job' ? what.id : 0
+  const info = jobInfo(db, jobId)
+  const [f, setF] = useState<Slot>(() => entry
+    ? { employeeId: entry.employeeId, date: entry.date, start: entry.start, end: entry.end }
+    : { employeeId: db.employees[0]?.id ?? '', date: defaultDate, start: DEFAULT_START, end: DEFAULT_END })
+  const [err, setErr] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+  const set = (k: keyof Slot) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setF({ ...f, [k]: e.target.value })
+  const unchanged = !!entry && entry.employeeId === f.employeeId && entry.date === f.date && entry.start === f.start && entry.end === f.end
+  const save = async () => {
+    if (!f.employeeId) return setErr('Choose who will do the work.')
+    if (!f.date) return setErr('Choose a day.')
+    if (!(f.start < f.end)) return setErr('End time must be after start time.')
+    setBusy(true); setErr('')
+    const e = await onSave(f)
+    setBusy(false)
+    if (e) setErr(e)
+  }
+  const remove = async () => {
+    if (!onRemove) return
+    setBusy(true)
+    const e = await onRemove()
+    setBusy(false)
+    if (e) setErr(e)
+  }
+  if (what.t === 'entry' && !entry) return null
+  return (
+    <div className="modal-bg" onClick={onCancel}>
+      <form className="modal move-sheet" role="dialog" aria-label={entry ? 'Move visit' : 'Book job'} onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); void save() }}>
+        <h3>{entry ? 'Move visit' : 'Book job'}</h3>
+        <p className="muted" style={{ margin: 0 }}>{info.name}{info.customer ? ` · ${info.customer.name}` : ''}</p>
+        <label>Who
+          <select value={f.employeeId} onChange={set('employeeId')}>
+            {db.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+          </select>
+        </label>
+        <label>Day<input type="date" value={f.date} onChange={set('date')} /></label>
+        <div className="row move-times">
+          <label>Start<input type="time" value={f.start} onChange={set('start')} /></label>
+          <label>End<input type="time" value={f.end} onChange={set('end')} /></label>
+        </div>
+        {err && <p className="error" role="alert">{err}</p>}
+        <div className="row">
+          <button type="submit" className="primary" disabled={busy || unchanged}>{entry ? 'Save changes' : 'Book it'}</button>
+          <button type="button" onClick={onCancel}>Cancel</button>
+        </div>
+        {onRemove && (confirmRemove ? (
+          <div className="row">
+            <span>Remove this visit from the schedule?</span>
+            <button type="button" disabled={busy} onClick={() => void remove()}>Remove</button>
+            <button type="button" className="link-btn" onClick={() => setConfirmRemove(false)}>Keep</button>
+          </div>
+        ) : (
+          <button type="button" className="link-btn" style={{ justifySelf: 'start' }} onClick={() => setConfirmRemove(true)}>Remove from schedule</button>
+        ))}
+      </form>
+    </div>
+  )
 }
 
 function WaitingJobs({ db, dragProps, canWrite, hint }: { db: Db; dragProps: (d: Drag) => object; canWrite: boolean; hint: string }) {
@@ -89,21 +195,17 @@ function WaitingJobs({ db, dragProps, canWrite, hint }: { db: Db; dragProps: (d:
 }
 
 export function DayView() {
-  const { db, moveScheduleEntry } = useStore()
+  const { db } = useStore()
   const [date, setDate] = useState(today())
-  const [editing, setEditing] = useState('')
-  const sch = useScheduler(db)
+  const sch = useScheduler(db, date)
   const entries = db.schedule.filter((e) => e.date === date)
-  const retime = async (e: ScheduleEntry, start: string, end: string) => {
-    const err = await moveScheduleEntry(e.id, { date: e.date, employeeId: e.employeeId, start, end })
-    if (err) sch.flash(err)
-  }
   return (
     <>
       <h1>Day view</h1>
       <DateNav date={date} setDate={setDate} unit="day" />
-      <p className="muted">{parseDate(date).toDateString()} · {entries.length} scheduled{sch.canWrite ? ' · drag a visit onto another person to reassign it' : ''}</p>
+      <p className="muted">{parseDate(date).toDateString()} · {entries.length} scheduled{sch.canWrite ? ' · tap a visit to move it or change its time, or drag it onto another person' : ''}</p>
       {sch.note}
+      {sch.sheet}
       <div className="grid2">
         {db.employees.map((emp) => {
           const mine = entries.filter((e) => e.employeeId === emp.id).sort(byTime)
@@ -111,21 +213,14 @@ export function DayView() {
           return (
             <div className="card dnd-zone" key={emp.id} {...sch.zoneProps(`d:${emp.id}`, emp.id, date)}>
               <div className="row between"><h3>{emp.name}</h3><span className="pill">{hours} hrs</span></div>
-              {mine.length === 0 && <p className="muted">Nothing scheduled.{sch.canWrite ? ' Drop a visit or a waiting job here.' : ''}</p>}
+              {mine.length === 0 && <p className="muted">Nothing scheduled.{sch.canWrite ? ' Book a waiting job below, or drop one here.' : ''}</p>}
               <ul className="plain">
                 {mine.map((e) => {
                   const info = jobInfo(db, e.jobId)
                   return (
                     <li key={e.id} {...sch.dragProps({ t: 'entry', id: e.id })}>
-                      {editing === e.id ? (
-                        <span className="row">
-                          <input type="time" defaultValue={e.start} id={`s${e.id}`} />–<input type="time" defaultValue={e.end} id={`e${e.id}`} />
-                          <button className="primary" onClick={async () => { await retime(e, (document.getElementById(`s${e.id}`) as HTMLInputElement).value, (document.getElementById(`e${e.id}`) as HTMLInputElement).value); setEditing('') }}>Save</button>
-                          <button onClick={() => setEditing('')}>Cancel</button>
-                        </span>
-                      ) : (
-                        <><b>{e.start}–{e.end}</b> {sch.canWrite && <button className="link-btn" onClick={() => setEditing(e.id)}>Change time</button>} {info.name}</>
-                      )}
+                      <b>{e.start}–{e.end}</b> {info.name}
+                      {sch.canWrite && <span className="link-btn move-hint" aria-hidden="true">Move / change time</span>}
                       <br /><span className="muted">{info.customer?.name} · {info.site?.address}</span>
                     </li>
                   )
@@ -135,7 +230,7 @@ export function DayView() {
           )
         })}
       </div>
-      <WaitingJobs db={db} dragProps={sch.dragProps} canWrite={sch.canWrite} hint="Drag a job onto a person to book it for this day (09:00–11:00 to start with; use Change time to adjust)." />
+      <WaitingJobs db={db} dragProps={sch.dragProps} canWrite={sch.canWrite} hint="Tap a job to book it, or drag it onto a person (09:00–11:00 to start with)." />
     </>
   )
 }
@@ -143,15 +238,16 @@ export function DayView() {
 export function WeekView() {
   const { db } = useStore()
   const [date, setDate] = useState(weekStart(today()))
-  const sch = useScheduler(db)
   const start = weekStart(date)
+  const sch = useScheduler(db, start <= today() && today() <= addDays(start, 6) ? today() : start)
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
   return (
     <>
       <h1>Week view</h1>
       <DateNav date={start} setDate={(d) => setDate(weekStart(d))} unit="week" />
-      {sch.canWrite && <p className="muted">Drag a visit to another day or person. Drag a waiting job from the list below into a cell to book it.</p>}
+      {sch.canWrite && <p className="muted">Tap a visit to move it or change its time, or drag it to another day or person. Tap a waiting job below to book it.</p>}
       {sch.note}
+      {sch.sheet}
       <table className="keep-table sched-week">
         <thead>
           <tr>
@@ -176,7 +272,7 @@ export function WeekView() {
           {db.employees.length === 0 && <tr><td colSpan={8} className="muted">No employees.</td></tr>}
         </tbody>
       </table>
-      <WaitingJobs db={db} dragProps={sch.dragProps} canWrite={sch.canWrite} hint="Drag a job into a person's day above." />
+      <WaitingJobs db={db} dragProps={sch.dragProps} canWrite={sch.canWrite} hint="Tap a job to book it, or drag it into a person's day above." />
     </>
   )
 }

@@ -43,8 +43,8 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 |---|---|---|
 | Jobs created from approved quotes, status flow pending → scheduled → in progress → complete → invoiced; renameable statuses | ✅ | |
 | Schedules: timesheets week calendar, day, week and month views, run sheets, work orders | ✅ | timesheet lock supported |
-| Drag-and-drop schedule (move visits between people/days, drop waiting jobs, change times, overlap warning) | ✅ | mouse/trackpad only; no touch |
-| Tap-to-move scheduling on phones | ⬜ | |
+| Drag-and-drop schedule (move visits between people/days, drop waiting jobs, change times, overlap warning) | ✅ | drag with mouse/trackpad; on phones use tap-to-move |
+| Tap-to-move scheduling (tap a visit or waiting job: person, day, times, remove; works by keyboard too) | ✅ | removing the last visit puts the job back on the waiting list |
 | My day (technician phone screen): timetable, navigate/call, access notes, status, notes, clock on/off, photos | ✅ | |
 | Mobile audits/forms: builder and runner with versioned results; optional rule "required audits before complete" | ✅ | |
 | Job photos (private storage, shrunk on device) | 🟡 | works in code; live storage not exercised from the build sandbox |
@@ -86,7 +86,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 1. **iPhone Safari crash on /jobs** (205 jobs, card layout) was reported. Mitigations shipped: paging (40 rows) on Jobs and Quotes, safe mode after a crash, lighter CSS. Root cause never reproduced (the sandbox has no WebKit). Ask the owner to confirm Jobs opens normally on the phone. Page the other long lists (Invoices, Customers, Sites, Materials tables, Leads, Timesheets) the same way.
 2. **Live (Supabase) paths are not testable from the sandbox.** Edge Functions, email, AI, storage uploads and the RPCs were checked by reading definitions and local-mode tests only. Treat first real use as a test; look at Supabase logs (`get_logs`) and the advisors.
 3. Lint is clean (0 warnings, 0 errors) since 26 Nov 2026.
-4. Drag-and-drop does not work on touch screens.
+4. ~~Drag-and-drop does not work on touch screens.~~ Tap-to-move covers phones.
 5. `supabase/schema.sql` is outdated; do not rely on it.
 6. Demo data sometimes shows a quote title that drops part of the customer name; this is how the seed data is written.
 7. Email is an HTML body without a PDF attachment, and needs the owner's domain verified at Resend.
@@ -96,7 +96,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 **A. Hardening (do first, about a day)**
 1. ~~Page every list that can exceed ~100 rows (`usePaged`); verify at 390px with 300+ rows.~~ Done (reports are not paged so they print in full).
 2. ~~Clear the lint warnings without changing behaviour.~~ Done.
-3. Phone pass over every page at 390px and in dark mode; fix overflow and spacing. Add tap-to-move (a "Move to…" sheet) for schedule visits on phones.
+3. ~~Phone pass over every page at 390px and in dark mode; fix overflow and spacing. Add tap-to-move (a "Move to…" sheet) for schedule visits on phones.~~ Done (Timesheets calendar scrolls in its card, page headers wrap).
 4. Add a small Playwright smoke script to the repo (`scripts/smoke.mjs`) that seeds local mode and walks quote → job → claim → cost → schedule, so regressions are caught before pushing.
 
 **B. Costing and purchasing depth**

@@ -186,7 +186,11 @@
 @media (max-width: 768px) {
   .page-anim > .row.between { margin-bottom: 14px; }
   .page-anim > .row.between > .row, .page-anim > .row.between > div { width: 100%; margin: 0; }
-  .page-anim > .row.between > .row > button, .page-anim > .row.between > .row > .btn { flex: 1 1 0; min-width: 0; }
+  .page-anim > .row.between > .row > button, .page-anim > .row.between > .row > .btn { flex: 1 0 auto; white-space: nowrap; }
+  /* header actions wrap onto a second line instead of squashing; a status note ("Last saved …") gets its own line */
+  .page-anim > .row.between > .row { flex-wrap: wrap; }
+  .page-anim > .row.between > .row > .muted { flex: 1 1 100%; text-align: left; font-size: .85rem; }
+  .page-anim > .row.between > .row > .pill { flex: 1 1 auto; }
 }
 @media (max-width: 768px) {
   .page table tr[data-wide] { padding: 10px; }
