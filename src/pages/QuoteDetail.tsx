@@ -64,8 +64,9 @@ export default function QuoteDetail() {
 
   const save = () => {
     const withLog: Quote = { ...draft, timeline: [{ id: uid(), type: 'System', message: 'Quote saved', at: new Date().toISOString() }, ...draft.timeline] }
-    saveQuote(withLog)
-    setDraft(withLog)
+    const saved = { ...withLog, updatedAt: new Date().toISOString() }
+    saveQuote(saved)
+    setDraft(saved)
     setDirty(false)
   }
 

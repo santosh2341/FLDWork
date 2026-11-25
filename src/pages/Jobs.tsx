@@ -52,6 +52,7 @@ function ClaimForm({ job, quote }: { job: Job; quote: Quote }) {
         <input type="number" min={1} max={left} step="any" value={pct} onChange={(e) => setPct(e.target.value)} />
       </label>
       <p className="muted">{n > 0 ? `${money(amt)} + GST = ${money(amt * (1 + quote.taxRate / 100))}` : 'Enter a percentage'}</p>
+      {n > left && <p className="error">Only {left}% is left to claim on this job.</p>}
       {err && <p className="error">{err}</p>}
       <div className="row">
         <button className="primary" disabled={busy || !(n > 0 && n <= left)} onClick={go}>Create claim</button>

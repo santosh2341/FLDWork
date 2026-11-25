@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, matchPath, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import Tour from './Tour'
 import MobileChrome from './MobileChrome'
@@ -50,13 +50,16 @@ const NAV: Flyout[] = [
   { label: 'Reports', icon: 'chart', to: '/reports', columns: [{ links: [{ label: 'View Reports', to: '/reports' }] }] },
 ]
 
+const PAGES = ['/', '/my-day', '/customers', '/assets', '/customers/:id', '/customers/:id/statement', '/sites', '/quotes', '/quotes/:id', '/jobs', '/invoices', '/invoices/paid', '/invoices/all', '/invoices/payments', '/invoices/retainages', '/invoices/credits', '/invoices/:id', '/schedules/timesheets', '/schedules/day', '/schedules/week', '/schedules/month', '/schedules/run-sheets', '/schedules/work-orders', '/schedules/work-orders/:id', '/leads', '/recurring', '/settings', '/settings/:tab', '/materials/inventory', '/materials/counts', '/materials/pre-builds', '/materials/purchase-orders', '/materials/vendor-quotes', '/materials/receipts', '/materials/catalog', '/reports', '/reports/:id']
+const pageExists = (to: string) => PAGES.some((p) => matchPath(p, to))
+
 function crumbs(pathname: string): { label: string; to: string }[] {
   const parts = pathname.split('/').filter(Boolean)
   const out: { label: string; to: string }[] = [{ label: 'Home', to: '/' }]
   let acc = ''
   for (const p of parts) {
     acc += '/' + p
-    out.push({ label: p.replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()), to: acc })
+    out.push({ label: p.replace(/-/g, ' ').replace(/^\w/, (c) => c.toUpperCase()), to: pageExists(acc) ? acc : '' })
   }
   return out
 }
@@ -127,8 +130,9 @@ export default function Shell() {
   }, [q, db])
 
   const trail = crumbs(loc.pathname)
-  const mBackLabel = trail.length > 2 ? trail[trail.length - 2].label : ''
-  const mBack = trail.length > 2 ? trail[trail.length - 2].to : null // detail pages get a back arrow; top-level pages do not
+  const prev = trail.slice(0, -1).reverse().find((c) => c.to) // nearest earlier page that really exists
+  const mBackLabel = trail.length > 2 && prev ? prev.label : ''
+  const mBack = trail.length > 2 && prev ? prev.to : null // detail pages get a back arrow; top-level pages do not
 
   return (
     <div className={`shell ${expanded ? 'expanded' : ''} ${drawer ? 'drawer-open' : ''}`}>
@@ -265,8 +269,8 @@ export default function Shell() {
         {tour && <Tour onClose={() => setTour(false)} />}
         <nav className="crumbs">
           {crumbs(loc.pathname).map((c, i, a) => (
-            <span key={c.to}>
-              {i < a.length - 1 ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
+            <span key={i}>
+              {i < a.length - 1 && c.to ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
               {i < a.length - 1 && ' / '}
             </span>
           ))}

@@ -66,12 +66,12 @@ function useScheduler(db: Db) {
       if (err) { setMsg({ text: err, bad: true }); return }
       const clash = db.schedule.find((x) => x.employeeId === empId && x.date === date && (d.t !== 'entry' || x.id !== d.id) && minutes(x.start) < minutes(end) && minutes(start) < minutes(x.end))
       const who = db.employees.find((x) => x.id === empId)?.name
-      setMsg({ text: `${label} is now ${who} on ${parseDate(date).toDateString()} (${start}–${end}).${d.t === 'job' ? ' Default time; change it in Day view.' : ''}${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
+      setMsg({ text: `${label} is now with ${who} on ${parseDate(date).toDateString()} (${start}–${end}).${d.t === 'job' ? ' Default time; change it in Day view.' : ''}${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
     },
     'data-over': over === key ? '1' : undefined,
   } : {}
   const note = msg && <div className={`dnd-msg ${msg.bad ? 'warn' : ''}`} role="status" onClick={() => setMsg(null)}>{msg.text}</div>
-  return { dragProps, zoneProps, note, canWrite }
+  return { dragProps, zoneProps, note, canWrite, flash: (text: string) => setMsg({ text, bad: true }) }
 }
 
 function WaitingJobs({ db, dragProps, canWrite, hint }: { db: Db; dragProps: (d: Drag) => object; canWrite: boolean; hint: string }) {
@@ -96,7 +96,7 @@ export function DayView() {
   const entries = db.schedule.filter((e) => e.date === date)
   const retime = async (e: ScheduleEntry, start: string, end: string) => {
     const err = await moveScheduleEntry(e.id, { date: e.date, employeeId: e.employeeId, start, end })
-    if (err) alert(err)
+    if (err) sch.flash(err)
   }
   return (
     <>

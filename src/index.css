@@ -584,3 +584,4 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .dnd-chips > span { padding: 6px 12px; border: 1px solid var(--line-strong); border-radius: 999px; background: var(--surface-2); font-size: .9rem; }
 .dnd-msg { margin: 0 0 12px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--line); border-left: 5px solid #1d9b62; background: var(--panel); cursor: pointer; }
 .dnd-msg.warn { border-left-color: #e6a800; }
+.sched-week { display: block; overflow-x: auto; }

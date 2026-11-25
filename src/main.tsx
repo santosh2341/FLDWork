@@ -10,7 +10,9 @@ let safe = false
 try {
   safe = sessionStorage.getItem('fw-boot') === '1'
   sessionStorage.setItem('fw-boot', '1')
-  setTimeout(() => { try { sessionStorage.removeItem('fw-boot') } catch { /* ignore */ } }, 5000)
+  const clear = () => { try { sessionStorage.removeItem('fw-boot') } catch { /* ignore */ } }
+  setTimeout(clear, 5000)
+  window.addEventListener('pagehide', clear) // a normal refresh or navigation fires this; a crash does not
 } catch { /* storage unavailable */ }
 if (safe) document.documentElement.classList.add('safe-mode')
 else void import('./mobile.css')

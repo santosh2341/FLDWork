@@ -23,6 +23,7 @@ export default function JobCosting() {
   const [desc, setDesc] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(today())
+  const [confirmId, setConfirmId] = useState('')
   if (!job) return <p>Job not found. <Link to="/jobs">Back to jobs</Link></p>
   const s = jobCostSummary(db, job)
   if (!s) return <p>This job's quote is missing, so there is nothing to compare against.</p>
@@ -50,9 +51,9 @@ export default function JobCosting() {
 
       <div className="jc-hero">
         <div className={`jc-profit ${s.profit < 0 ? 'neg' : ''}`}>
-          <span className="muted">Profit so far</span>
+          <span className="muted">{s.actTotal === 0 ? 'Expected profit' : 'Profit so far'}</span>
           <b>{money(s.profit)}</b>
-          <span>{pctTxt(s.margin)} margin · quoted {pctTxt(s.estMargin)}</span>
+          <span>{s.actTotal === 0 ? 'Nothing recorded yet, so this is the full quote price' : `${pctTxt(s.margin)} margin · quoted ${pctTxt(s.estMargin)}`}</span>
         </div>
         <div><span className="muted">Quote price</span><b>{money(s.revenue)}</b></div>
         <div><span className="muted">Invoiced</span><b>{money(s.invoiced)}</b><span className="muted">{s.revenue > 0 ? pctTxt((s.invoiced / s.revenue) * 100) : ''} of quote</span></div>
@@ -101,7 +102,7 @@ export default function JobCosting() {
                 <td>{c.supplier}</td>
                 <td>{c.description}</td>
                 <td className="num">{money(c.amount)}</td>
-                <td>{canWrite && <button className="link-btn" onClick={() => confirm('Remove this cost?') && deleteJobCost(c.id)}>Remove</button>}</td>
+                <td>{canWrite && confirmId === c.id ? <span className="row"><button onClick={() => { deleteJobCost(c.id); setConfirmId('') }}>Remove</button><button className="link-btn" onClick={() => setConfirmId('')}>Keep</button></span> : <button className="link-btn" onClick={() => setConfirmId(c.id)}>Remove</button>}</td>
               </tr>
             ))}
           </tbody>
