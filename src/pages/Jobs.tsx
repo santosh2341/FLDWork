@@ -7,6 +7,7 @@ import { useFilter } from '../components/useFilter'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
 import { claimedPct, claimsFor, CLAIM_LABELS, quoteNet } from '../lib/claims'
+import { dmy, today } from '../lib/dates'
 import { isOverBudget } from '../lib/jobcost'
 import type { Job, JobStatus, Quote } from '../types'
 
@@ -91,7 +92,14 @@ export default function Jobs() {
   const { shown, more } = usePaged(rows, `${filter}|${s}|${focusId ?? ''}`)
   const setFilter = (f: string) => { const p = new URLSearchParams(params); if (f) p.set('filter', f); else p.delete('filter'); p.delete('job'); setParams(p) }
   const count = (f: string) => db.jobs.filter((j) => (f === 'over_budget' ? isOverBudget(db, j) : f ? j.status === f : true)).length
-  const TABS: [string, string][] = [['', 'All'], ...(Object.entries(labels) as [string, string][]), ['over_budget', 'Over budget']]
+  const ORDER: JobStatus[] = ['pending', 'scheduled', 'in_progress', 'complete', 'invoiced'] // workflow order
+  const TABS: [string, string][] = [['', 'All'], ...ORDER.map((k) => [k, labels[k] ?? k] as [string, string]), ['over_budget', 'Over budget']]
+  // the next booked visit for a job (today or later, else the latest one)
+  const nextVisit = (jobId: number) => {
+    const vs = db.schedule.filter((e) => e.jobId === jobId).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))
+    const t = today()
+    return vs.find((e) => e.date >= t) ?? vs[vs.length - 1]
+  }
 
   // bring the highlighted job into view once
   useEffect(() => {
@@ -131,7 +139,7 @@ export default function Jobs() {
           {focus && created === focus.id && (
             <div className="filter-bar">
               <span>Job <b>#{focus.id}</b> created from quote #{focus.quoteId}. It is waiting to be scheduled.</span>
-              <Link className="btn" to="/schedules/week">Schedule it</Link>
+              <Link className="btn" to={`/schedules/week?book=${focus.id}`}>Schedule it</Link>
             </div>
           )}
           {rows.length === 0 && <p className="muted">No jobs match. Try another search or choose All.</p>}
@@ -166,10 +174,18 @@ export default function Jobs() {
                       disabled={j.status === 'invoiced'}
                       onChange={(e) => changeStatus(j, e.target.value as JobStatus)}
                     >
-                      {Object.entries(labels)
-                        .filter(([k]) => k !== 'invoiced' || j.status === 'invoiced')
-                        .map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      {ORDER
+                        .filter((k) => k !== 'invoiced' || j.status === 'invoiced')
+                        .map((k) => <option key={k} value={k}>{labels[k] ?? k}</option>)}
                     </select>
+                    {(() => {
+                      const v = nextVisit(j.id)
+                      if (v) {
+                        const who = db.employees.find((e) => e.id === v.employeeId)?.name ?? ''
+                        return <div className="muted job-visit"><Link to={`/schedules/week?week=${v.date}`}>{dmy(v.date)} {v.start}</Link>{who ? ` · ${who}` : ''}</div>
+                      }
+                      return canWrite && j.status === 'pending' ? <Link className="btn job-sched" to={`/schedules/week?book=${j.id}`}>Schedule</Link> : null
+                    })()}
                   </td>
                   <td>
                     {inv ? (

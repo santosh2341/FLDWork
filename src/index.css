@@ -649,3 +649,5 @@ button.danger { background: var(--mark-red, #d1453b); border-color: var(--mark-r
 button.danger:hover { filter: brightness(1.08); }
 .auto-run { border-left: 5px solid var(--brand); display: grid; gap: 4px; }
 .emp-inactive td { opacity: .7; }
+.job-visit { margin-top: 4px; font-size: .78rem; white-space: nowrap; }
+.btn.job-sched { margin-top: 6px; min-height: 30px; padding: 0 12px; font-size: .82rem; }

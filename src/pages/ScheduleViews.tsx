@@ -1,6 +1,6 @@
 import { isActive, pickable } from '../lib/people'
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { addDays, DAY_NAMES, fmtDate, hoursBetween, minutes, parseDate, today, weekStart } from '../lib/dates'
 import type { Db, ScheduleEntry } from '../types'
@@ -238,10 +238,22 @@ export function DayView() {
 
 export function WeekView() {
   const { db } = useStore()
-  const [date, setDate] = useState(weekStart(today()))
+  const [wk] = useSearchParams()
+  const asked = wk.get('week') ?? ''
+  const [date, setDate] = useState(() => weekStart(/^\d{4}-\d{2}-\d{2}$/.test(asked) ? asked : today())) // ?week=YYYY-MM-DD opens that week
   const start = weekStart(date)
   const sch = useScheduler(db, start <= today() && today() <= addDays(start, 6) ? today() : start)
   const days = Array.from({ length: 7 }, (_, i) => addDays(start, i))
+  // "Schedule" on the Jobs page links here with ?book=<job id>: open the booking sheet for that job once
+  const [params, setParams] = useSearchParams()
+  const bookId = Number(params.get('book')) || 0
+  const bookJob = bookId ? db.jobs.find((j) => j.id === bookId) : undefined
+  useEffect(() => {
+    if (!bookJob) return
+    if (bookJob.status === 'pending') sch.open({ t: 'job', id: bookJob.id })()
+    else sch.flash(`${bookJob.id} – ${bookJob.name} is already ${db.settings.jobStatusLabels[bookJob.status]?.toLowerCase() ?? bookJob.status}. Tap its visit below to move it.`)
+    const p = new URLSearchParams(params); p.delete('book'); setParams(p, { replace: true })
+  }, [bookJob?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <>
       <h1>Week view</h1>
