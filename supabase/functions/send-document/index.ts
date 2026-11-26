@@ -1,6 +1,7 @@
 // Fieldwork: emails a quote or invoice to the customer on record, as a clean HTML email, via Resend.
 // Optional: the PDF made in the app (attached, max ~4 MB) and, for quotes, a button to the customer's
-// "accept online" page (/q/<token>; the token must belong to this quote and still be active).
+// "accept online" page (/q/<token>; the token must belong to this quote and still be active); for invoices, a
+// "View and pay online" button to the customer's portal (/p/<token>; must belong to the invoice's customer).
 // Runs as the signed-in user (reads under their permissions). The recipient is ALWAYS the customer's email on file,
 // so this cannot be used to send mail to arbitrary addresses. Limit: 50 emails per company per day.
 // Secrets: RESEND_API_KEY, EMAIL_FROM (an address on a domain verified in Resend, e.g. quotes@yourcompany.com.au;
@@ -52,6 +53,10 @@ Deno.serve(async (req) => {
     const pdf = typeof body.pdf === 'string' ? body.pdf : ''
     if (pdf && (pdf.length > 5_600_000 || !pdf.startsWith('JVBER'))) return json({ error: 'The PDF is too large or not a PDF.' }, 400)
     const linkToken = typeof body.linkToken === 'string' && /^[0-9a-f]{64}$/.test(body.linkToken) ? body.linkToken : ''
+    // invoices: the customer's portal link (/p/<token>), shown as a "View and pay online" button
+    const portalToken = typeof body.portalToken === 'string' && /^[0-9a-f]{64}$/.test(body.portalToken) ? body.portalToken : ''
+    const origin = (req.headers.get('origin') ?? Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
+    const originOk = /^https?:\/\/[\w.-]+(:\d+)?$/.test(origin)
     const message = String(body.message ?? '').slice(0, 4000)
     const subject = String(body.subject ?? '').trim().slice(0, 200)
     if (!subject) return json({ error: 'Add a subject.' }, 400)
@@ -101,10 +106,19 @@ Deno.serve(async (req) => {
     let acceptUrl = ''
     if (kind === 'quote' && linkToken) {
       const { data: link } = await sb.from('quote_links').select('token, expires_at').eq('token', linkToken).eq('quote_id', id).is('revoked_at', null).is('decision', null).maybeSingle()
-      const origin = (req.headers.get('origin') ?? Deno.env.get('APP_URL') ?? '').replace(/\/$/, '')
-      if (link && new Date(link.expires_at as string) > new Date() && /^https?:\/\/[\w.-]+(:\d+)?$/.test(origin)) acceptUrl = `${origin}/q/${linkToken}`
+      if (link && new Date(link.expires_at as string) > new Date() && originOk) acceptUrl = `${origin}/q/${linkToken}`
     }
     if (acceptUrl) after = `<p style="margin:22px 0"><a href="${esc(acceptUrl)}" style="background:#0f766e;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;display:inline-block">View and accept this quote online</a></p>` + after
+
+    // Invoice: a button to the customer's portal, where they can pay by card. The link must belong to this
+    // invoice's customer and still be active.
+    let payUrl = ''
+    if (kind === 'invoice' && portalToken && originOk) {
+      const { data: pl } = await sb.from('customer_links').select('token, expires_at').eq('token', portalToken).eq('customer_id', customerId).is('revoked_at', null).maybeSingle()
+      if (pl && new Date(pl.expires_at as string) > new Date()) payUrl = `${origin}/p/${portalToken}`
+    }
+    const payLabel = balance !== null && balance > 0.005 ? `View and pay ${money(balance)} online` : 'View your account online'
+    if (payUrl) after = `<p style="margin:22px 0"><a href="${esc(payUrl)}" style="background:#0f766e;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:700;display:inline-block">${esc(payLabel)}</a><br><span style="color:#64748b;font-size:12px">Pay by card, or see all your invoices and statement.</span></p>` + after
 
     const net = subtotal - discount
     const tax = net * (taxRate / 100)
@@ -137,7 +151,7 @@ Deno.serve(async (req) => {
         subject,
         html,
         ...(pdf ? { attachments: [{ filename: `${title.replace(/\s+/g, '-')}-${number}.pdf`, content: pdf }] } : {}),
-        text: `${message}\n\n${title} #${number} – total ${money(total)}${balance !== null ? `, balance due ${money(balance)}` : ''}${acceptUrl ? `\n\nView and accept online: ${acceptUrl}` : ''}`,
+        text: `${message}\n\n${title} #${number} – total ${money(total)}${balance !== null ? `, balance due ${money(balance)}` : ''}${acceptUrl ? `\n\nView and accept online: ${acceptUrl}` : ''}${payUrl ? `\n\n${payLabel}: ${payUrl}` : ''}`,
       }),
     })
     if (!res.ok) {

@@ -11,7 +11,7 @@ import { activeLink } from '../lib/quoteLinks'
 export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessage, doc }: {
   kind: 'quote' | 'invoice'; id: number; to?: string; defaultSubject: string; defaultMessage: string; doc?: DocModel
 }) {
-  const { remote, canWrite, db, profile, createQuoteLink } = useStore()
+  const { remote, canWrite, db, profile, createQuoteLink, createCustomerLink } = useStore()
   const [open, setOpen] = useState(false)
   const [subject, setSubject] = useState(defaultSubject)
   const [message, setMessage] = useState(defaultMessage)
@@ -23,6 +23,7 @@ export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessag
   const [history, setHistory] = useState<SentRecord[]>([])
   const quote = kind === 'quote' ? db.quotes.find((q) => q.id === id) : undefined
   const decided = quote?.status === 'approved' || quote?.status === 'declined'
+  const invoice = kind === 'invoice' ? db.invoices.find((i) => i.id === id) : undefined
 
   useEffect(() => { if (remote) void sentHistory(kind, id).then(setHistory) }, [remote, kind, id])
   if (!remote || !canWrite) return null
@@ -45,7 +46,19 @@ export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessag
           linkToken = r.token
         }
       }
-      const r = await sendDocument({ kind, id, subject, message, copyMe, pdf, linkToken })
+      // invoices: a "View and pay online" button to the customer's portal (pay by card there). Reuse a portal link
+      // with at least 30 days left, otherwise make a new one (they last 180 days).
+      let portalToken: string | undefined
+      if (kind === 'invoice' && withLink && invoice) {
+        const soon = Date.now() + 30 * 86400000
+        portalToken = (db.customerLinks ?? []).find((l) => l.customerId === invoice.customerId && !l.revokedAt && new Date(l.expiresAt).getTime() > soon)?.token
+        if (!portalToken) {
+          const r = await createCustomerLink(invoice.customerId, profile?.fullName ?? '')
+          if (r.error) throw new Error(r.error)
+          portalToken = r.token
+        }
+      }
+      const r = await sendDocument({ kind, id, subject, message, copyMe, pdf, linkToken, portalToken })
       setMsg({ ok: true, text: `Sent to ${r.to}.` })
       setHistory(await sentHistory(kind, id))
       setOpen(false)
@@ -72,6 +85,7 @@ export default function EmailPanel({ kind, id, to, defaultSubject, defaultMessag
           <p className="muted">The {kind} itself (items, totals{kind === 'invoice' ? ', bank details' : ''}) is included below your message.</p>
           {doc && <label className="block"><input type="checkbox" checked={attach} onChange={(e) => setAttach(e.target.checked)} /> Attach the {kind} as a PDF ({doc.fileName})</label>}
           {kind === 'quote' && !decided && <label className="block"><input type="checkbox" checked={withLink} onChange={(e) => setWithLink(e.target.checked)} /> Include a link so the customer can accept or decline online</label>}
+          {kind === 'invoice' && <label className="block"><input type="checkbox" checked={withLink} onChange={(e) => setWithLink(e.target.checked)} /> Include a "View and pay online" button (opens their customer portal, where they can pay by card)</label>}
           <label className="block"><input type="checkbox" checked={copyMe} onChange={(e) => setCopyMe(e.target.checked)} /> Send me a copy</label>
           <div className="row" style={{ marginTop: 8 }}><button className="primary" disabled={busy || !subject.trim()} onClick={() => void send()}>{busy ? 'Sending…' : 'Send email'}</button></div>
         </div>
