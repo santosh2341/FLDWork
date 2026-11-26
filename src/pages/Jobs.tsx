@@ -1,9 +1,8 @@
 import { useDialog } from '../components/dialog'
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import JobPhotos from '../components/JobPhotos'
 import { usePaged } from '../components/Paged'
-import FilterBar from '../components/FilterBar'
 import { useFilter } from '../components/useFilter'
 import { useStore } from '../store'
 import { computeCosting, money } from '../lib/costing'
@@ -73,9 +72,33 @@ export default function Jobs() {
   const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite, profile } = useStore()
   const nav = useNavigate()
   const filter = useFilter()
-  const rows = filter === 'pending' ? db.jobs.filter((j) => j.status === 'pending') : filter === 'over_budget' ? db.jobs.filter((j) => isOverBudget(db, j)) : db.jobs
+  const [params, setParams] = useSearchParams()
+  const focusId = Number(params.get('job')) || null // a job to show first and highlight (just created, or picked in search)
+  const created = (useLocation().state as { createdJob?: number } | null)?.createdJob // set by "Create job" on a quote
+  const [search, setSearch] = useState('')
   const labels = db.settings.jobStatusLabels
-  const { shown, more } = usePaged(rows, filter)
+  const custName = (id: string) => db.customers.find((c) => c.id === id)?.name ?? ''
+  const siteName = (id: string) => db.sites.find((s) => s.id === id)?.name ?? ''
+  // newest first (job numbers are not in creation order: demo jobs use higher numbers)
+  const sorted = [...db.jobs].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.id - a.id)
+  const inFilter = (j: Job) =>
+    filter === 'over_budget' ? isOverBudget(db, j) : filter && filter in labels ? j.status === filter : true
+  const s = search.trim().toLowerCase()
+  const matches = (j: Job) => !s || [j.id, j.quoteId, j.name, custName(j.customerId), siteName(j.siteId)].join(' ').toLowerCase().includes(s)
+  const filtered = sorted.filter((j) => inFilter(j) && matches(j))
+  const focus = focusId ? db.jobs.find((j) => j.id === focusId) : undefined
+  const rows = focus ? [focus, ...filtered.filter((j) => j.id !== focus.id)] : filtered
+  const { shown, more } = usePaged(rows, `${filter}|${s}|${focusId ?? ''}`)
+  const setFilter = (f: string) => { const p = new URLSearchParams(params); if (f) p.set('filter', f); else p.delete('filter'); p.delete('job'); setParams(p) }
+  const count = (f: string) => db.jobs.filter((j) => (f === 'over_budget' ? isOverBudget(db, j) : f ? j.status === f : true)).length
+  const TABS: [string, string][] = [['', 'All'], ...(Object.entries(labels) as [string, string][]), ['over_budget', 'Over budget']]
+
+  // bring the highlighted job into view once
+  useEffect(() => {
+    if (!focusId) return
+    const t = window.setTimeout(() => document.getElementById(`job-${focusId}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 150)
+    return () => window.clearTimeout(t)
+  }, [focusId])
   const changeStatus = (j: Job, status: JobStatus) => {
     if (status === 'complete' && db.settings.requireAuditsToComplete) {
       const q = db.quotes.find((x) => x.id === j.quoteId)
@@ -93,8 +116,28 @@ export default function Jobs() {
       {db.jobs.length === 0 && (
         <p className="muted">No jobs yet. Approve a quote, then use "Create job" on the quote.</p>
       )}
-      <FilterBar label={filter === 'over_budget' ? 'open jobs that have cost more than quoted' : 'jobs waiting to be scheduled'} shown={rows.length} total={db.jobs.length} />
       {db.jobs.length > 0 && (
+        <>
+          <div className="subtabs">
+            {TABS.map(([k, label]) => (
+              <button key={k || 'all'} className={filter === k ? 'active' : ''} onClick={() => setFilter(k)}>
+                {label} <span className="muted">{count(k)}</span>
+              </button>
+            ))}
+          </div>
+          <input className="wide" type="search" placeholder="Search by job or quote number, customer, site…" value={search}
+            onChange={(e) => { setSearch(e.target.value); if (focusId) { const p = new URLSearchParams(params); p.delete('job'); setParams(p, { replace: true }) } }}
+            aria-label="Search jobs" style={{ marginBottom: 12 }} />
+          {focus && created === focus.id && (
+            <div className="filter-bar">
+              <span>Job <b>#{focus.id}</b> created from quote #{focus.quoteId}. It is waiting to be scheduled.</span>
+              <Link className="btn" to="/schedules/week">Schedule it</Link>
+            </div>
+          )}
+          {rows.length === 0 && <p className="muted">No jobs match. Try another search or choose All.</p>}
+        </>
+      )}
+      {db.jobs.length > 0 && rows.length > 0 && (
         <table>
           <thead>
             <tr><th>Job</th><th>Quote</th><th>Customer</th><th>Site</th><th>Value</th><th>Status</th><th /><th /></tr>
@@ -105,7 +148,7 @@ export default function Jobs() {
               const inv = db.invoices.find((i) => i.jobId === j.id && !i.voided && i.claimPct == null)
               const claims = claimsFor(db.invoices, j.id)
               return (
-                <tr key={j.id}>
+                <tr key={j.id} id={`job-${j.id}`} className={j.id === focusId ? 'row-focus' : undefined}>
                   <td>{j.id} – {j.name}{(() => {
                     const notes = db.jobNotes.filter((n) => n.jobId === j.id)
                     const mins = Math.round(db.clock.filter((c) => c.jobId === j.id).reduce((t, c) => t + (new Date(c.end ?? Date.now()).getTime() - new Date(c.start).getTime()), 0) / 60000)

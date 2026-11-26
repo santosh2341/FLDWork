@@ -125,14 +125,16 @@ export default function Shell() {
     if (!s) return []
     const has = (...v: (string | number | undefined)[]) => v.join(' ').toLowerCase().includes(s)
     const cust = (id: string) => db.customers.find((c) => c.id === id)?.name ?? ''
-    return [
-      ...db.customers.filter((c) => has(c.name, c.contactName, c.email, c.phone, c.address)).map((c) => ({ group: 'Customers', label: c.contactName ? `${c.name} (${c.contactName})` : c.name, to: `/customers/${c.id}` })),
-      ...db.sites.filter((x) => has(x.name, x.address)).map((x) => ({ group: 'Sites', label: `${x.name} – ${cust(x.customerId)}`, to: `/customers/${x.customerId}` })),
-      ...db.quotes.filter((x) => has(x.id, x.name, cust(x.customerId))).map((x) => ({ group: 'Quotes', label: `#${x.id} ${x.name}`, to: `/quotes/${x.id}` })),
-      ...db.jobs.filter((j) => has(j.id, j.name, cust(j.customerId))).map((j) => ({ group: 'Jobs', label: `#${j.id} ${j.name}`, to: '/jobs' })),
-      ...db.invoices.filter((i) => has(i.id, cust(i.customerId))).map((i) => ({ group: 'Invoices', label: `Invoice #${i.id} – ${cust(i.customerId)}`, to: `/invoices/${i.id}` })),
-      ...db.catalog.filter((p) => has(p.partNo, p.description)).map((p) => ({ group: 'Parts', label: `${p.partNo} ${p.description}`, to: '/materials/catalog' })),
-    ].slice(0, 15)
+    // up to 4 per group, so a customer's name also brings up their quotes, jobs and invoices
+    const groups = [
+      db.customers.filter((c) => has(c.name, c.contactName, c.email, c.phone, c.address)).map((c) => ({ group: 'Customers', label: c.contactName ? `${c.name} (${c.contactName})` : c.name, to: `/customers/${c.id}` })),
+      db.sites.filter((x) => has(x.name, x.address)).map((x) => ({ group: 'Sites', label: `${x.name} – ${cust(x.customerId)}`, to: `/customers/${x.customerId}` })),
+      [...db.quotes].sort((a, b) => b.id - a.id).filter((x) => has(x.id, x.name, cust(x.customerId))).map((x) => ({ group: 'Quotes', label: `#${x.id} ${x.name} – ${cust(x.customerId)}`, to: `/quotes/${x.id}` })),
+      [...db.jobs].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')).filter((j) => has(j.id, j.name, cust(j.customerId))).map((j) => ({ group: 'Jobs', label: `#${j.id} ${j.name} – ${cust(j.customerId)}`, to: `/jobs?job=${j.id}` })),
+      db.invoices.filter((i) => has(i.id, cust(i.customerId))).map((i) => ({ group: 'Invoices', label: `Invoice #${i.id} – ${cust(i.customerId)}`, to: `/invoices/${i.id}` })),
+      db.catalog.filter((p) => has(p.partNo, p.description)).map((p) => ({ group: 'Parts', label: `${p.partNo} ${p.description}`, to: '/materials/catalog' })),
+    ]
+    return groups.flatMap((g) => g.slice(0, 4))
   }, [q, db])
 
   const trail = crumbs(loc.pathname)

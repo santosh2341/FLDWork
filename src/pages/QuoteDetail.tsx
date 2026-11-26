@@ -149,7 +149,11 @@ export default function QuoteDetail() {
         <div className="row">
           <span className="muted">{dirty ? 'Unsaved changes' : `Last saved ${new Date(draft.updatedAt).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })}`}</span>
           {draft.status === 'approved' && !dirty && (
-            <button onClick={async () => { const job = await createJobFromQuote(draft.id); if (job) nav('/jobs', { state: { job } }) }}>
+            <button onClick={async () => {
+              const had = db.jobs.find((j) => j.quoteId === draft.id)
+              const job = had ? had.id : await createJobFromQuote(draft.id)
+              if (job) nav(`/jobs?job=${job}`, { state: had ? null : { createdJob: job } })
+            }}>
               {db.jobs.some((j) => j.quoteId === draft.id) ? 'View job' : 'Create job'}
             </button>
           )}
