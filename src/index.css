@@ -609,6 +609,13 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .qp-doc { margin-bottom: 18px; }
 .qp-foot { text-align: center; }
 .qp-card .row > button { min-height: 44px; }
+.qp-files h3 { margin: 0 0 8px; font-size: 1rem; }
+.qp-files ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.qp-files li { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); }
+.qp-file-ic { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 8px; background: var(--brand-soft); color: var(--brand); font: 700 .7rem/1 Archivo, system-ui, sans-serif; }
+.qp-file-name { flex: 1; min-width: 0; display: grid; overflow-wrap: anywhere; font-weight: 600; }
+.qp-file-name small { font-weight: 400; }
+.qp-files .btn { flex: none; min-height: 40px; }
 .qlink .muted { margin-top: 2px; }
 .qlink-url { width: 100%; box-sizing: border-box; margin-top: 10px; font-family: ui-monospace, monospace; font-size: .8rem; }
 .qlink-history { margin-top: 8px; }

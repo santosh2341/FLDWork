@@ -74,6 +74,7 @@ export interface QuoteAttachment {
   type: string
   dataUrl: string // kept in the browser for now; move to Supabase Storage later
   addedAt: string
+  customerVisible?: boolean // shown on the customer's accept page and portal; missing = hidden (older files)
 }
 
 export interface Quote {

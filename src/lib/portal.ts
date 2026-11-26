@@ -4,6 +4,10 @@ import { supabase } from './supabase'
 import type { Db } from '../types'
 
 type SellItem = { description: string; quantity: number; unitSell: number; kind: string }
+// A quote attachment the office ticked "Customer can see"
+export type SharedFile = { id: string; name: string; size: number; type: string; dataUrl: string }
+const shared = (list?: { id: string; name: string; size: number; type: string; dataUrl: string; customerVisible?: boolean }[]): SharedFile[] =>
+  (list ?? []).filter((a) => a.customerVisible === true && a.dataUrl).map((a) => ({ id: a.id, name: a.name, size: a.size, type: a.type, dataUrl: a.dataUrl }))
 export interface PortalData {
   state: 'ok' | 'not_found' | 'revoked' | 'expired'
   company?: { name: string; abn: string; licence: string; phone: string; email: string; website: string; address: string }
@@ -11,6 +15,7 @@ export interface PortalData {
   site?: { name: string; address: string }
   quote?: { id: number; name: string; status: string; description: string; date: string; discount: number; taxRate: number; sections: { name: string; items: SellItem[] }[] }
   link?: { expiresAt: string; decision: 'accepted' | 'declined' | null; decidedAt: string | null; signerName: string }
+  attachments?: SharedFile[]
 }
 
 const KEY = 'fieldwork.db.v1'
@@ -45,6 +50,7 @@ export async function loadQuotePortal(token: string): Promise<PortalData> {
       sections: q.costCenters.map((c) => ({ name: c.name, items: c.items.map((i) => ({ description: i.description, quantity: i.quantity, unitSell: i.unitSell, kind: i.kind })) })),
     },
     link: { expiresAt: l.expiresAt, decision: l.decision ?? null, decidedAt: l.decidedAt ?? null, signerName: l.signerName ?? '' },
+    attachments: shared(q.attachments),
   }
 }
 
@@ -79,7 +85,7 @@ export interface AccountData {
   customer?: { name: string; contactName: string; address: string }
   expiresAt?: string
   invoices?: { id: number; issuedAt: string; dueAt: string; taxRate: number; discount: number; claimLabel?: string | null; claimPct?: number | null; job: string; site: { name?: string; address?: string }; sections: SellSection[]; payments: { amount: number; date: string }[]; credits: { amount: number; date: string }[] }[]
-  quotes?: { id: number; name: string; status: string; description: string; date: string; discount: number; taxRate: number; site: { name?: string; address?: string }; acceptToken?: string | null; sections: SellSection[] }[]
+  quotes?: { id: number; name: string; status: string; description: string; date: string; discount: number; taxRate: number; site: { name?: string; address?: string }; acceptToken?: string | null; sections: SellSection[]; attachments?: SharedFile[] }[]
 }
 
 export async function loadCustomerPortal(token: string): Promise<AccountData> {
@@ -115,6 +121,7 @@ export async function loadCustomerPortal(token: string): Promise<AccountData> {
       id: q.id, name: q.name, status: q.status, description: q.description, date: q.timeline[q.timeline.length - 1]?.at ?? q.updatedAt,
       discount: q.discount, taxRate: q.taxRate, site: siteOf(q.siteId), sections: sell(q.costCenters),
       acceptToken: (db.quoteLinks ?? []).find((k) => k.quoteId === q.id && !k.revokedAt && !k.decision && new Date(k.expiresAt).getTime() > now)?.token ?? null,
+      attachments: shared(q.attachments),
     })),
   }
 }

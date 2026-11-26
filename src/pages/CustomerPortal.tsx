@@ -6,6 +6,7 @@ import type { DocModel } from '../lib/docs'
 import { money, STATUS_LABEL } from '../lib/costing'
 import { today } from '../lib/dates'
 import { cardPaymentsEnabled, startCardPayment } from '../lib/payments'
+import SharedFiles from '../components/SharedFiles'
 
 type Quo = NonNullable<AccountData['quotes']>[number]
 const num = (n: unknown) => Number(n ?? 0)
@@ -131,6 +132,7 @@ export default function CustomerPortal({ token }: { token: string }) {
                   {q.acceptToken && <a className="btn primary" href={`/q/${q.acceptToken}`}>View and accept</a>}
                   <PdfButton make={() => doc} />
                 </div>
+                <SharedFiles files={q.attachments} />
               </div>
             )
           })}

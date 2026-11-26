@@ -4,6 +4,7 @@ import type { PortalData } from '../lib/portal'
 import { auDate, companyBlock, makePdf, quoteDocFrom } from '../lib/docs'
 import type { DocModel } from '../lib/docs'
 import { money } from '../lib/costing'
+import SharedFiles from '../components/SharedFiles'
 
 // The page a customer opens from "accept online" (/q/<token>). No sign-in, no app chrome:
 // the quote at selling prices, a PDF download, and accept (typed name) or decline (optional reason).
@@ -37,6 +38,7 @@ export default function QuotePortal({ token }: { token: string }) {
   return (
     <Frame company={data.company.name}>
       <Decision token={token} data={data} total={total} onDone={() => setReload((n) => n + 1)} />
+      {data.attachments?.length ? <div className="qp-card"><SharedFiles files={data.attachments} /></div> : null}
       <DocView doc={doc} />
       <p className="muted qp-foot">Questions? {[data.company.phone && `Call ${data.company.phone}`, data.company.email && `email ${data.company.email}`].filter(Boolean).join(' or ') || 'Contact us'}.</p>
     </Frame>

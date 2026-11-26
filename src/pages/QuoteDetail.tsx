@@ -7,7 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AiPolish from '../components/AiPolish'
 import { useStore } from '../store'
 import { computeCosting, money, sellFromCost, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
-import { today } from '../lib/dates'
+import { dmy, today } from '../lib/dates'
 import type { CostCenter, LineItem, Quote, QuoteAttachment, QuoteStatus } from '../types'
 import { uid } from '../lib/id'
 
@@ -109,7 +109,7 @@ export default function QuoteDetail() {
       }
       const reader = new FileReader()
       reader.onload = () => {
-        const att: QuoteAttachment = { id: uid(), name: f.name, size: f.size, type: f.type, dataUrl: String(reader.result), addedAt: new Date().toISOString() }
+        const att: QuoteAttachment = { id: uid(), name: f.name, size: f.size, type: f.type, dataUrl: String(reader.result), addedAt: new Date().toISOString(), customerVisible: true }
         setDraft((d) => (d ? { ...d, attachments: [...(d.attachments ?? []), att] } : d))
         setDirty(true)
       }
@@ -323,21 +323,28 @@ export default function QuoteDetail() {
         <>
           <div className="card row wrap">
             <input type="file" multiple onChange={(e) => { onFiles(e.target.files); e.target.value = '' }} />
-            <span className="muted">Up to {MAX_FILE / 1024} KB per file while data is stored in the browser.</span>
+            <span className="muted">Up to {MAX_FILE / 1024} KB per file. Ticked files appear on the customer's quote link and portal.</span>
           </div>
           {attachErr && <p className="error">{attachErr}</p>}
           <table>
-            <thead><tr><th>File</th><th>Size</th><th>Added</th><th /></tr></thead>
+            <thead><tr><th>File</th><th>Size</th><th>Added</th><th>Customer can see</th><th /></tr></thead>
             <tbody>
               {(draft.attachments ?? []).map((a) => (
                 <tr key={a.id}>
                   <td><a href={a.dataUrl} download={a.name}>{a.name}</a></td>
                   <td>{Math.max(1, Math.round(a.size / 1024))} KB</td>
-                  <td>{new Date(a.addedAt).toLocaleDateString()}</td>
-                  <td><button onClick={() => change({ attachments: (draft.attachments ?? []).filter((x) => x.id !== a.id) })}>×</button></td>
+                  <td>{dmy(new Date(a.addedAt).toLocaleDateString('en-CA'))}</td>
+                  <td>
+                    <label className="row" style={{ gap: 6 }}>
+                      <input type="checkbox" checked={a.customerVisible === true} aria-label={`Customer can see ${a.name}`}
+                        onChange={(e) => change({ attachments: (draft.attachments ?? []).map((x) => (x.id === a.id ? { ...x, customerVisible: e.target.checked } : x)) })} />
+                      <span className="muted">{a.customerVisible ? 'Shown' : 'Internal'}</span>
+                    </label>
+                  </td>
+                  <td><button aria-label={`Remove ${a.name}`} onClick={() => change({ attachments: (draft.attachments ?? []).filter((x) => x.id !== a.id) })}>×</button></td>
                 </tr>
               ))}
-              {(draft.attachments ?? []).length === 0 && <tr><td colSpan={4} className="muted">No attachments.</td></tr>}
+              {(draft.attachments ?? []).length === 0 && <tr><td colSpan={5} className="muted">No attachments.</td></tr>}
             </tbody>
           </table>
         </>
