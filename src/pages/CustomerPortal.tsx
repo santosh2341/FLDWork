@@ -5,6 +5,7 @@ import { auDate, companyBlock, invoiceDocFrom, makePdf, quoteDocFrom, sellTotals
 import type { DocModel } from '../lib/docs'
 import { money, STATUS_LABEL } from '../lib/costing'
 import { today } from '../lib/dates'
+import { cardPaymentsEnabled, startCardPayment } from '../lib/payments'
 
 type Quo = NonNullable<AccountData['quotes']>[number]
 const num = (n: unknown) => Number(n ?? 0)
@@ -16,6 +17,14 @@ export default function CustomerPortal({ token }: { token: string }) {
   const [err, setErr] = useState('')
   const [retry, setRetry] = useState(0)
   const [tab, setTab] = useState<'invoices' | 'quotes' | 'statement'>('invoices')
+  const [cards, setCards] = useState(false)
+  const [paidId] = useState(() => new URLSearchParams(window.location.search).get('paid')?.replace(/\D/g, '') ?? '')
+
+  useEffect(() => {
+    let live = true
+    void cardPaymentsEnabled().then((on) => { if (live) setCards(on) })
+    return () => { live = false }
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -59,6 +68,7 @@ export default function CustomerPortal({ token }: { token: string }) {
 
   return (
     <Shell company={co.name}>
+      {paidId && <div className="qp-card qp-done ok" role="status"><b>Thank you for your payment on invoice #{paidId}.</b><span className="muted">Stripe emails a receipt to the address you gave. The balance below updates within a minute or two; refresh the page to see it.</span></div>}
       <div className="qp-card cp-summary">
         <h2>{data.customer.name}</h2>
         <div className="cp-stats">
@@ -96,7 +106,10 @@ export default function CustomerPortal({ token }: { token: string }) {
                     <span className="muted">of {money(r.total)}{late ? ' · overdue' : ''}</span>
                   </div>
                 </div>
-                <PdfButton make={() => invoiceDoc(r)} />
+                <div className="row wrap">
+                  {cards && r.balance >= 0.5 && <PayButton token={token} invoiceId={r.i.id} amount={r.balance} />}
+                  <PdfButton make={() => invoiceDoc(r)} />
+                </div>
               </div>
             )
           })}
@@ -174,3 +187,20 @@ function PdfButton({ make }: { make: () => DocModel }) {
   return <>{failed && <span className="error">Could not create the PDF.</span>}<button disabled={busy} onClick={() => void go()}>{busy ? 'Creating PDF…' : 'Download PDF'}</button></>
 }
 
+
+// Opens Stripe's secure payment page for this invoice's balance; Stripe brings the customer back here afterwards.
+function PayButton({ token, invoiceId, amount }: { token: string; invoiceId: number; amount: number }) {
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const go = async () => {
+    setBusy(true); setErr('')
+    try {
+      const { url } = await startCardPayment({ invoiceId, portalToken: token })
+      window.location.assign(url)
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : 'Could not start the payment.')
+      setBusy(false)
+    }
+  }
+  return <>{err && <span className="error" role="alert">{err}</span>}<button className="primary" disabled={busy} onClick={() => void go()}>{busy ? 'Opening secure payment…' : `Pay ${money(amount)} by card`}</button></>
+}

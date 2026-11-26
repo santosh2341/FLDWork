@@ -66,7 +66,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Reports: the ten standard reports plus technician hours, job profitability and customer profitability; filters, CSV, print | ✅ | dashboard "Jobs over budget" alert opens Jobs filtered to them |
 | CSV exports: Xero sales-invoice import format, customers, parts | ✅ | MYOB layout not done |
 | Live accounting sync (Xero, MYOB) | ⬜ | needs the owner's Xero developer account (OAuth app) |
-| Online card payments (Stripe) and payment links | ⬜ | needs a Stripe account |
+| Online card payments (Stripe Checkout): "Pay by card" in the customer portal, card payment link on invoices, payment recorded automatically by webhook | 🟡 | migration 030 + Edge Functions deployed; needs `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set in Supabase and the webhook endpoint added in Stripe; test mode for now |
 | Contractor / vendor bills (accounts payable), BI-style reporting | ⬜ | |
 | SMS reminders and "on my way" texts | ⬜ | needs an SMS provider (for example Twilio) |
 
@@ -111,7 +111,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 
 **D. Needs the owner's accounts (ask before starting)**
 11. Xero sync: OAuth app; push invoices, payments and customers; map GST codes and accounts. MYOB layout for CSV after.
-12. Stripe: pay-by-link on invoices, webhook marks the payment, reconciliation.
+12. Stripe: ~~pay-by-link on invoices, webhook marks the payment~~ built (030); still to do: Stripe fee reconciliation/payout report and switching to live keys.
 13. SMS: appointment reminders and "technician on the way" via Twilio or similar.
 14. Background jobs: ~~scheduled recurring-job generation~~ done (migration 028); overdue-invoice reminder emails still to do (needs the Resend secrets).
 

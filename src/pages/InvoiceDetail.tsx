@@ -1,5 +1,6 @@
 import { useDialog } from '../components/dialog'
 import { today, dmy } from '../lib/dates'
+import CardLinkPanel from '../components/CardLinkPanel'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
@@ -144,6 +145,7 @@ export default function InvoiceDetail() {
 
       {tab === 'Payments' && (
         <>
+          {!inv.voided && inv.stage !== 'draft' && <CardLinkPanel invoiceId={inv.id} balance={t.balance} />}
           {!inv.voided && (
             <div className="card row">
               <input type="number" min="0" step="0.01" placeholder="Amount" value={amount} onChange={(e) => setAmount(e.target.value)} />
