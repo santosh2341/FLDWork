@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
+import CustomerPicker from '../components/CustomerPicker'
 import { money } from '../lib/costing'
 import { REPORTS, toCsv } from '../lib/reports'
 import type { Cell, Column, Filters } from '../lib/reports'
@@ -58,12 +59,9 @@ export function ReportPage() {
         <div className="row wrap">
           <label>From <input type="date" value={filters.from} onChange={(e) => setFilters({ ...filters, from: e.target.value })} /></label>
           <label>To <input type="date" value={filters.to} onChange={(e) => setFilters({ ...filters, to: e.target.value })} /></label>
-          <label>Customer
-            <select value={filters.customerId} onChange={(e) => setFilters({ ...filters, customerId: e.target.value })}>
-              <option value="">All</option>
-              {db.customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-          </label>
+          <div className="row" style={{ gap: 6 }}>Customer
+            <CustomerPicker value={filters.customerId} onChange={(id) => setFilters({ ...filters, customerId: id })} allLabel="All customers" />
+          </div>
           <button className="primary" onClick={() => setApplied(filters)}>Display</button>
           <button onClick={() => window.print()}>Print</button>
           <button onClick={download}>Export CSV</button>

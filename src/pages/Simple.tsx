@@ -11,6 +11,7 @@ import { exportCustomers } from '../lib/accounting'
 import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
 import { usePaged } from '../components/Paged'
 import CustomerLinkPanel from '../components/CustomerLinkPanel'
+import CustomerPicker from '../components/CustomerPicker'
 
 export function Soon() {
   const { slug } = useParams()
@@ -145,11 +146,9 @@ function SiteForm({ customers, fixedCustomerId, initial, submitLabel = 'Add site
   return (
     <form className="card narrow" onSubmit={submit}>
       {!fixedCustomerId && (
-        <label className="block">Customer *<br />
-          <select className="wide" value={customerId} onChange={(e) => setCustomerId(e.target.value)}>
-            {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <div className="block">Customer *<br />
+          <CustomerPicker customers={customers} value={customerId} onChange={setCustomerId} />
+        </div>
       )}
       <label className="block">Site name *<br /><input className="wide" value={name} onChange={(e) => setName(e.target.value)} autoFocus /></label>
       <label className="block">Property type<br />
@@ -191,11 +190,9 @@ export function QuoteForm({ customers, sites, fixedCustomerId, onSubmit, onCance
   return (
     <form className="card narrow" onSubmit={submit}>
       {!fixedCustomerId && (
-        <label className="block">Customer *<br />
-          <select className="wide" value={customerId} onChange={(e) => pickCustomer(e.target.value)}>
-            {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <div className="block">Customer *<br />
+          <CustomerPicker customers={customers} value={customerId} onChange={pickCustomer} />
+        </div>
       )}
       <label className="block">Site *<br />
         <select className="wide" value={siteId} onChange={(e) => setSiteId(e.target.value)}>

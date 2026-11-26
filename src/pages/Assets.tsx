@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
 import FilterBar from '../components/FilterBar'
+import CustomerPicker from '../components/CustomerPicker'
 import { useFilter, useStartOpen } from '../components/useFilter'
 import { CATEGORIES, DUE_LABEL, addMonths, dueState, todayIso } from '../lib/assets'
 import type { Asset } from '../types'
@@ -31,12 +32,9 @@ export function AssetForm({ initial, onSave, onCancel }: { initial: Draft; onSav
     <form className="card" onSubmit={submit}>
       <h3>{f.id ? 'Edit equipment' : 'New equipment'}</h3>
       <div className="grid2">
-        <label className="block">Customer *<br />
-          <select className="wide" value={f.customerId} onChange={(e) => setF({ ...f, customerId: e.target.value, siteId: '' })}>
-            <option value="">Choose…</option>
-            {db.customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </label>
+        <div className="block">Customer *<br />
+          <CustomerPicker value={f.customerId} onChange={(id) => setF({ ...f, customerId: id, siteId: '' })} />
+        </div>
         <label className="block">Site<br />
           <select className="wide" value={f.siteId ?? ''} onChange={set('siteId')} disabled={!f.customerId}>
             <option value="">Not specified</option>
@@ -111,12 +109,12 @@ export default function Assets() {
       <FilterBar label="equipment overdue or due within 30 days" shown={rows.length} total={db.assets.length} />
       <div className="row wrap" style={{ margin: '8px 0' }}>
         <input placeholder="Search name, make, model, serial…" value={q} onChange={(e) => setQ(e.target.value)} />
-        <select value={cust} onChange={(e) => setCust(e.target.value)}>
-          <option value="">All customers</option>
-          {db.customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <CustomerPicker value={cust} onChange={setCust} allLabel="All customers" />
       </div>
       {db.assets.length === 0 && !form && <p className="muted">No equipment recorded yet. Add the units you service (air conditioners, fire panels, switchboards…) to track service history and when each is next due.</p>}
+      {db.assets.length > 0 && rows.length === 0 && (
+        <p className="muted">No equipment matches{cust ? ` for ${db.customers.find((c) => c.id === cust)?.name ?? 'this customer'}` : ''}{q.trim() ? ` and "${q.trim()}"` : ''}. {canWrite && cust ? 'Use "+ New equipment" to add one for them.' : 'Try another search.'}</p>
+      )}
       {rows.length > 0 && (
         <table>
           <thead><tr><th>Equipment</th><th>Customer / site</th><th>Type</th><th>Last serviced</th><th>Next due</th><th></th></tr></thead>
