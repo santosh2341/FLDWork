@@ -128,12 +128,14 @@ async function workflow(page) {
   await go(page, '/quotes/1290')
   if ((await page.locator('select:has(option[value="approved"])').inputValue()) !== 'approved') await page.locator('select:has(option[value="approved"])').selectOption('approved')
   await page.getByRole('button', { name: 'Create job' }).click()
-  await page.waitForURL('**/jobs')
-  const jobLink = page.getByRole('link', { name: 'Job cost' }).first()
+  await page.waitForURL(/\/jobs\?job=\d+$/)
+  const jobId = new URL(page.url()).searchParams.get('job')
+  // the new job is listed first and highlighted
+  const jobLink = page.locator('tbody tr.row-focus').first().getByRole('link', { name: 'Job cost' })
   await jobLink.waitFor()
   const costHref = await jobLink.getAttribute('href')
-  const jobId = costHref?.match(/\/jobs\/(\d+)\//)?.[1] ?? fail(`could not read the new job's id from ${costHref}`)
-  log(`quote approved and job ${jobId} created`)
+  if (!costHref?.includes(`/jobs/${jobId}/`)) fail(`highlighted row is not job ${jobId} (${costHref})`)
+  log(`quote approved and job ${jobId} created, shown first`)
 
   step = 'progress claim'
   await page.getByRole('button', { name: 'Bill in stages' }).click()
