@@ -1,3 +1,4 @@
+import { dmy } from '../lib/dates'
 import { useState } from 'react'
 import { useStore } from '../store'
 import { DUE_LABEL, dueState, todayIso } from '../lib/assets'
@@ -19,7 +20,7 @@ export default function AssetLogger({ assets, jobId, by }: { assets: Asset[]; jo
             <div>
               <b>{a.name}</b> <span className={`pill due-${st}`}>{DUE_LABEL[st]}</span>
               <div className="muted">{[a.make, a.model, a.serial && `S/N ${a.serial}`, a.location].filter(Boolean).join(' · ')}</div>
-              <div className="muted">{a.lastServiced ? `Last serviced ${a.lastServiced}` : 'Never serviced here'}{a.nextDue ? ` · next due ${a.nextDue}` : ''}</div>
+              <div className="muted">{a.lastServiced ? `Last serviced ${dmy(a.lastServiced)}` : 'Never serviced here'}{a.nextDue ? ` · next due ${dmy(a.nextDue)}` : ''}</div>
             </div>
             {open === a.id ? (
               <div style={{ display: 'grid', gap: 6 }}>

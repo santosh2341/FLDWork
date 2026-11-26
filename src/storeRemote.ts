@@ -225,6 +225,27 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
     },
     setClockApproved: async (ids, approved, by) =>
       ids.length === 0 ? null : write(() => sb.from('clock_entries').update({ approved_at: approved ? new Date().toISOString() : null, approved_by: approved ? by : '' }).in('id', ids)),
+    addEmployee: async (name) => {
+      const n = name.trim()
+      if (!n) return { error: 'Enter a name.' }
+      try {
+        const { data, error } = await sb.from('employees').insert({ name: n }).select('id').single()
+        if (error) { fail(error.message); return { error: error.message } }
+        await reload()
+        return { id: data.id as string }
+      } catch (e) {
+        const m = errMsg(e)
+        fail(m)
+        return { error: m }
+      }
+    },
+    updateEmployee: async (id, patch) => {
+      if (patch.name !== undefined && !patch.name.trim()) return 'Enter a name.'
+      const row: Record<string, unknown> = {}
+      if (patch.name !== undefined) row.name = patch.name.trim()
+      if (patch.active !== undefined) row.active = patch.active
+      return write(() => sb.from('employees').update(row).eq('id', id))
+    },
     setEmployeeRate: async (employeeId, rate) =>
       rate == null
         ? write(() => sb.from('employee_rates').delete().eq('employee_id', employeeId))

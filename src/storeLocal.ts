@@ -124,6 +124,19 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       setDb((d) => ({ ...d, clock: d.clock.map((c) => (ids.includes(c.id) ? { ...c, approvedAt: at, approvedBy: approved ? by : '' } : c)) }))
       return null
     },
+    addEmployee: async (name) => {
+      const n = name.trim()
+      if (!n) return { error: 'Enter a name.' }
+      if (db.employees.some((e) => e.name.trim().toLowerCase() === n.toLowerCase())) return { error: 'There is already an employee with that name.' }
+      const id = uid()
+      setDb((d) => ({ ...d, employees: [...d.employees, { id, name: n, active: true }].sort((a, b) => a.name.localeCompare(b.name)) }))
+      return { id }
+    },
+    updateEmployee: async (id, patch) => {
+      if (patch.name !== undefined && !patch.name.trim()) return 'Enter a name.'
+      setDb((d) => ({ ...d, employees: d.employees.map((e) => (e.id === id ? { ...e, ...patch, ...(patch.name !== undefined ? { name: patch.name.trim() } : {}) } : e)) }))
+      return null
+    },
     setEmployeeRate: async (employeeId, rate) => {
       if (rate != null && !(rate >= 0)) return 'Enter an hourly cost of zero or more.'
       setDb((d) => ({ ...d, employees: d.employees.map((e) => (e.id === employeeId ? { ...e, costRate: rate } : e)) }))

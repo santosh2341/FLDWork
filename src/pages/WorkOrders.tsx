@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
-import { hoursBetween, minutes, parseDate, today } from '../lib/dates'
+import { hoursBetween, minutes, parseDate, today, dmy } from '../lib/dates'
 
 export function WorkOrders() {
   const { db } = useStore()
@@ -32,7 +32,7 @@ export function WorkOrders() {
             return (
               <tr key={e.id}>
                 <td><Link to={`/schedules/work-orders/${e.id}`}>WO-{e.id.toUpperCase()}</Link></td>
-                <td>{e.date}</td><td>{e.start}–{e.end}</td>
+                <td>{dmy(e.date)}</td><td>{e.start}–{e.end}</td>
                 <td>{j ? `${j.id} – ${j.name}` : e.jobId}</td>
                 <td>{db.customers.find((c) => c.id === j?.customerId)?.name}</td>
                 <td>{db.employees.find((x) => x.id === e.employeeId)?.name}</td>

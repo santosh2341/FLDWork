@@ -1,3 +1,4 @@
+import { pickable } from '../lib/people'
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
 import type { Audit, Job, JobStatus } from '../types'
@@ -15,7 +16,7 @@ export default function MyDay() {
     const n = (profile?.fullName ?? '').trim().toLowerCase()
     return db.employees.find((e) => n && e.name.trim().toLowerCase() === n)?.id ?? ''
   }, [db.employees, profile])
-  const [empId, setEmpId] = useState(me || db.employees[0]?.id || '')
+  const [empId, setEmpId] = useState(me || pickable(db.employees)[0]?.id || '')
   const [todayIso] = useState(() => iso(new Date()))
   const [date, setDate] = useState(todayIso)
   const [runFor, setRunFor] = useState<{ job: Job; audit: Audit } | null>(null)
@@ -114,7 +115,7 @@ export default function MyDay() {
       {(!me || db.employees.length > 1) && (
         <label className="block">Showing visits for
           <select value={empId} onChange={(e) => setEmpId(e.target.value)}>
-            {db.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            {pickable(db.employees, empId).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
         </label>
       )}

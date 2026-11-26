@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { useCallback, useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
@@ -17,6 +18,7 @@ interface Member { id: string; name: string; email: string; role: Role }
 interface Invite { id: string; email: string; role: Role; code: string; expires_at: string; used_at: string | null }
 
 export default function Team() {
+  const { ask } = useDialog()
   const { remote, profile } = useStore()
   const [members, setMembers] = useState<Member[]>([])
   const [invites, setInvites] = useState<Invite[]>([])
@@ -74,7 +76,7 @@ export default function Team() {
   }
 
   const revoke = async (id: string) => {
-    if (!supabase || !confirm('Cancel this invitation?')) return
+    if (!supabase || !(await ask({ message: 'Cancel this invitation? The link will stop working.', confirmLabel: 'Cancel invitation', cancelLabel: 'Keep it', danger: true }))) return
     const { error: er } = await supabase.from('invites').delete().eq('id', id)
     if (er) setError(er.message)
     await load()

@@ -1,3 +1,5 @@
+import { useDialog } from '../components/dialog'
+import { dmy } from '../lib/dates'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useStore } from '../store'
@@ -67,6 +69,7 @@ export function AssetForm({ initial, onSave, onCancel }: { initial: Draft; onSav
 }
 
 export default function Assets() {
+  const { ask, tell } = useDialog()
   const { db, canWrite, addAsset, updateAsset, deleteAsset, logAssetService, createQuote, profile } = useStore()
   const nav = useNavigate()
   const dueOnly = useFilter() === 'due'
@@ -93,7 +96,7 @@ export default function Assets() {
 
   const serviceQuote = async (a: Asset) => {
     const site = a.siteId || db.sites.find((s) => s.customerId === a.customerId)?.id
-    if (!site) return alert('Add a site for this customer first.')
+    if (!site) return void tell('Add a site for this customer first, then create the service quote.')
     const id = await createQuote(a.customerId, site, `Service – ${a.name}`)
     nav(`/quotes/${id}`)
   }
@@ -143,14 +146,14 @@ export default function Assets() {
                           {a.notes && <p>{a.notes}</p>}
                           <b>Service history</b>
                           {a.services.length === 0 && <p className="muted">No services recorded.</p>}
-                          <ul>{a.services.map((s) => <li key={s.id}><b>{s.date}</b> {s.by && `· ${s.by}`}{s.jobId ? ` · job #${s.jobId}` : ''}{s.notes && <><br />{s.notes}</>}</li>)}</ul>
+                          <ul>{a.services.map((s) => <li key={s.id}><b>{dmy(s.date)}</b> {s.by && `· ${s.by}`}{s.jobId ? ` · job #${s.jobId}` : ''}{s.notes && <><br />{s.notes}</>}</li>)}</ul>
                           {canWrite && (
                             <div style={{ display: 'grid', gap: 6, maxWidth: 520 }}>
                               <textarea rows={2} placeholder="Service notes (optional)" value={note} onChange={(e) => setNote(e.target.value)} />
                               <div className="row">
                                 <button className="primary" onClick={() => { logAssetService(a.id, todayIso(), note.trim(), profile?.fullName ?? '', undefined); setNote('') }}>Log service today</button>
                                 <button onClick={() => void serviceQuote(a)}>Create service quote</button>
-                                <button className="link-btn" onClick={() => confirm(`Delete "${a.name}" and its history?`) && deleteAsset(a.id)}>Delete</button>
+                                <button className="link-btn" onClick={async () => { if (await ask({ message: `Delete "${a.name}" and its service history? This cannot be undone.`, confirmLabel: 'Delete', danger: true })) deleteAsset(a.id) }}>Delete</button>
                               </div>
                             </div>
                           )}

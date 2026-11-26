@@ -631,3 +631,11 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .cp-item .row > button, .cp-item > button, .cp-item .btn { min-height: 40px; justify-self: start; }
 @media print { .qp { background: #fff; } .cp-summary, .cp-tabs, .qp-foot { display: none !important; } }
 @media (max-width: 520px) { .qp-doc { overflow-x: auto; } .qp-doc .doc-table { min-width: 340px; } }
+/* In-page dialogs (components/DialogProvider.tsx) */
+.app-dialog p { margin: 0; line-height: 1.5; color: var(--ink); }
+.app-dialog h3 { margin: 0; }
+.app-dialog .row { margin-top: 6px; }
+button.danger { background: var(--mark-red, #d1453b); border-color: var(--mark-red, #d1453b); color: #fff; }
+button.danger:hover { filter: brightness(1.08); }
+.auto-run { border-left: 5px solid var(--brand); display: grid; gap: 4px; }
+.emp-inactive td { opacity: .7; }

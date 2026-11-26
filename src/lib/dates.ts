@@ -16,6 +16,8 @@ export const weekStart = (s: string) => {
   return addDays(s, -dow)
 }
 export const today = () => fmtDate(new Date())
+// Show a YYYY-MM-DD date the Australian way (25/11/2026). Anything else is returned unchanged.
+export const dmy = (iso?: string | null) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : (iso ?? ''))
 export const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number)
   return h * 60 + m

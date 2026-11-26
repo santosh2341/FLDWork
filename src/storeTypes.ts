@@ -38,6 +38,8 @@ export interface Actions {
   clockOff: (jobId: number, employeeId: string) => void
   setClockApproved: (ids: string[], approved: boolean, by: string) => Promise<string | null> // approve or reopen clocked hours
   setEmployeeRate: (employeeId: string, rate: number | null) => Promise<string | null> // hourly cost; null clears it
+  addEmployee: (name: string) => Promise<{ id?: string; error?: string }> // someone who may never sign in, e.g. a subcontractor
+  updateEmployee: (id: string, patch: { name?: string; active?: boolean }) => Promise<string | null>
   createInvoiceFromJob: (jobId: number) => Promise<number>
   createProgressClaim: (jobId: number, label: string, pct: number) => Promise<{ id?: number; error?: string }>
   saveInvoice: (inv: Invoice) => void

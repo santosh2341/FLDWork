@@ -1,4 +1,5 @@
-import { today } from '../lib/dates'
+import { useDialog } from '../components/dialog'
+import { today, dmy } from '../lib/dates'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
@@ -11,6 +12,7 @@ import { invoiceIssues } from '../lib/checks'
 const TABS = ['Details', 'Payments', 'Log', 'Notes'] as const
 
 export default function InvoiceDetail() {
+  const { ask } = useDialog()
   const { id } = useParams()
   const { db, saveInvoice, recordPayment, addCredit, openTab } = useStore()
   const [sp] = useSearchParams()
@@ -35,10 +37,10 @@ export default function InvoiceDetail() {
   const st = invoiceState(inv)
   const locked = inv.stage !== 'draft' || inv.voided
 
-  const pay = () => {
+  const pay = async () => {
     const n = Number(amount)
     if (!(n > 0)) return
-    if (n > t.balance + 0.005 && !confirm('This payment is more than the balance due. Record it anyway?')) return
+    if (n > t.balance + 0.005 && !(await ask({ message: `This payment is more than the balance due (${money(t.balance)}). Record it anyway?`, confirmLabel: 'Record payment' }))) return
     recordPayment(inv.id, { amount: n, date: today(), method })
     setAmount('')
   }
@@ -66,10 +68,10 @@ export default function InvoiceDetail() {
             <button className="primary" onClick={() => saveInvoice(withLog({ ...inv, stage: 'approved' }, 'Invoice approved'))}>Approve</button>
           )}
           {inv.stage !== 'draft' && !inv.voided && (
-            <button onClick={() => confirm('Unlock this invoice for editing?') && saveInvoice(withLog({ ...inv, stage: 'draft' }, 'Invoice unlocked for editing'))}>Unlock</button>
+            <button onClick={async () => (await ask({ message: 'Unlock this invoice for editing? It goes back to draft until you approve it again.', confirmLabel: 'Unlock' })) && saveInvoice(withLog({ ...inv, stage: 'draft' }, 'Invoice unlocked for editing'))}>Unlock</button>
           )}
           {!inv.voided && t.paid === 0 && (
-            <button onClick={() => confirm('Void this invoice?') && saveInvoice(withLog({ ...inv, voided: true }, 'Invoice voided'))}>Void</button>
+            <button onClick={async () => (await ask({ message: 'Void this invoice? It stays on record but no longer counts as owing.', confirmLabel: 'Void invoice', danger: true })) && saveInvoice(withLog({ ...inv, voided: true }, 'Invoice voided'))}>Void</button>
           )}
         </div>
       </div>
@@ -86,7 +88,7 @@ export default function InvoiceDetail() {
             <div><small>Company</small><br />{customer && <Link to={`/customers/${customer.id}`}>{customer.name}</Link>}</div>
             <div><small>Site</small><br />{site?.name}</div>
             <div><small>Job</small><br />{inv.jobId || '–'}</div>
-            <div><small>Issued</small><br />{inv.issuedAt}</div>
+            <div><small>Issued</small><br />{dmy(inv.issuedAt)}</div>
             <div><small>Payment due</small><br />
               <input type="date" value={inv.dueAt} disabled={locked} onChange={(e) => saveInvoice({ ...inv, dueAt: e.target.value })} />
             </div>
@@ -155,7 +157,7 @@ export default function InvoiceDetail() {
             <thead><tr><th>Date</th><th>Method</th><th className="num">Amount</th></tr></thead>
             <tbody>
               {inv.payments.map((p) => (
-                <tr key={p.id}><td>{p.date}</td><td>{p.method}</td><td className="num">{money(p.amount)}</td></tr>
+                <tr key={p.id}><td>{dmy(p.date)}</td><td>{p.method}</td><td className="num">{money(p.amount)}</td></tr>
               ))}
               {inv.payments.length === 0 && <tr><td colSpan={3} className="muted">No payments recorded.</td></tr>}
             </tbody>
@@ -174,7 +176,7 @@ export default function InvoiceDetail() {
             <thead><tr><th>Date</th><th>Reason</th><th className="num">Amount</th></tr></thead>
             <tbody>
               {(inv.credits ?? []).map((c) => (
-                <tr key={c.id}><td>{c.date}</td><td>{c.reason}</td><td className="num">{money(c.amount)}</td></tr>
+                <tr key={c.id}><td>{dmy(c.date)}</td><td>{c.reason}</td><td className="num">{money(c.amount)}</td></tr>
               ))}
               {(inv.credits ?? []).length === 0 && <tr><td colSpan={3} className="muted">No credits issued.</td></tr>}
             </tbody>

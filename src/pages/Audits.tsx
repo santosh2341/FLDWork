@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { useState } from 'react'
 import { useStore } from '../store'
 import type { AnswerType, Audit, AuditGroup, AuditQuestion } from '../types'
@@ -13,6 +14,7 @@ const move = <T,>(arr: T[], i: number, d: number) => {
 }
 
 export default function Audits() {
+  const { ask } = useDialog()
   const { db, upsertAudit, deleteAudit, saveAuditResult } = useStore()
   const [search, setSearch] = useState('')
   const [selId, setSelId] = useState<string | null>(db.audits[0]?.id ?? null)
@@ -23,8 +25,8 @@ export default function Audits() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [msg, setMsg] = useState('')
 
-  const select = (a: Audit) => {
-    if (dirty && !confirm('Discard unsaved changes?')) return
+  const select = async (a: Audit) => {
+    if (dirty && !(await ask({ message: 'Discard your unsaved changes to this audit?', confirmLabel: 'Discard', danger: true }))) return
     setSelId(a.id)
     setDraft(JSON.parse(JSON.stringify(a)))
     setDirty(false)
@@ -118,7 +120,7 @@ export default function Audits() {
                       <label>Name <input value={draft.name} onChange={(e) => change({ ...draft, name: e.target.value })} /></label>
                       <label>Folder <input value={draft.folder} onChange={(e) => change({ ...draft, folder: e.target.value })} /></label>
                       <button className="primary" disabled={!dirty} onClick={save}>Save</button>
-                      <button onClick={() => { if (confirm('Delete this audit? Completed results are kept.')) { deleteAudit(draft.id); setSelId(null); setDraft(null) } }}>Delete</button>
+                      <button onClick={async () => { if (await ask({ message: 'Delete this audit? Completed results are kept.', confirmLabel: 'Delete', danger: true })) { deleteAudit(draft.id); setSelId(null); setDraft(null) } }}>Delete</button>
                     </div>
                   </div>
                   {draft.groups.map((g, gi) => (

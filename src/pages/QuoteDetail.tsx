@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { useEffect, useState } from 'react'
 import PreSendCheck from '../components/PreSendCheck'
 import QuoteLinkPanel from '../components/QuoteLinkPanel'
@@ -14,6 +15,7 @@ const SUBTABS = ['Summary', 'Parts & Labor', 'Costing', 'Tasks', 'Forms', 'Attac
 const MAX_FILE = 400 * 1024 // browser storage is small; larger files wait for Supabase Storage
 
 export default function QuoteDetail() {
+  const { ask } = useDialog()
   const { id } = useParams()
   const { db, saveQuote, openTab, createJobFromQuote, deleteQuote, canWrite } = useStore()
   const nav = useNavigate()
@@ -139,7 +141,7 @@ export default function QuoteDetail() {
             <button
               disabled={db.jobs.some((j) => j.quoteId === draft.id)}
               title={db.jobs.some((j) => j.quoteId === draft.id) ? 'This quote has a job, so it cannot be deleted' : ''}
-              onClick={() => { if (confirm(`Delete quote #${draft.id}? This cannot be undone.`)) { deleteQuote(draft.id); nav('/quotes') } }}
+              onClick={async () => { if (await ask({ message: `Delete quote #${draft.id}? This cannot be undone.`, confirmLabel: 'Delete quote', danger: true })) { deleteQuote(draft.id); nav('/quotes') } }}
             >Delete</button>
           )}
           <button className="primary" disabled={!dirty} onClick={save}>Save</button>

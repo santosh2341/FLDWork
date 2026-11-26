@@ -1,3 +1,5 @@
+import { useDialog } from '../components/dialog'
+import { dmy } from '../lib/dates'
 import { useState } from 'react'
 import FilterBar from '../components/FilterBar'
 import { useFilter } from '../components/useFilter'
@@ -37,6 +39,7 @@ function sortRows<T>(rows: T[], sort: SortState, val: (r: T, key: string) => Cel
 }
 
 export default function Invoices({ initial = 'unpaid' as Filter }) {
+  const { ask, tell } = useDialog()
   const { db, saveInvoice } = useStore()
   const nav = useNavigate()
   const filter = initial
@@ -91,10 +94,10 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
   const count = filter === 'payments' ? payRows.length : filter === 'credits' ? creditRows.length : filter === 'retainages' ? db.invoices.filter((x) => !x.voided && (x.retainagePct ?? 0) > 0).length : invoiceRows.length
   const outstanding = invoiceRows.reduce((a, r) => (isUnpaid(r.inv) ? a + r.t.balance : a), 0)
 
-  const option = (inv: Invoice, action: string) => {
+  const option = async (inv: Invoice, action: string) => {
     if (action === 'view') nav(`/invoices/${inv.id}`)
     if (action === 'pay') nav(`/invoices/${inv.id}?tab=Payments`)
-    if (action === 'void' && confirm(`Void invoice #${inv.id}?`)) saveInvoice(withLog({ ...inv, voided: true }, 'Invoice voided'))
+    if (action === 'void' && (await ask({ message: `Void invoice #${inv.id}? It stays on record but no longer counts as owing.`, confirmLabel: 'Void invoice', danger: true }))) saveInvoice(withLog({ ...inv, voided: true }, 'Invoice voided'))
   }
 
   const exportCsv = () => {
@@ -116,7 +119,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
       <div className="row between">
         <h1>{heading} ({count})</h1>
         <div className="row">
-          <button onClick={() => { if (!exportXeroInvoices(db)) alert('No approved or sent invoices to export yet.') }} title="Sent and approved invoices, in Xero's sales invoice import layout">Export for Xero</button>
+          <button onClick={() => { if (!exportXeroInvoices(db)) void tell('No approved or sent invoices to export yet.') }} title="Sent and approved invoices, in Xero's sales invoice import layout">Export for Xero</button>
           <button onClick={exportCsv} disabled={count === 0 || filter === 'retainages'}>Export CSV</button>
         </div>
       </div>
@@ -144,15 +147,15 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
                 <td><Link to={`/invoices/${r.inv.id}`}>{r.inv.id}</Link></td>
                 <td><i className="dot" title={STATE_LABEL[r.st]} style={{ background: STATE_COLOR[r.st] }} />{STATE_LABEL[r.st]}</td>
                 <td>{r.inv.jobId || '–'}</td>
-                <td>{r.inv.issuedAt}</td>
-                <td>{r.inv.dueAt}</td>
+                <td>{dmy(r.inv.issuedAt)}</td>
+                <td>{dmy(r.inv.dueAt)}</td>
                 <td className="num">{isUnpaid(r.inv) ? daysOverdue(r.inv) : '–'}</td>
                 <td>{r.customer}</td>
                 <td>{r.site}</td>
                 <td className="num">{money(r.t.total)}</td>
                 <td className="num">{money(r.t.paid)}</td>
                 <td>
-                  <select value="" onChange={(e) => option(r.inv, e.target.value)} aria-label={`Options for invoice ${r.inv.id}`}>
+                  <select value="" onChange={(e) => void option(r.inv, e.target.value)} aria-label={`Options for invoice ${r.inv.id}`}>
                     <option value="">Options</option>
                     <option value="view">View</option>
                     {!r.inv.voided && <option value="pay">Record payment</option>}
@@ -173,7 +176,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           <tbody>
             {payPage.shown.map((r, i) => (
               <tr key={i}>
-                <td>{r.date}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
+                <td>{dmy(r.date)}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
                 <td>{r.customer}</td><td>{r.method}</td><td className="num">{money(r.amount)}</td>
               </tr>
             ))}
@@ -191,7 +194,7 @@ export default function Invoices({ initial = 'unpaid' as Filter }) {
           <tbody>
             {creditPage.shown.map((r, i) => (
               <tr key={i}>
-                <td>{r.date}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
+                <td>{dmy(r.date)}</td><td><Link to={`/invoices/${r.invoice}`}>{r.invoice}</Link></td>
                 <td>{r.customer}</td><td>{r.reason}</td><td className="num">{money(r.amount)}</td>
               </tr>
             ))}

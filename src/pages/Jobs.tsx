@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import JobPhotos from '../components/JobPhotos'
@@ -68,6 +69,7 @@ function PhotosToggle({ jobId, count, author, canAdd }: { jobId: number; count: 
 }
 
 export default function Jobs() {
+  const { ask, tell } = useDialog()
   const { db, setJobStatus, createInvoiceFromJob, deleteJob, canWrite, profile } = useStore()
   const nav = useNavigate()
   const filter = useFilter()
@@ -79,7 +81,7 @@ export default function Jobs() {
       const q = db.quotes.find((x) => x.id === j.quoteId)
       const missing = (q?.forms ?? []).filter((fid) => !db.auditResults.some((r) => r.jobId === j.id && r.auditId === fid))
       if (missing.length) {
-        alert(`Complete these audits first: ${missing.map((fid) => db.audits.find((a) => a.id === fid)?.name ?? 'a deleted audit').join(', ')}`)
+        void tell(`Complete these audits first: ${missing.map((fid) => db.audits.find((a) => a.id === fid)?.name ?? 'a deleted audit').join(', ')}`)
         return
       }
     }
@@ -143,7 +145,7 @@ export default function Jobs() {
                   </td>
                   <td>
                     {canWrite && (
-                      <button className="link-btn" disabled={!!inv} title={inv ? 'This job has an invoice' : ''} onClick={() => confirm(`Delete job ${j.id}? Its schedule entries and audit results are removed too.`) && deleteJob(j.id)}>Delete</button>
+                      <button className="link-btn" disabled={!!inv} title={inv ? 'This job has an invoice' : ''} onClick={async () => { if (await ask({ message: `Delete job ${j.id}? Its schedule entries and audit results are removed too.`, confirmLabel: 'Delete job', danger: true })) deleteJob(j.id) }}>Delete</button>
                     )}
                   </td>
                 </tr>

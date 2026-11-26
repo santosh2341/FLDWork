@@ -1,12 +1,14 @@
+import { useDialog } from '../components/dialog'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
-import { today } from '../lib/dates'
+import { today, dmy } from '../lib/dates'
 import { FREQ_LABEL } from '../lib/recurring'
 import type { RecurringJob } from '../types'
 
 export default function Recurring() {
-  const { db, addRecurring, updateRecurring, deleteRecurring, runRecurring } = useStore()
+  const { ask } = useDialog()
+  const { db, remote, addRecurring, updateRecurring, deleteRecurring, runRecurring } = useStore()
   const [edit, setEdit] = useState<RecurringJob | null>(null)
   const [adding, setAdding] = useState(false)
   const [form, setForm] = useState({ name: '', quoteId: '', frequency: 'monthly' as RecurringJob['frequency'], nextDue: today() })
@@ -23,6 +25,7 @@ export default function Recurring() {
   }
   const isDue = (r: RecurringJob) => r.active && r.nextDue <= today()
   const due = db.recurring.filter(isDue)
+  const lastAuto = (db.automationLog ?? []).find((a) => a.kind === 'recurring')
 
   const save = () => {
     if (!form.name.trim()) return setError('Give the schedule a name.')
@@ -47,7 +50,17 @@ export default function Recurring() {
           <button className="primary" onClick={() => setAdding(!adding)}>{adding ? 'Cancel' : '+ New schedule'}</button>
         </div>
       </div>
-      <p className="muted">Each schedule copies an existing quote into a new pending job every time it falls due. Jobs are created when you run it, not automatically in the background.</p>
+      <p className="muted">Each schedule copies an existing quote into a new pending job every time it falls due.</p>
+      <div className="card auto-run">
+        {remote ? (
+          <>
+            <b>Runs automatically every morning</b> <span className="muted">(about 6am Sydney/Melbourne time). Due schedules become pending jobs without anyone pressing a button.</span>
+            <div className="muted">{lastAuto ? `Last automatic run: ${new Date(lastAuto.ranAt).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })}, ${lastAuto.createdCount === 0 ? 'nothing was due' : `created ${lastAuto.createdCount} job${lastAuto.createdCount === 1 ? '' : 's'}`}.` : 'No automatic run yet. The first one happens tomorrow morning.'}</div>
+          </>
+        ) : (
+          <span className="muted">With the database connected, due schedules run automatically every morning. In this demo copy, use <b>Create all due jobs</b>.</span>
+        )}
+      </div>
       {msg && <p>{msg} <Link to="/jobs">Open jobs</Link></p>}
 
       {adding && (
@@ -81,7 +94,7 @@ export default function Recurring() {
                   {(Object.keys(FREQ_LABEL) as RecurringJob['frequency'][]).map((f) => <option key={f} value={f}>{FREQ_LABEL[f]}</option>)}
                 </select>
               ) : FREQ_LABEL[r.frequency]}</td>
-              <td>{edit?.id === r.id ? <input type="date" value={edit.nextDue} onChange={(e) => e.target.value && setEdit({ ...edit, nextDue: e.target.value })} /> : <>{r.nextDue} {isDue(r) && <span className="badge">Due</span>}</>}</td>
+              <td>{edit?.id === r.id ? <input type="date" value={edit.nextDue} onChange={(e) => e.target.value && setEdit({ ...edit, nextDue: e.target.value })} /> : <>{dmy(r.nextDue)} {isDue(r) && <span className="badge">Due</span>}</>}</td>
               <td>{r.lastCreated ?? '–'}</td>
               <td><input type="checkbox" checked={r.active} aria-label={`Activate ${r.name}`} onChange={(e) => updateRecurring({ ...r, active: e.target.checked })} /></td>
               <td>
@@ -94,7 +107,7 @@ export default function Recurring() {
                   <div className="row">
                     <button disabled={!r.active} onClick={() => run([r.id])}>Create job now</button>
                     <button onClick={() => setEdit(r)}>Edit</button>
-                    <button className="link-btn" onClick={() => confirm(`Delete the schedule "${r.name}"? Jobs already created are kept.`) && deleteRecurring(r.id)}>Delete</button>
+                    <button className="link-btn" onClick={async () => (await ask({ message: `Delete the schedule "${r.name}"? Jobs already created are kept.`, confirmLabel: 'Delete', danger: true })) && deleteRecurring(r.id)}>Delete</button>
                   </div>
                 )}
               </td>

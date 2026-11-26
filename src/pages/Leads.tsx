@@ -1,3 +1,5 @@
+import { useDialog } from '../components/dialog'
+import { dmy } from '../lib/dates'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStartOpen } from '../components/useFilter'
@@ -19,6 +21,7 @@ const SOURCES = ['Website', 'Referral', 'Phone', 'Walk-in', 'Other']
 const EMPTY = { name: '', contactName: '', phone: '', email: '', address: '', source: 'Website', notes: '' }
 
 export default function Leads() {
+  const { ask } = useDialog()
   const { db, addLead, updateLead, convertLead, canWrite } = useStore()
   const nav = useNavigate()
   const [filter, setFilter] = useState<LeadStatus | 'all'>('all')
@@ -49,7 +52,7 @@ export default function Leads() {
   }
 
   const convert = async (id: string) => {
-    if (!confirm('Create a customer, site and draft quote from this lead?')) return
+    if (!(await ask({ message: 'Create a customer, site and draft quote from this lead?', confirmLabel: 'Convert lead' }))) return
     const qid = await convertLead(id)
     if (qid) nav(`/quotes/${qid}`)
   }
@@ -99,7 +102,7 @@ export default function Leads() {
               <td>{l.contactName}<br /><span className="muted">{l.email}</span></td>
               <td>{l.phone}</td>
               <td>{l.source}</td>
-              <td>{l.createdAt}</td>
+              <td>{dmy(l.createdAt)}</td>
               <td>
                 <select value={l.status} disabled={l.status === 'converted'} onChange={(e) => updateLead({ ...l, status: e.target.value as LeadStatus })}>
                   {(Object.keys(LABEL) as LeadStatus[])

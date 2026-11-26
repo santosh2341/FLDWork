@@ -165,6 +165,26 @@ async function workflow(page) {
   await page.getByText('Saved').first().waitFor({ timeout: 5000 }).catch(() => fail('saving an hourly cost did not say "Saved"'))
   log('hourly cost saved in Settings → Employees')
 
+  step = 'add and deactivate an employee'
+  await page.getByLabel('New employee name').fill('Smoke Subbie')
+  await page.getByRole('button', { name: 'Add employee' }).click()
+  const subbie = page.locator('tbody tr', { has: page.locator('input[value="Smoke Subbie"]') })
+  await subbie.waitFor({ timeout: 5000 }).catch(() => fail('a new employee did not appear in the list'))
+  await subbie.getByRole('button', { name: 'Mark inactive' }).click()
+  await go(page, '/schedules/day')
+  if (await page.getByRole('heading', { name: 'Smoke Subbie' }).count()) fail('an inactive employee still shows in Day view')
+  log('employee added, marked inactive and hidden from the schedule')
+
+  step = 'in-page confirm dialog'
+  await go(page, '/materials/catalog')
+  const partRows = await page.locator('main tbody tr').count()
+  await page.getByRole('button', { name: 'Delete' }).first().click()
+  const dialog = page.getByRole('alertdialog')
+  await dialog.waitFor({ timeout: 5000 }).catch(() => fail('deleting a part should ask in an in-page dialog'))
+  await dialog.getByRole('button', { name: 'Cancel' }).click()
+  if ((await page.locator('main tbody tr').count()) !== partRows) fail('cancelling the dialog should keep the part')
+  log('delete asks in an in-page dialog and Cancel keeps the part')
+
   step = 'purchase order for the job'
   await go(page, '/materials/purchase-orders')
   await page.getByPlaceholder('Vendor (pick or type) *').fill('Smoke Electrical')

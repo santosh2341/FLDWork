@@ -223,6 +223,13 @@ export interface CustomerLink {
   lastViewedAt?: string | null
 }
 
+// One automatic background run (migration 028), e.g. recurring jobs created at 6am.
+export interface AutomationRun {
+  kind: string
+  ranAt: string
+  createdCount: number
+}
+
 export interface AssetService {
   id: string
   jobId?: number
@@ -275,6 +282,7 @@ export interface Employee {
   id: string
   name: string
   costRate?: number | null // $/hour this person costs the business, ex GST. Only office roles receive it.
+  active?: boolean // false = left the business; kept on past work, hidden from pickers (missing means active)
 }
 
 export interface ScheduleEntry {
@@ -436,6 +444,7 @@ export interface Db {
   jobCosts: JobCost[]
   quoteLinks: QuoteLink[]
   customerLinks: CustomerLink[]
+  automationLog: AutomationRun[]
   clock: ClockEntry[]
   jobPhotos: JobPhoto[]
   assets: Asset[]

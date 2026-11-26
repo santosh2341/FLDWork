@@ -1,7 +1,9 @@
+import { isActive, pickable } from '../lib/people'
+import { useDialog } from '../components/dialog'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
-import { addDays, DAY_NAMES, fmtDate, hoursBetween, layoutLanes, minutes, parseDate, today, weekStart } from '../lib/dates'
+import { addDays, DAY_NAMES, fmtDate, hoursBetween, layoutLanes, minutes, parseDate, today, weekStart, dmy } from '../lib/dates'
 import type { ScheduleEntry } from '../types'
 
 type View = 'calendar' | 'summary' | 'breakdown'
@@ -13,6 +15,7 @@ const HOURS = Array.from({ length: LAST_HOUR - FIRST_HOUR }, (_, i) => FIRST_HOU
 const label = (h: number) => `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'am' : 'pm'}`
 
 export default function Timesheets() {
+  const { ask } = useDialog()
   const { db, addScheduleEntry, deleteScheduleEntry, setTimesheetLock, createJobFromQuote, canWrite, setClockApproved, profile } = useStore()
   const [approveMsg, setApproveMsg] = useState<{ text: string; bad: boolean } | null>(null)
   const [from, setFrom] = useState(weekStart(today()))
@@ -20,10 +23,10 @@ export default function Timesheets() {
   const [view, setView] = useState<View>('calendar')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [form, setForm] = useState({ jobId: '', employeeId: db.employees[0]?.id ?? '', date: today(), start: '08:00', end: '10:00' })
+  const [form, setForm] = useState({ jobId: '', employeeId: pickable(db.employees)[0]?.id ?? '', date: today(), start: '08:00', end: '10:00' })
 
   const days = Array.from({ length: 7 }, (_, i) => addDays(from, i))
-  const people = db.employees.filter((e) => employeeId === 'all' || e.id === employeeId)
+  const people = db.employees.filter((e) => (employeeId === 'all' ? isActive(e) || db.schedule.some((s) => s.employeeId === e.id && s.date >= days[0] && s.date <= days[6]) : e.id === employeeId))
   const weekEntries = db.schedule.filter((e) => e.date >= days[0] && e.date <= days[6])
   const schedulableJobs = db.jobs.filter((j) => j.status !== 'invoiced')
   const approvedNoJob = db.quotes.filter((q) => q.status === 'approved' && !db.jobs.some((j) => j.quoteId === q.id))
@@ -49,7 +52,7 @@ export default function Timesheets() {
     }
   }
   const remove = async (e: ScheduleEntry) => {
-    if (!confirm(`Remove ${jobName(e.jobId)} on ${e.date}?`)) return
+    if (!(await ask({ message: `Remove ${jobName(e.jobId)} on ${dmy(e.date)}?`, confirmLabel: 'Remove', danger: true }))) return
     setError((await deleteScheduleEntry(e.id)) ?? '')
   }
 
@@ -92,7 +95,7 @@ export default function Timesheets() {
             <label>Employee
               <select value={employeeId} onChange={(e) => setEmployeeId(e.target.value)}>
                 <option value="all">All employees</option>
-                {db.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+                {pickable(db.employees, employeeId).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
               </select>
             </label>
           </div>
@@ -121,7 +124,7 @@ export default function Timesheets() {
             {schedulableJobs.map((j) => <option key={j.id} value={j.id}>{j.id} – {j.name}</option>)}
           </select>
           <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })}>
-            {db.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            {pickable(db.employees, form.employeeId).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
           <input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
           <input type="time" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} />
@@ -247,7 +250,7 @@ export default function Timesheets() {
               .sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start))
               .map((e) => (
                 <tr key={e.id}>
-                  <td>{e.date}</td>
+                  <td>{dmy(e.date)}</td>
                   <td>{db.employees.find((x) => x.id === e.employeeId)?.name}</td>
                   <td>{e.jobId} – {jobName(e.jobId)}</td>
                   <td>{jobCustomer(e.jobId)}</td>

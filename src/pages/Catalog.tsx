@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { exportParts } from '../lib/accounting'
 import { useState } from 'react'
 import { useStore } from '../store'
@@ -8,6 +9,7 @@ import { usePaged } from '../components/Paged'
 const blank: Omit<CatalogPart, 'id'> = { partNo: '', description: '', vendor: '', category: '', cost: 0, markupPct: 30, stock: 0 }
 
 export default function Catalog() {
+  const { ask } = useDialog()
   const { db, upsertPart, deletePart, canWrite } = useStore()
   const [q, setQ] = useState('')
   const [edit, setEdit] = useState<(Omit<CatalogPart, 'id'> & { id?: string }) | null>(null)
@@ -29,7 +31,7 @@ export default function Catalog() {
               <td>{p.partNo}</td><td>{p.description}</td><td>{p.vendor}</td><td>{p.category}</td>
               <td>{money(p.cost)}</td><td>{p.markupPct}%</td><td>{money(sellFromCost(p.cost, p.markupPct))}</td>
               <td className={p.stock < 5 ? 'low' : ''}>{p.stock}</td>
-              <td>{canWrite && <><button onClick={() => setEdit(p)}>Edit</button> <button onClick={() => confirm('Delete part?') && deletePart(p.id)}>Delete</button></>}</td>
+              <td>{canWrite && <><button onClick={() => setEdit(p)}>Edit</button> <button onClick={async () => { if (await ask({ message: `Delete part ${p.partNo}?`, confirmLabel: 'Delete', danger: true })) deletePart(p.id) }}>Delete</button></>}</td>
             </tr>
           ))}
         </tbody>

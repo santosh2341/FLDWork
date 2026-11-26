@@ -1,3 +1,4 @@
+import { useDialog } from '../components/dialog'
 import { useState } from 'react'
 import FilterBar from '../components/FilterBar'
 import { useFilter, useStartOpen } from '../components/useFilter'
@@ -125,19 +126,20 @@ function SiteForm({ customers, fixedCustomerId, initial, submitLabel = 'Add site
   initial?: { customerId: string; name: string; addr: AddressValue; propertyType?: string; accessNotes?: string }; submitLabel?: string
   onSubmit: (customerId: string, name: string, addr: AddressValue, extra: { propertyType: string; accessNotes: string }) => void; onCancel: () => void
 }) {
+  const { ask } = useDialog()
   const [customerId, setCustomerId] = useState(initial?.customerId ?? fixedCustomerId ?? customers[0]?.id ?? '')
   const [name, setName] = useState(initial?.name ?? '')
   const [addr, setAddr] = useState<AddressValue>(initial?.addr ?? { parts: emptyAddress, point: null })
   const [propertyType, setPropertyType] = useState(initial?.propertyType ?? '')
   const [accessNotes, setAccessNotes] = useState(initial?.accessNotes ?? '')
   const [err, setErr] = useState('')
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!customerId) return setErr('Choose a customer.')
     if (!name.trim()) return setErr('Site name is required.')
     const ae = validateAddress(addr.parts)
     if (ae) return setErr(ae)
-    if (!isBlank(addr.parts) && !addr.point && !confirm('This site has no map location, so it will not appear on the dashboard map. Save anyway? (Use "Find on map" first.)')) return
+    if (!isBlank(addr.parts) && !addr.point && !(await ask({ message: 'This site has no map location, so it will not appear on the dashboard map. Save anyway? (Use "Find on map" first.)', confirmLabel: 'Save anyway' }))) return
     onSubmit(customerId, name.trim(), addr, { propertyType, accessNotes: accessNotes.trim() })
   }
   return (
@@ -209,6 +211,7 @@ export function QuoteForm({ customers, sites, fixedCustomerId, onSubmit, onCance
 }
 
 export function CustomerDetail() {
+  const { ask } = useDialog()
   const { id } = useParams()
   const { db, addSite, updateSite, deleteSite, deleteCustomer, updateCustomer, createQuote, canWrite } = useStore()
   const nav = useNavigate()
@@ -270,7 +273,7 @@ export function CustomerDetail() {
             return (
               <li key={s.id}>{s.name} <span className="muted">{s.address}</span>{s.propertyType && <span className="pill" style={{ marginLeft: 6, fontSize: '.7rem', padding: '1px 8px' }}>{s.propertyType}</span>} <span title={s.lat != null ? 'Shown on the map' : 'No map location yet. Edit the site and use Find on map.'}>{s.lat != null ? '📍' : '⚠️'}</span>{' '}
                 {canWrite && <button className="link-btn" onClick={() => { setEditingSite(s); setAddingSite(false) }}>edit</button>}{' '}
-                {canWrite && <button className="link-btn" disabled={used} title={used ? 'In use by a quote, job or invoice' : ''} onClick={() => confirm(`Delete site "${s.name}"?`) && deleteSite(s.id)}>delete</button>}
+                {canWrite && <button className="link-btn" disabled={used} title={used ? 'In use by a quote, job or invoice' : ''} onClick={async () => { if (await ask({ message: `Delete site "${s.name}"?`, confirmLabel: 'Delete site', danger: true })) deleteSite(s.id) }}>delete</button>}
               </li>
             )
           })}</ul>
@@ -294,7 +297,7 @@ export function CustomerDetail() {
           <button
             disabled={hasHistory}
             title={hasHistory ? 'This customer has quotes, jobs or invoices, so it cannot be deleted. Put it on hold instead.' : ''}
-            onClick={() => { if (confirm(`Delete customer "${c.name}" and its sites? This cannot be undone.`)) { deleteCustomer(c.id); nav('/customers') } }}
+            onClick={async () => { if (await ask({ message: `Delete customer "${c.name}" and its sites? This cannot be undone.`, confirmLabel: 'Delete customer', danger: true })) { deleteCustomer(c.id); nav('/customers') } }}
           >Delete customer</button>
         </p>
       )}

@@ -1,8 +1,10 @@
+import { useDialog } from './dialog'
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
 
 // Photos on a job: take or choose pictures (phone camera opens directly), view them, and remove them (office roles).
 export default function JobPhotos({ jobId, author, canAdd = true }: { jobId: number; author: string; canAdd?: boolean }) {
+  const { ask } = useDialog()
   const { db, addJobPhoto, deleteJobPhoto, photoUrls, canWrite } = useStore()
   const photos = db.jobPhotos.filter((p) => p.jobId === jobId)
   const [urls, setUrls] = useState<Record<string, string>>({})
@@ -38,7 +40,7 @@ export default function JobPhotos({ jobId, author, canAdd = true }: { jobId: num
         {photos.map((p) => (
           <figure key={p.id}>
             {urls[p.id] ? <img src={urls[p.id]} alt={p.name || 'Job photo'} loading="lazy" onClick={() => setBig(urls[p.id])} /> : <div className="jp-ph" />}
-            {canWrite && <button className="link-btn" onClick={() => confirm('Remove this photo?') && deleteJobPhoto(p.id)}>Remove</button>}
+            {canWrite && <button className="link-btn" onClick={async () => { if (await ask({ message: 'Remove this photo?', confirmLabel: 'Remove', danger: true })) deleteJobPhoto(p.id) }}>Remove</button>}
           </figure>
         ))}
       </div>

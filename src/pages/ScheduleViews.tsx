@@ -1,3 +1,4 @@
+import { isActive, pickable } from '../lib/people'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
@@ -123,7 +124,7 @@ function MoveSheet({ db, what, defaultDate, onSave, onCancel, onRemove }: {
   const info = jobInfo(db, jobId)
   const [f, setF] = useState<Slot>(() => entry
     ? { employeeId: entry.employeeId, date: entry.date, start: entry.start, end: entry.end }
-    : { employeeId: db.employees[0]?.id ?? '', date: defaultDate, start: DEFAULT_START, end: DEFAULT_END })
+    : { employeeId: pickable(db.employees)[0]?.id ?? '', date: defaultDate, start: DEFAULT_START, end: DEFAULT_END })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [confirmRemove, setConfirmRemove] = useState(false)
@@ -153,7 +154,7 @@ function MoveSheet({ db, what, defaultDate, onSave, onCancel, onRemove }: {
         <p className="muted" style={{ margin: 0 }}>{info.name}{info.customer ? ` · ${info.customer.name}` : ''}</p>
         <label>Who
           <select value={f.employeeId} onChange={set('employeeId')}>
-            {db.employees.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
+            {pickable(db.employees, f.employeeId).map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </select>
         </label>
         <label>Day<input type="date" value={f.date} onChange={set('date')} /></label>
@@ -207,7 +208,7 @@ export function DayView() {
       {sch.note}
       {sch.sheet}
       <div className="grid2">
-        {db.employees.map((emp) => {
+        {db.employees.filter((emp) => isActive(emp) || entries.some((e) => e.employeeId === emp.id)).map((emp) => {
           const mine = entries.filter((e) => e.employeeId === emp.id).sort(byTime)
           const hours = mine.reduce((a, e) => a + hoursBetween(e.start, e.end), 0)
           return (
@@ -256,7 +257,7 @@ export function WeekView() {
           </tr>
         </thead>
         <tbody>
-          {db.employees.map((emp) => (
+          {db.employees.filter((emp) => isActive(emp) || db.schedule.some((e) => e.employeeId === emp.id && days.includes(e.date))).map((emp) => (
             <tr key={emp.id}>
               <td><b>{emp.name}</b></td>
               {days.map((d) => {
@@ -310,7 +311,7 @@ export function MonthView() {
 export function RunSheets() {
   const { db } = useStore()
   const [date, setDate] = useState(today())
-  const [employeeId, setEmployeeId] = useState(db.employees[0]?.id ?? '')
+  const [employeeId, setEmployeeId] = useState(pickable(db.employees)[0]?.id ?? '')
   const emp = db.employees.find((e) => e.id === employeeId)
   const mine = db.schedule.filter((e) => e.employeeId === employeeId && e.date === date).sort(byTime)
   return (

@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './auth'
 import { AuthProvider } from './AuthProvider'
 import { StoreProvider } from './StoreProvider'
+import DialogProvider from './components/DialogProvider'
 import Login from './pages/Login'
 import Shell from './components/Shell'
 import { useStore } from './store'
@@ -77,6 +78,7 @@ function Home() {
 function AppRoutes() {
   return (
     <StoreProvider>
+      <DialogProvider>
       <BrowserRouter>
         <Suspense fallback={<div className="center muted">Loading…</div>}>
         <Routes>
@@ -128,6 +130,7 @@ function AppRoutes() {
         </Routes>
         </Suspense>
       </BrowserRouter>
+      </DialogProvider>
     </StoreProvider>
   )
 }

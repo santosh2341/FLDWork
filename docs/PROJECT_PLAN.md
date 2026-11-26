@@ -49,7 +49,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Mobile audits/forms: builder and runner with versioned results; optional rule "required audits before complete" | ✅ | |
 | Job photos (private storage, shrunk on device) | 🟡 | works in code; live storage not exercised from the build sandbox |
 | Equipment register: assets per site/customer, service history, due dates, "services due" list, log service from phone, create service quote | ✅ | |
-| Recurring jobs (copy a quote into a new pending job when due) | 🟡 | run manually; no background scheduler yet |
+| Recurring jobs (copy a quote into a new pending job when due), run automatically every morning, with manual run kept | ✅ | migration 028, pg_cron at 6am Sydney time; Recurring page shows the last automatic run |
 | Clock hours in timesheet approval: clocked vs scheduled per person per week, approve/reopen; approved entries are locked for technicians | ✅ | approval is per person per week on Timesheets → Summary |
 | Route optimisation, GPS tracking, offline mode / PWA install, push notifications | ⬜ | |
 | Customer sign-off signature on a job | ⬜ | |
@@ -78,7 +78,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Company profile (ABN, bank, footer), settings tabs (General, Statuses, Audits, Invoicing, mobile settings) | ✅ | |
 | Global search, notifications bell, dashboard (alert tiles that filter lists, reminders, announcements, day schedule, map), guided tour, light/dark theme | ✅ | |
 | Phone redesign and desktop refresh (this session) | ✅ | verified at 390px and 1366px in Chromium; iPhone Safari verified only by the owner's reports |
-| AI: quote drafting from catalog, "Tidy with AI" on scope/notes | 🟡 | built, hidden behind a missing `ANTHROPIC_API_KEY`; the owner postponed paying for AI |
+| AI: quote drafting from catalog, "Tidy with AI" on scope/notes | 🟡 | built and updated for current models (structured outputs); hidden behind a missing `ANTHROPIC_API_KEY`; the owner postponed paying for AI |
 | AI: ask-your-data, equipment photo reading, manuals search | ⬜ | postponed by the owner |
 | Multi-branch / multiple companies per user, API/webhooks, audit trail UI | ⬜ | |
 
@@ -113,7 +113,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 11. Xero sync: OAuth app; push invoices, payments and customers; map GST codes and accounts. MYOB layout for CSV after.
 12. Stripe: pay-by-link on invoices, webhook marks the payment, reconciliation.
 13. SMS: appointment reminders and "technician on the way" via Twilio or similar.
-14. Background jobs: scheduled recurring-job generation and overdue-invoice reminders (Supabase cron / Edge Function).
+14. Background jobs: ~~scheduled recurring-job generation~~ done (migration 028); overdue-invoice reminder emails still to do (needs the Resend secrets).
 
 **E. AI (only when the owner says go; needs `ANTHROPIC_API_KEY` and a budget)**
 15. Turn on the existing quote drafting and tidy-ups and test live.

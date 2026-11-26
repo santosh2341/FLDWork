@@ -1,3 +1,4 @@
+import { isActive } from '../lib/people'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStore } from '../store'
@@ -135,7 +136,7 @@ export default function Dashboard() {
           </div>
           {dayEntries.length === 0 && <p className="muted">Nothing scheduled on this day.</p>}
           <div className="scroll-list grow">
-          {db.employees.map((emp) => {
+          {db.employees.filter((emp) => isActive(emp) || dayEntries.some((e) => e.employeeId === emp.id)).map((emp) => {
             const mine = dayEntries.filter((e) => e.employeeId === emp.id).sort((a, b) => a.start.localeCompare(b.start))
             if (mine.length === 0) return null
             return (

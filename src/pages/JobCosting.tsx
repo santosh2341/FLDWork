@@ -1,4 +1,4 @@
-import { today } from '../lib/dates'
+import { dmy, today } from '../lib/dates'
 import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
@@ -11,7 +11,6 @@ const KINDS: { v: JobCost['kind']; label: string }[] = [
   { v: 'subcontract', label: 'Subcontractor' },
   { v: 'other', label: 'Other' },
 ]
-const dmy = (s: string) => s.split('-').reverse().join('/')
 const pctTxt = (n: number) => `${Math.round(n * 10) / 10}%`
 
 export default function JobCosting() {

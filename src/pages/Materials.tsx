@@ -1,4 +1,5 @@
-import { today } from '../lib/dates'
+import { useDialog } from '../components/dialog'
+import { today, dmy } from '../lib/dates'
 import { useState } from 'react'
 import FilterBar from '../components/FilterBar'
 import { useFilter } from '../components/useFilter'
@@ -39,6 +40,7 @@ export function Inventory() {
 }
 
 export function PurchaseOrders() {
+  const { ask } = useDialog()
   const { db, createPO, setPOStatus, receivePO, setPOJob } = useStore()
   const [jobId, setJobId] = useState('')
   const [jobErr, setJobErr] = useState<{ po: number; msg: string } | null>(null)
@@ -102,12 +104,12 @@ export function PurchaseOrders() {
       {shownPOs.map((po) => (
         <div key={po.id} className="card">
           <div className="row between">
-            <h3>PO {po.id} – {po.vendor} <span className="muted">{po.createdAt} · {po.status} · {money(po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0))}</span></h3>
+            <h3>PO {po.id} – {po.vendor} <span className="muted">{dmy(po.createdAt)} · {po.status} · {money(po.lines.reduce((a, l) => a + l.qty * l.unitCost, 0))}</span></h3>
             <div className="row">
               <Link className="btn" to={`/materials/purchase-orders/${po.id}/print`}>Print / PDF</Link>
               {po.status === 'draft' && <button onClick={() => setPOStatus(po.id, 'ordered')}>Mark as ordered</button>}
               {(po.status === 'draft' || po.status === 'ordered') && po.lines.every((l) => l.received === 0) && (
-                <button className="link-btn" onClick={() => confirm(`Cancel PO ${po.id}?`) && setPOStatus(po.id, 'cancelled')}>Cancel PO</button>
+                <button className="link-btn" onClick={async () => { if (await ask({ message: `Cancel PO ${po.id}?`, confirmLabel: 'Cancel PO', cancelLabel: 'Keep PO', danger: true })) setPOStatus(po.id, 'cancelled') }}>Cancel PO</button>
               )}
             </div>
           </div>
@@ -156,6 +158,7 @@ export function PurchaseOrders() {
 }
 
 export function InventoryCounts() {
+  const { ask } = useDialog()
   const { db, createCount, setCountLine, applyCount } = useStore()
   const [open, setOpen] = useState<string | null>(db.counts[0]?.id ?? null)
   const partName = (id: string) => db.catalog.find((p) => p.id === id)?.description ?? id
@@ -164,7 +167,7 @@ export function InventoryCounts() {
     <>
       <div className="row between"><h1>Inventory Counts</h1><button onClick={async () => { const id = await createCount(); if (id) setOpen(id) }}>+ New count</button></div>
       <div className="subtabs">
-        {db.counts.map((c) => <button key={c.id} className={c.id === open ? 'active' : ''} onClick={() => setOpen(c.id)}>{c.date}{c.applied ? ' ✓' : ''}</button>)}
+        {db.counts.map((c) => <button key={c.id} className={c.id === open ? 'active' : ''} onClick={() => setOpen(c.id)}>{dmy(c.date)}{c.applied ? ' ✓' : ''}</button>)}
       </div>
       {!sel && <p className="muted">Start a count to record what is physically on the shelf.</p>}
       {sel && (
@@ -181,7 +184,7 @@ export function InventoryCounts() {
               ))}
             </tbody>
           </table>
-          {!sel.applied && <button className="primary" onClick={() => confirm('Update stock levels to the counted quantities?') && applyCount(sel.id)}>Apply count to stock</button>}
+          {!sel.applied && <button className="primary" onClick={async () => { if (await ask({ message: 'Update stock levels to the counted quantities?', confirmLabel: 'Update stock' })) applyCount(sel.id) }}>Apply count to stock</button>}
           {sel.applied && <p className="muted">This count has been applied to stock.</p>}
         </>
       )}
@@ -300,7 +303,7 @@ export function VendorQuotes() {
         return (
           <div key={q.id} className="card">
             <div className="row between">
-              <h3>Quote {q.id} – {q.vendor} <span className="muted">{QUOTE_LABEL[q.status]} · {q.createdAt}{q.validUntil ? ` · valid until ${q.validUntil}` : ''}</span> {expired && q.status !== 'accepted' && <span className="badge">Expired</span>}</h3>
+              <h3>Quote {q.id} – {q.vendor} <span className="muted">{QUOTE_LABEL[q.status]} · {dmy(q.createdAt)}{q.validUntil ? ` · valid until ${dmy(q.validUntil)}` : ''}</span> {expired && q.status !== 'accepted' && <span className="badge">Expired</span>}</h3>
               <b>{money(total)}</b>
             </div>
             <table>
@@ -355,7 +358,7 @@ export function Receipts() {
           {shown.map((r) => (
             <tr key={r.id}>
               <td>R-{r.id}</td>
-              <td>{r.date}</td>
+              <td>{dmy(r.date)}</td>
               <td><Link to="/materials/purchase-orders">{r.poId}</Link></td>
               <td>{db.purchaseOrders.find((p) => p.id === r.poId)?.vendor}</td>
               <td>{r.lines.map((l) => `${l.qty} × ${part(l.partId)}`).join(', ')}</td>
