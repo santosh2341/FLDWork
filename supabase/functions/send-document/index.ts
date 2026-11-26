@@ -24,7 +24,8 @@ const addrLines = (a?: string) => {
 }
 
 interface Item { description: string; quantity: number; unit_sell: number; kind: string }
-const rowsHtml = (groups: { name: string; items: Item[] }[]) =>
+// empty cost centres (no lines) are left out
+const rowsHtml = (all: { name: string; items: Item[] }[], groups = all.filter((g) => g.items.length > 0)) =>
   groups.map((g) =>
     (groups.length > 1 ? `<tr><td colspan="4" style="padding:8px 0 4px;font-weight:600;color:#475569">${esc(g.name)}</td></tr>` : '') +
     g.items.map((i) => `<tr><td style="padding:6px 0;border-bottom:1px solid #e5e7eb">${esc(i.description)}</td><td style="padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right">${i.quantity}${i.kind === 'labour' ? ' h' : ''}</td><td style="padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right">${money(i.unit_sell)}</td><td style="padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right">${money(i.quantity * i.unit_sell)}</td></tr>`).join('')).join('')
