@@ -7,6 +7,17 @@ import type { CatalogPart } from '../types'
 import { usePaged } from '../components/Paged'
 
 const blank: Omit<CatalogPart, 'id'> = { partNo: '', description: '', vendor: '', category: '', cost: 0, markupPct: 30, stock: 0 }
+const TEXT_FIELDS = [
+  ['partNo', 'Part number', 'e.g. RCBO-20A'],
+  ['description', 'Description', 'e.g. RCBO 20A 30mA, 1 pole'],
+  ['vendor', 'Supplier', 'e.g. Rexel'],
+  ['category', 'Category', 'e.g. Electrical'],
+] as const
+const NUM_FIELDS = [
+  ['cost', 'Cost ($, ex GST)', '0.01'],
+  ['markupPct', 'Markup %', '0.1'],
+  ['stock', 'In stock', '1'],
+] as const
 
 export default function Catalog() {
   const { ask } = useDialog()
@@ -42,13 +53,16 @@ export default function Catalog() {
         <div className="modal-bg" onClick={() => setEdit(null)}>
           <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={(e) => { e.preventDefault(); upsertPart(edit); setEdit(null) }}>
             <h3>{edit.id ? 'Edit part' : 'New part'}</h3>
-            {(['partNo', 'description', 'vendor', 'category'] as const).map((k) => (
-              <label key={k}>{k}<input required={k === 'partNo' || k === 'description'} value={edit[k]} onChange={(e) => setEdit({ ...edit, [k]: e.target.value })} /></label>
+            {TEXT_FIELDS.map(([k, label, hint]) => (
+              <label key={k}>{label}<input required={k === 'partNo' || k === 'description'} placeholder={hint} value={edit[k]} onChange={(e) => setEdit({ ...edit, [k]: e.target.value })} /></label>
             ))}
-            {(['cost', 'markupPct', 'stock'] as const).map((k) => (
-              <label key={k}>{k}<input type="number" step="0.01" min="0" value={edit[k]} onChange={(e) => setEdit({ ...edit, [k]: Number(e.target.value) })} /></label>
-            ))}
-            <div className="row"><button type="submit">Save</button><button type="button" onClick={() => setEdit(null)}>Cancel</button></div>
+            <div className="row" style={{ gap: 10 }}>
+              {NUM_FIELDS.map(([k, label, step]) => (
+                <label key={k} style={{ flex: 1, minWidth: 0 }}>{label}<input type="number" step={step} min="0" value={edit[k]} onChange={(e) => setEdit({ ...edit, [k]: Number(e.target.value) })} /></label>
+              ))}
+            </div>
+            <p className="muted" style={{ margin: 0 }}>Markup is added on top of your cost. Sell price: <b>{money(sellFromCost(edit.cost, edit.markupPct))}</b> ex GST</p>
+            <div className="row"><button type="submit" className="primary">{edit.id ? 'Save part' : 'Add part'}</button><button type="button" onClick={() => setEdit(null)}>Cancel</button></div>
           </form>
         </div>
       )}

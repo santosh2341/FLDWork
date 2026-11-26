@@ -186,12 +186,14 @@ label { cursor: inherit; }
 .notice { display: flex; justify-content: space-between; gap: 12px; align-items: center; background: color-mix(in srgb, var(--danger) 12%, var(--panel)); color: var(--danger); border-bottom: 1px solid color-mix(in srgb, var(--danger) 30%, var(--line)); padding: 9px 24px; animation: slide-down .3s var(--ease) both; }
 .notice button { border: 0; background: none; font-size: 1.1rem; color: inherit; padding: 0 6px; }
 
-.crumbs { padding: 16px 28px 0; color: var(--muted); font-size: .8rem; max-width: 1500px; width: 100%; margin: 0 auto; }
+.crumbs { padding: 16px 28px 0; color: var(--muted); font-size: .8rem; max-width: 1500px; width: 100%; margin: 0 auto; display: flex; align-items: center; flex-wrap: wrap; gap: 0 4px; }
+.crumbs .back-btn { display: inline-flex; align-items: center; gap: 4px; margin-right: 10px; padding: 4px 10px 4px 6px; min-height: 0; border-radius: 8px; font-size: .8rem; font-weight: 600; color: var(--ink); background: var(--panel); border: 1px solid var(--line); box-shadow: none; }
+.crumbs .back-btn:hover:not(:disabled) { border-color: var(--line-strong); background: var(--surface-2); transform: none; box-shadow: none; }
 .crumbs a { color: var(--muted); }
 .crumbs a:hover { color: var(--link); }
 .crumbs span span:last-child, .crumbs > span:last-child > span { color: var(--ink); font-weight: 500; }
 .page { padding: 12px 28px 56px; max-width: 1500px; width: 100%; margin: 0 auto; }
-.page-anim { animation: page-in .38s var(--ease) both; }
+.page-anim { animation: page-in .38s var(--ease) backwards; } /* backwards, not both: a kept transform would make position:fixed pop-ups position inside the page instead of the screen */
 
 /* Sidebar dropdown sections */
 button.rail-item { width: 100%; border: 0; background: transparent; box-shadow: none; text-align: left; font-weight: 500; }
@@ -236,7 +238,7 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .cards { display: flex; gap: 16px; margin-bottom: 18px; flex-wrap: wrap; }
 .card {
   background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px;
-  box-shadow: var(--shadow-sm); animation: rise .45s var(--ease) both; transition: box-shadow .25s, border-color .25s, transform .25s var(--ease);
+  box-shadow: var(--shadow-sm); animation: rise .45s var(--ease) backwards; transition: box-shadow .25s, border-color .25s, transform .25s var(--ease);
 }
 .card > h3:first-child { margin-bottom: 12px; }
 .card.alert {
@@ -264,7 +266,7 @@ tr.hl td { background: var(--brand-soft); font-weight: 600; }
 .grid2 > .card { margin-bottom: 0; } .grid2 { margin-bottom: 16px; }
 .grid2 > .card:nth-child(2) { animation-delay: .08s; }
 .split { display: grid; grid-template-columns: 300px 1fr; gap: 16px; margin-bottom: 16px; align-items: start; }
-.strip { display: flex; gap: 36px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); animation: rise .4s var(--ease) both; }
+.strip { display: flex; gap: 36px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); animation: rise .4s var(--ease) backwards; }
 .strip small { color: var(--muted); font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
 .pill { display: inline-flex; align-items: center; background: var(--brand-soft); color: var(--link); padding: 5px 14px; border-radius: 999px; font-weight: 600; font-variant-numeric: tabular-nums; border: 1px solid color-mix(in srgb, var(--brand-2) 30%, transparent); }
 .totals { width: 340px; margin-left: auto; }

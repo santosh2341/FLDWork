@@ -274,7 +274,17 @@ export default function Shell() {
         )}
         {tour && <Tour onClose={() => setTour(false)} />}
         <nav className="crumbs">
-          {crumbs(loc.pathname).map((c, i, a) => (
+          {loc.pathname !== '/' && (
+            <button
+              className="back-btn"
+              onClick={() => {
+                // previous page in this tab if there is one, otherwise the nearest page above this one
+                if (((window.history.state as { idx?: number } | null)?.idx ?? 0) > 0) nav(-1)
+                else nav([...trail].slice(0, -1).reverse().find((c) => c.to)?.to ?? '/')
+              }}
+            ><Icon name="back" size={15} />Back</button>
+          )}
+          {trail.map((c, i, a) => (
             <span key={i}>
               {i < a.length - 1 && c.to ? <Link to={c.to}>{c.label}</Link> : <span>{c.label}</span>}
               {i < a.length - 1 && ' / '}
