@@ -66,7 +66,7 @@ Legend: ✅ built and working in the app · 🟡 built but needs setup, has a kn
 | Reports: the ten standard reports plus technician hours, job profitability and customer profitability; filters, CSV, print | ✅ | dashboard "Jobs over budget" alert opens Jobs filtered to them |
 | CSV exports: Xero sales-invoice import format, customers, parts | ✅ | MYOB layout not done |
 | Live accounting sync (Xero, MYOB) | ⬜ | needs the owner's Xero developer account (OAuth app) |
-| Online card payments (Stripe Checkout): "Pay by card" in the customer portal, card payment link on invoices, payment recorded automatically by webhook | 🟡 | migration 030 + Edge Functions deployed; needs `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` set in Supabase and the webhook endpoint added in Stripe; test mode for now |
+| Online card payments (Stripe Checkout): "Pay by card" in the customer portal, card payment link on invoices, payment recorded automatically by webhook | ✅ (test mode) | migrations 030-032 + Edge Functions; verified end to end on 26/11/2026 in the Stripe sandbox (staff payment link on #2044, portal "Pay by card" on #2005, webhook recorded each payment once). Switch to live keys before real use |
 | Contractor / vendor bills (accounts payable), BI-style reporting | ⬜ | |
 | SMS reminders and "on my way" texts | ⬜ | needs an SMS provider (for example Twilio) |
 
