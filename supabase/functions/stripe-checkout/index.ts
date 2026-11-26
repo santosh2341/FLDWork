@@ -49,7 +49,8 @@ Deno.serve(async (req) => {
     if (typeof body.portalToken === 'string') {
       // customer portal: the link must be active and belong to this invoice's customer
       if (!TOKEN.test(body.portalToken)) return json({ error: 'This link is not valid.' }, 400)
-      const { data: link } = await admin.from('customer_links').select('company_id, customer_id, expires_at, revoked_at').eq('token', body.portalToken).maybeSingle()
+      const { data: link, error: linkErr } = await admin.from('customer_links').select('company_id, customer_id, expires_at, revoked_at').eq('token', body.portalToken).maybeSingle()
+      if (linkErr) { console.error('stripe-checkout: link lookup failed', linkErr.message); return json({ error: 'Could not check your link. Try again shortly.' }, 500) }
       if (!link || link.revoked_at || new Date(link.expires_at as string) < new Date()) return json({ error: 'This link is no longer active. Please contact us.' }, 403)
       const { data } = await admin.from('invoices').select(select).eq('id', invoiceId).eq('company_id', link.company_id).eq('customer_id', link.customer_id).maybeSingle()
       inv = data as Inv | null

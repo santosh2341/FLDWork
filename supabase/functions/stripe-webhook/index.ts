@@ -39,7 +39,11 @@ Deno.serve(async (req) => {
   if (!Number.isFinite(invoiceId) || !companyId || !(amount > 0) || String(s.currency).toLowerCase() !== 'aud') return ok('missing details')
 
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
-  const { data: inv } = await admin.from('invoices').select('id').eq('id', invoiceId).eq('company_id', companyId).maybeSingle()
+  const { data: inv, error: findErr } = await admin.from('invoices').select('id').eq('id', invoiceId).eq('company_id', companyId).maybeSingle()
+  if (findErr) { // a database problem, not a missing invoice: answer non-2xx so Stripe retries later
+    console.error('stripe-webhook: invoice lookup failed', findErr.message)
+    return new Response('Could not look up invoice', { status: 500 })
+  }
   if (!inv) { console.error('stripe-webhook: invoice not found', invoiceId, companyId); return ok('invoice not found') }
   const { error } = await admin.from('payments').insert({
     company_id: companyId, invoice_id: invoiceId, amount, date: sydneyToday(), method: 'Card (Stripe)', external_ref: String(s.id),
