@@ -38,7 +38,7 @@ export default function Recurring() {
 
   const run = async (ids: string[]) => {
     const n = await runRecurring(ids)
-    setMsg(n === 0 ? 'Nothing was created. Check the schedule is active and its quote still exists.' : `Created ${n} pending job${n > 1 ? 's' : ''}. Find them under Jobs.`)
+    setMsg(n === 0 ? 'Nothing was created. Check the schedule is active and its quote still exists.' : `Created ${n} pending job${n > 1 ? 's' : ''}. They are waiting to be scheduled.`)
   }
 
   return (
@@ -61,7 +61,7 @@ export default function Recurring() {
           <span className="muted">With the database connected, due schedules run automatically every morning. In this demo copy, use <b>Create all due jobs</b>.</span>
         )}
       </div>
-      {msg && <p>{msg} <Link to="/jobs">Open jobs</Link></p>}
+      {msg && <p>{msg} <Link to="/jobs?filter=pending">Open pending jobs</Link></p>}
 
       {adding && (
         <div className="card">

@@ -2,7 +2,7 @@ import { isActive, pickable } from '../lib/people'
 import { useEffect, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
-import { addDays, DAY_NAMES, fmtDate, hoursBetween, minutes, parseDate, today, weekStart } from '../lib/dates'
+import { addDays, DAY_NAMES, fmtDate, hoursBetween, longDay, minutes, parseDate, today, weekStart } from '../lib/dates'
 import type { Db, ScheduleEntry } from '../types'
 
 const addMonths = (s: string, n: number) => {
@@ -51,7 +51,7 @@ function useScheduler(db: Db, defaultDate: string) {
     if (err) return err
     const clash = db.schedule.find((x) => x.employeeId === to.employeeId && x.date === to.date && (d.t !== 'entry' || x.id !== d.id) && minutes(x.start) < minutes(to.end) && minutes(to.start) < minutes(x.end))
     const who = db.employees.find((x) => x.id === to.employeeId)?.name
-    setMsg({ text: `${label} is now with ${who} on ${parseDate(to.date).toDateString()} (${to.start}–${to.end}).${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
+    setMsg({ text: `${label} is now with ${who} on ${longDay(to.date)} (${to.start}–${to.end}).${clash ? ` Heads up: this overlaps ${jobInfo(db, clash.jobId).name} (${clash.start}–${clash.end}).` : ''}`, bad: !!clash })
     return null
   }
 
@@ -204,7 +204,7 @@ export function DayView() {
     <>
       <h1>Day view</h1>
       <DateNav date={date} setDate={setDate} unit="day" />
-      <p className="muted">{parseDate(date).toDateString()} · {entries.length} scheduled{sch.canWrite ? ' · tap a visit to move it or change its time, or drag it onto another person' : ''}</p>
+      <p className="muted">{longDay(date)} · {entries.length} scheduled{sch.canWrite ? ' · tap a visit to move it or change its time, or drag it onto another person' : ''}</p>
       {sch.note}
       {sch.sheet}
       <div className="grid2">
@@ -301,7 +301,7 @@ export function MonthView() {
     <>
       <h1>Month view</h1>
       <DateNav date={first} setDate={(d) => setDate(d.slice(0, 7) + '-01')} unit="month" />
-      <p className="muted">{month.toLocaleString(undefined, { month: 'long', year: 'numeric' })}</p>
+      <p className="muted">{month.toLocaleString('en-AU', { month: 'long', year: 'numeric' })}</p>
       <div className="scroll-x"><div className="month-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 1, background: 'var(--line)', border: '1px solid var(--line)', borderRadius: 8, overflow: 'hidden' }}>
         {DAY_NAMES.map((n) => <div key={n} style={{ background: 'var(--surface-2)', padding: 6, fontWeight: 600, fontSize: '.8rem' }}>{n}</div>)}
         {cells.map((d) => {
@@ -338,7 +338,7 @@ export function RunSheets() {
         <button onClick={() => setDate(addDays(date, 1))}>›</button>
         <button className="primary" onClick={() => window.print()} disabled={mine.length === 0}>Print</button>
       </div>
-      <h3>{emp?.name ?? 'No employee'} · {parseDate(date).toDateString()}</h3>
+      <h3>{emp?.name ?? 'No employee'} · {longDay(date)}</h3>
       {mine.length === 0 ? (
         <p className="muted">Nothing scheduled for this person on this day.</p>
       ) : (

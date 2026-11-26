@@ -1,5 +1,5 @@
 import { useDialog } from '../components/dialog'
-import { today, dmy } from '../lib/dates'
+import { today, dmy, dmyTime } from '../lib/dates'
 import CardLinkPanel from '../components/CardLinkPanel'
 import { useEffect, useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
@@ -88,7 +88,7 @@ export default function InvoiceDetail() {
           <div className="strip">
             <div><small>Company</small><br />{customer && <Link to={`/customers/${customer.id}`}>{customer.name}</Link>}</div>
             <div><small>Site</small><br />{site?.name}</div>
-            <div><small>Job</small><br />{inv.jobId || '–'}</div>
+            <div><small>Job</small><br />{inv.jobId ? <Link to={`/jobs?job=${inv.jobId}`}>{inv.jobId}</Link> : '–'}</div>
             <div><small>Issued</small><br />{dmy(inv.issuedAt)}</div>
             <div><small>Payment due</small><br />
               <input type="date" value={inv.dueAt} disabled={locked} onChange={(e) => saveInvoice({ ...inv, dueAt: e.target.value })} />
@@ -101,7 +101,7 @@ export default function InvoiceDetail() {
             <div><small>Status</small><br /><i className="dot" style={{ background: STATE_COLOR[st] }} />{STATE_LABEL[st]}</div>
           </div>
 
-          {inv.sections.map((s) => {
+          {inv.sections.filter((s) => s.items.length > 0).map((s, _i, shownSections) => {
             const sub = s.items.reduce((a, i) => a + i.quantity * i.unitSell, 0)
             return (
               <div key={s.id} className="card">
@@ -120,7 +120,7 @@ export default function InvoiceDetail() {
                           <td className="num">{money(i.quantity * i.unitSell)}</td>
                         </tr>
                       ))}
-                      {inv.sections.length > 1 && <tr className="hl"><td colSpan={3}>Sub-total</td><td className="num">{money(sub)}</td></tr>}
+                      {shownSections.length > 1 && <tr className="hl"><td colSpan={3}>Sub-total</td><td className="num">{money(sub)}</td></tr>}
                     </tbody>
                   </table>
                 )}
@@ -191,7 +191,7 @@ export default function InvoiceDetail() {
           <thead><tr><th>When</th><th>Event</th></tr></thead>
           <tbody>
             {(inv.log ?? []).map((l) => (
-              <tr key={l.id}><td>{new Date(l.at).toLocaleString()}</td><td>{l.message}</td></tr>
+              <tr key={l.id}><td>{dmyTime(l.at)}</td><td>{l.message}</td></tr>
             ))}
             {(inv.log ?? []).length === 0 && <tr><td colSpan={2} className="muted">No activity recorded yet.</td></tr>}
           </tbody>

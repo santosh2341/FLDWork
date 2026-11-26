@@ -39,7 +39,7 @@ export default function CardLinkPanel({ invoiceId, balance }: { invoiceId: numbe
       <div className="row between wrap">
         <div>
           <b>Card payment</b>
-          <div className="muted">Send the customer a secure Stripe link to pay the {money(balance)} owing. Paid amounts are recorded here automatically.</div>
+          <div className="muted">Send the customer a secure Stripe link to pay the {money(balance)} owing. Paid amounts are recorded here automatically. Stripe links work for 24 hours; for a link that lasts, email the invoice (it includes a "View and pay online" button).</div>
         </div>
         <button className="primary" disabled={busy} onClick={() => void create()}>{busy ? 'Creating…' : url ? 'New link' : 'Create payment link'}</button>
       </div>

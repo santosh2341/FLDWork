@@ -13,7 +13,7 @@ import CountUp from '../components/CountUp'
 import { shortAddress } from '../lib/address'
 
 const ANNOUNCEMENTS = [
-  { title: 'Welcome to Fieldwork', body: 'Quotes, jobs, scheduling, invoicing, inventory and reports are all live in this build.' },
+  { title: 'Welcome to Fieldwork', body: 'Quotes, jobs, scheduling, invoicing, stock and reports in one place. Use the ? button at the top for a quick tour.' },
   { title: 'Timesheet lock', body: 'Admins can freeze past timesheets from Schedules → Timesheets.' },
 ]
 
@@ -30,13 +30,14 @@ export default function Dashboard() {
     { label: 'Low stock parts', n: db.catalog.filter((p) => p.stock < 5).length, to: '/materials/inventory?filter=low', icon: 'box', tone: 'warn', hint: 'Reorder' },
     { label: 'Jobs over budget', n: db.jobs.filter((j) => isOverBudget(db, j)).length, to: '/jobs?filter=over_budget', icon: 'wrench', tone: 'danger', hint: 'Review' },
     { label: 'Jobs to schedule', n: db.jobs.filter((j) => j.status === 'pending').length, to: '/jobs?filter=pending', icon: 'wrench', tone: 'brand', hint: 'Assign' },
+    { label: 'Accepted, needs a job', n: db.quotes.filter((q) => q.status === 'approved' && !db.jobs.some((j) => j.quoteId === q.id)).length, to: '/quotes?filter=needs_job', icon: 'quote', tone: 'warn', hint: 'Create job' },
     { label: 'Quotes to complete', n: db.quotes.filter((q) => q.status === 'to_be_completed').length, to: '/quotes?filter=to_be_completed', icon: 'quote', tone: 'brand', hint: 'Finish' },
   ]
   const [now] = useState(() => new Date())
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
   const first = profile?.fullName?.split(' ')[0]
-  const longDate = now.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' })
+  const longDate = now.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })
 
   const reminders = db.reminders.filter((r) => !r.done && (!r.snoozedUntil || r.snoozedUntil <= today()))
   const dayEntries = db.schedule.filter((e) => e.date === date)
@@ -54,7 +55,7 @@ export default function Dashboard() {
         lng: site.lng,
         title: `Job ${job.id} – ${job.name}`,
         detail: `${e.start}–${e.end}, ${site.address}${site.accessNotes ? ' · Access: ' + site.accessNotes : ''}`,
-        href: '/jobs',
+        href: `/jobs?job=${job.id}`,
       })
     }
     return out
@@ -151,7 +152,7 @@ export default function Dashboard() {
                       return (
                         <tr key={e.id}>
                           <td><input type="checkbox" checked={!hidden[e.id]} onChange={() => setHidden({ ...hidden, [e.id]: !hidden[e.id] })} /></td>
-                          <td><Link to="/jobs">{job?.id} – {job?.name}</Link></td>
+                          <td><Link to={job ? `/jobs?job=${job.id}` : "/jobs"}>{job?.id} – {job?.name}</Link></td>
                           <td>{e.start}–{e.end}</td>
                           <td>{db.customers.find((c) => c.id === job?.customerId)?.name}</td>
                           <td title={site?.address}>{shortAddress(site?.address, site?.addressParts)}</td>

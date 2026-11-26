@@ -7,7 +7,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import AiPolish from '../components/AiPolish'
 import { useStore } from '../store'
 import { computeCosting, money, sellFromCost, STATUS_COLOR, STATUS_LABEL } from '../lib/costing'
-import { dmy, today } from '../lib/dates'
+import { dmy, dmyTime, today } from '../lib/dates'
 import type { CostCenter, LineItem, Quote, QuoteAttachment, QuoteStatus } from '../types'
 import { uid } from '../lib/id'
 
@@ -222,7 +222,7 @@ export default function QuoteDetail() {
             <h3>Timeline</h3>
             <ul className="timeline">
               {draft.timeline.map((t) => (
-                <li key={t.id}><b>{t.type}</b> {t.message}<br /><small className="muted">{new Date(t.at).toLocaleString()}</small></li>
+                <li key={t.id}><b>{t.type}</b> {t.message}<br /><small className="muted">{dmyTime(t.at)}</small></li>
               ))}
             </ul>
           </div>
@@ -343,7 +343,7 @@ export default function QuoteDetail() {
           <table>
             <thead><tr><th>Audit</th><th>Job</th><th>Completed</th></tr></thead>
             <tbody>
-              {results.map((r) => <tr key={r.id}><td>{r.auditName}</td><td>{r.jobId}</td><td>{new Date(r.completedAt).toLocaleString()}</td></tr>)}
+              {results.map((r) => <tr key={r.id}><td>{r.auditName}</td><td>{r.jobId}</td><td>{dmyTime(r.completedAt)}</td></tr>)}
               {results.length === 0 && <tr><td colSpan={3} className="muted">No completed audits for this quote.</td></tr>}
             </tbody>
           </table>

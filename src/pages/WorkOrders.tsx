@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
-import { hoursBetween, minutes, parseDate, today, dmy } from '../lib/dates'
+import { hoursBetween, longDay, minutes, today, dmy } from '../lib/dates'
 
 export function WorkOrders() {
   const { db } = useStore()
@@ -73,7 +73,7 @@ export function WorkOrderDetail() {
         <button className="primary" onClick={() => window.print()}>Print</button>
       </div>
       <div className="strip">
-        <div><small>Date</small><br />{parseDate(e.date).toDateString()}</div>
+        <div><small>Date</small><br />{longDay(e.date)}</div>
         <div><small>Time</small><br />{e.start}–{e.end}{ok ? ` (${visitHours} hrs)` : ''}</div>
         <div><small>Technician</small><br />{tech?.name}</div>
         <div><small>Job</small><br />{job ? `${job.id} – ${job.name}` : e.jobId}</div>

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useStore } from '../store'
 import type { AnswerType, Audit, AuditGroup, AuditQuestion } from '../types'
 import { uid } from '../lib/id'
+import { dmyTime } from '../lib/dates'
 
 const TYPES: AnswerType[] = ['yesno', 'text', 'number', 'photo', 'signature']
 const move = <T,>(arr: T[], i: number, d: number) => {
@@ -200,7 +201,7 @@ export default function Audits() {
         <tbody>
           {results.map((r) => (
             <tr key={r.id}>
-              <td>{r.auditName}</td><td>{r.jobId}</td><td>{new Date(r.completedAt).toLocaleString()}</td>
+              <td>{r.auditName}</td><td>{r.jobId}</td><td>{dmyTime(r.completedAt)}</td>
               <td>{Object.keys(r.answers).length} / {r.snapshot.reduce((a, g) => a + g.questions.length, 0)}</td>
             </tr>
           ))}

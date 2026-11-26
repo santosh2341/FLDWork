@@ -36,7 +36,8 @@ function Letterhead({ company, fallbackName, title, number, rows }: {
   )
 }
 
-function Lines({ sections }: { sections: CostCenter[] }) {
+function Lines({ sections: all }: { sections: CostCenter[] }) {
+  const sections = all.filter((cc) => cc.items.length > 0) // empty cost centres are left off
   return (
     <table className="doc-table">
       <thead><tr><th>Description</th><th className="num">Qty</th><th className="num">Unit price</th><th className="num">Amount</th></tr></thead>

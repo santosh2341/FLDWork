@@ -114,6 +114,8 @@ export default function Shell() {
     const od = db.invoices.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).length
     const low = db.catalog.filter((p) => p.stock < 5).length
     const pend = db.jobs.filter((j) => j.status === 'pending').length
+    const accepted = db.quotes.filter((q) => q.status === 'approved' && !db.jobs.some((j) => j.quoteId === q.id)).length
+    if (accepted) out.push({ text: `${accepted} accepted quote${accepted > 1 ? 's' : ''} need${accepted > 1 ? '' : 's'} a job`, to: '/quotes?filter=needs_job' })
     if (od) out.push({ text: `${od} overdue invoice${od > 1 ? 's' : ''}`, to: '/invoices?filter=overdue' })
     if (low) out.push({ text: `${low} part${low > 1 ? 's' : ''} low on stock`, to: '/materials/inventory?filter=low' })
     if (pend) out.push({ text: `${pend} job${pend > 1 ? 's' : ''} waiting to be scheduled`, to: '/jobs?filter=pending' })

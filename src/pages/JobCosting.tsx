@@ -50,7 +50,7 @@ export default function JobCosting() {
     <>
       <div className="row between">
         <h1>Job {job.id} cost</h1>
-        <Link className="btn" to="/jobs">Back to jobs</Link>
+        <Link className="btn" to={`/jobs?job=${job.id}`}>Back to job</Link>
       </div>
       <p className="muted">{job.name}. Amounts are ex GST. The estimate comes from the quote; actual cost is clocked time plus what you record below.</p>
 

@@ -18,6 +18,10 @@ export const weekStart = (s: string) => {
 export const today = () => fmtDate(new Date())
 // Show a YYYY-MM-DD date the Australian way (25/11/2026). Anything else is returned unchanged.
 export const dmy = (iso?: string | null) => (iso && /^\d{4}-\d{2}-\d{2}/.test(iso) ? `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}` : (iso ?? ''))
+// A timestamp in Australian format, in the viewer's time zone: 27/11/2026, 1:52 pm
+export const dmyTime = (iso?: string | null) => (iso ? new Date(iso).toLocaleString('en-AU', { day: '2-digit', month: '2-digit', year: 'numeric', hour: 'numeric', minute: '2-digit' }) : '')
+// A YYYY-MM-DD date spelt out: Fri 27 Nov 2026
+export const longDay = (d: string) => parseDate(d).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 export const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number)
   return h * 60 + m

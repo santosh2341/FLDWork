@@ -661,3 +661,7 @@ button.danger:hover { filter: brightness(1.08); }
 .picker-list li[aria-selected="true"] span { font-weight: 600; color: var(--link); }
 .picker-list small { flex: none; font-size: .78rem; }
 .picker-list .picker-none { cursor: default; display: block; font-size: .85rem; }
+.cust-strip { margin-top: 16px; }
+.cust-strip > div { display: grid; gap: 2px; }
+.cust-strip b { font-family: Archivo, system-ui, sans-serif; font-size: 1.3rem; }
+.cust-strip b.bad { color: var(--danger); }

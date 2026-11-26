@@ -1,7 +1,7 @@
 import { useDialog } from '../components/dialog'
 import { dmy } from '../lib/dates'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useStore } from '../store'
 import { usePaged } from '../components/Paged'
 import FilterBar from '../components/FilterBar'
@@ -72,9 +72,11 @@ export default function Assets() {
   const nav = useNavigate()
   const dueOnly = useFilter() === 'due'
   const [q, setQ] = useState('')
-  const [cust, setCust] = useState('')
+  const [params] = useSearchParams()
+  const askedCust = params.get('customer') ?? '' // from the customer page
+  const [cust, setCust] = useState(() => (db.customers.some((c) => c.id === askedCust) ? askedCust : ''))
   const startOpen = useStartOpen()
-  const [form, setForm] = useState<Draft | null>(() => (startOpen ? blank() : null))
+  const [form, setForm] = useState<Draft | null>(() => (startOpen ? blank(cust) : null))
   const [openId, setOpenId] = useState('')
   const [note, setNote] = useState('')
 

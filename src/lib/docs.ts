@@ -46,8 +46,9 @@ export function companyBlock(c: Partial<CompanyProfile>, fallbackName: string) {
 }
 
 type SellItem = { description: string; quantity: number; unitSell: number; kind: string }
+// empty cost centres (no lines) are left off documents
 const docSections = (sections: { name: string; items: SellItem[] }[]) =>
-  sections.map((s) => ({
+  sections.filter((s) => s.items.length > 0).map((s) => ({
     name: s.name,
     items: s.items.map((i) => ({ description: i.description, qty: `${i.quantity}${i.kind === 'labour' ? ' h' : ''}`, unit: i.unitSell, amount: i.quantity * i.unitSell })),
   }))

@@ -12,6 +12,9 @@ import { money, computeCosting, STATUS_COLOR, STATUS_LABEL } from '../lib/costin
 import { usePaged } from '../components/Paged'
 import CustomerLinkPanel from '../components/CustomerLinkPanel'
 import CustomerPicker from '../components/CustomerPicker'
+import { daysOverdue, invoiceState, invoiceTotals, isUnpaid, STATE_COLOR, STATE_LABEL } from '../lib/invoicing'
+import { dueState, DUE_LABEL } from '../lib/assets'
+import { dmy, today } from '../lib/dates'
 
 export function Soon() {
   const { slug } = useParams()
@@ -216,10 +219,18 @@ export function CustomerDetail() {
   const [addingSite, setAddingSite] = useState(false)
   const [addingQuote, setAddingQuote] = useState(false)
   const [editingSite, setEditingSite] = useState<(typeof db.sites)[number] | null>(null)
+  const [tab, setTab] = useState<'quotes' | 'jobs' | 'invoices' | 'equipment'>('quotes')
   const c = db.customers.find((x) => x.id === id)
   if (!c) return <p>Customer not found.</p>
   const sites = db.sites.filter((s) => s.customerId === c.id)
-  const quotes = db.quotes.filter((q) => q.customerId === c.id)
+  const quotes = db.quotes.filter((q) => q.customerId === c.id).sort((a, b) => b.id - a.id)
+  const jobs = db.jobs.filter((j) => j.customerId === c.id).sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+  const invoices = db.invoices.filter((i) => i.customerId === c.id && !i.voided).sort((a, b) => (b.issuedAt ?? '').localeCompare(a.issuedAt ?? '') || b.id - a.id)
+  const assets = db.assets.filter((a) => a.customerId === c.id)
+  const issued = invoices.filter((i) => i.stage !== 'draft')
+  const owing = issued.reduce((s, i) => s + Math.max(0, invoiceTotals(i).balance), 0)
+  const overdue = issued.filter((i) => isUnpaid(i) && daysOverdue(i) > 0).reduce((s, i) => s + Math.max(0, invoiceTotals(i).balance), 0)
+  const openJobs = jobs.filter((j) => j.status !== 'complete' && j.status !== 'invoiced').length
   const hasHistory = quotes.length > 0 || db.jobs.some((j) => j.customerId === c.id) || db.invoices.some((i) => i.customerId === c.id)
   return (
     <>
@@ -277,9 +288,82 @@ export function CustomerDetail() {
           {!sites.length && !addingSite && <p className="muted">No sites yet. Add one to create quotes.</p>}
         </div>
       </div>
-      <div className="row between"><h3>Quotes</h3>
-        {canWrite && <button disabled={!sites.length} onClick={() => setAddingQuote(true)}>+ New quote</button>}
+      <div className="strip cust-strip">
+        <div><span className="muted">Balance owing</span><b>{money(owing)}</b></div>
+        <div><span className="muted">Overdue</span><b className={overdue > 0 ? 'bad' : ''}>{money(overdue)}</b></div>
+        <div><span className="muted">Open jobs</span><b>{openJobs}</b></div>
+        <div><span className="muted">Equipment</span><b>{assets.length}</b></div>
       </div>
+      <div className="row between wrap">
+        <div className="subtabs" style={{ marginBottom: 0 }}>
+          {(['quotes', 'jobs', 'invoices', 'equipment'] as const).map((t) => (
+            <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>
+              {t[0].toUpperCase() + t.slice(1)} <span className="muted">{{ quotes: quotes.length, jobs: jobs.length, invoices: invoices.length, equipment: assets.length }[t]}</span>
+            </button>
+          ))}
+        </div>
+        {canWrite && tab === 'quotes' && <button disabled={!sites.length} onClick={() => setAddingQuote(true)}>+ New quote</button>}
+        {canWrite && tab === 'equipment' && <Link className="btn" to={`/assets?new=1&customer=${c.id}`}>+ New equipment</Link>}
+      </div>
+      {tab === 'jobs' && (
+        jobs.length === 0 ? <p className="muted">No jobs yet. Jobs are created from approved quotes.</p> : (
+          <table>
+            <thead><tr><th>Job</th><th>Site</th><th>Status</th><th>Next visit</th></tr></thead>
+            <tbody>
+              {jobs.map((j) => {
+                const v = db.schedule.filter((e) => e.jobId === j.id).sort((a, b) => (a.date + a.start).localeCompare(b.date + b.start)).find((e) => e.date >= today())
+                return (
+                  <tr key={j.id}>
+                    <td><Link to={`/jobs?job=${j.id}`}>{j.id} – {j.name}</Link></td>
+                    <td>{db.sites.find((s) => s.id === j.siteId)?.name}</td>
+                    <td>{db.settings.jobStatusLabels[j.status] ?? j.status}</td>
+                    <td>{v ? `${dmy(v.date)} ${v.start}` : <span className="muted">–</span>}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )
+      )}
+      {tab === 'invoices' && (
+        invoices.length === 0 ? <p className="muted">No invoices yet.</p> : (
+          <table>
+            <thead><tr><th>Invoice</th><th>Issued</th><th>Due</th><th>Total</th><th>Balance</th><th>Status</th></tr></thead>
+            <tbody>
+              {invoices.map((i) => {
+                const t = invoiceTotals(i)
+                const st = invoiceState(i)
+                return (
+                  <tr key={i.id}>
+                    <td><Link to={`/invoices/${i.id}`}>#{i.id}</Link>{i.stage === 'draft' && <span className="muted"> (draft)</span>}</td>
+                    <td>{dmy(i.issuedAt)}</td>
+                    <td>{dmy(i.dueAt)}</td>
+                    <td>{money(t.total)}</td>
+                    <td>{money(t.balance)}</td>
+                    <td><i className="dot" style={{ background: STATE_COLOR[st] }} />{STATE_LABEL[st]}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        )
+      )}
+      {tab === 'equipment' && (
+        assets.length === 0 ? <p className="muted">No equipment recorded for this customer.</p> : (
+          <table>
+            <thead><tr><th>Equipment</th><th>Site</th><th>Next service</th></tr></thead>
+            <tbody>
+              {assets.map((a) => (
+                <tr key={a.id}>
+                  <td><Link to={`/assets?customer=${c.id}`}>{a.name}</Link>{a.make || a.model ? <span className="muted"> · {[a.make, a.model].filter(Boolean).join(' ')}</span> : null}</td>
+                  <td>{db.sites.find((s) => s.id === a.siteId)?.name ?? '–'}</td>
+                  <td>{a.nextDue ? `${dmy(a.nextDue)} (${DUE_LABEL[dueState(a)]})` : <span className="muted">–</span>}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      )}
       {addingQuote && (
         <QuoteForm
           customers={[c]}
@@ -289,27 +373,32 @@ export function CustomerDetail() {
           onSubmit={async (cid, sid, name) => { const qid = await createQuote(cid, sid, name); if (qid) nav(`/quotes/${qid}`) }}
         />
       )}
+      {tab === 'quotes' && (
+        quotes.length === 0 ? <p className="muted">No quotes yet.{sites.length ? '' : ' Add a site first.'}</p> : (
+          <table>
+            <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Total</th></tr></thead>
+            <tbody>
+              {quotes.map((q) => (
+                <tr key={q.id}>
+                  <td><Link to={`/quotes/${q.id}`}>{q.id}</Link></td><td>{q.name}</td>
+                  <td><i className="dot" style={{ background: STATUS_COLOR[q.status] }} />{STATUS_LABEL[q.status]}</td>
+                  <td>{money(computeCosting(q).total)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      )}
       {canWrite && (
-        <p>
+        <p style={{ marginTop: 24 }}>
           <button
             disabled={hasHistory}
             title={hasHistory ? 'This customer has quotes, jobs or invoices, so it cannot be deleted. Put it on hold instead.' : ''}
             onClick={async () => { if (await ask({ message: `Delete customer "${c.name}" and its sites? This cannot be undone.`, confirmLabel: 'Delete customer', danger: true })) { deleteCustomer(c.id); nav('/customers') } }}
           >Delete customer</button>
+          {hasHistory && <span className="muted"> Customers with quotes, jobs or invoices can't be deleted. Put them on hold instead.</span>}
         </p>
       )}
-      <table>
-        <thead><tr><th>#</th><th>Name</th><th>Status</th><th>Total</th></tr></thead>
-        <tbody>
-          {quotes.map((q) => (
-            <tr key={q.id}>
-              <td><Link to={`/quotes/${q.id}`}>{q.id}</Link></td><td>{q.name}</td>
-              <td><i className="dot" style={{ background: STATUS_COLOR[q.status] }} />{STATUS_LABEL[q.status]}</td>
-              <td>{money(computeCosting(q).total)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </>
   )
 }
