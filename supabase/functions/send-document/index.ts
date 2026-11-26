@@ -3,7 +3,8 @@
 // "accept online" page (/q/<token>; the token must belong to this quote and still be active).
 // Runs as the signed-in user (reads under their permissions). The recipient is ALWAYS the customer's email on file,
 // so this cannot be used to send mail to arbitrary addresses. Limit: 50 emails per company per day.
-// Secrets: RESEND_API_KEY, EMAIL_FROM (an address on a domain verified in Resend, e.g. quotes@yourcompany.com.au).
+// Secrets: RESEND_API_KEY, EMAIL_FROM (an address on a domain verified in Resend, e.g. quotes@yourcompany.com.au;
+// optional while testing: defaults to onboarding@resend.dev, which only delivers to the Resend account owner).
 import { createClient } from 'npm:@supabase/supabase-js@2'
 
 const cors = {
@@ -32,8 +33,10 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405)
   try {
     const apiKey = Deno.env.get('RESEND_API_KEY')
-    const from = Deno.env.get('EMAIL_FROM')
-    if (!apiKey || !from) return json({ error: 'Email sending is not set up yet. An admin needs to add the RESEND_API_KEY and EMAIL_FROM secrets in Supabase.', code: 'not_configured' }, 503)
+    // Without EMAIL_FROM, fall back to Resend's shared test sender (it only delivers to the Resend account's own address)
+    // (a bare address: the company name is added below as the display name)
+    const from = Deno.env.get('EMAIL_FROM')?.trim() || 'onboarding@resend.dev'
+    if (!apiKey) return json({ error: 'Email sending is not set up yet. An admin needs to add the RESEND_API_KEY secret in Supabase.', code: 'not_configured' }, 503)
 
     const auth = req.headers.get('Authorization') ?? ''
     const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, { global: { headers: { Authorization: auth } } })
