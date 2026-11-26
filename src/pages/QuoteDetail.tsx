@@ -70,8 +70,25 @@ export default function QuoteDetail() {
   const addLabour = (ccId: string) =>
     setCC(ccId, (cc) => ({ ...cc, items: [...cc.items, { id: uid(), kind: 'labour', description: 'Electrical', quantity: 1, unitCost: 55, unitSell: 90 }] }))
 
-  const save = () => {
-    const withLog: Quote = { ...draft, timeline: [{ id: uid(), type: 'System', message: 'Quote saved', at: new Date().toISOString() }, ...draft.timeline] }
+  // Changed elsewhere while this screen has unsaved edits (customer accepted online, a colleague saved): the
+  // latest copy has history lines this draft does not know about.
+  const known = new Set(draft.timeline.map((t) => t.id))
+  const newer = dirty && stored && stored.id === draft.id ? stored.timeline.filter((t) => !known.has(t.id)) : []
+  const loadLatest = () => { if (stored) { setDraft(stored); setDirty(false) } }
+
+  const save = async () => {
+    let base = draft
+    if (newer.length && stored) {
+      const keep = await ask({
+        title: 'This quote changed while you were editing',
+        message: `${newer[0].message}. Save your edits on top of the latest version? The current status (${STATUS_LABEL[stored.status]}) and the new history are kept.`,
+        confirmLabel: 'Save my edits',
+        cancelLabel: 'Go back',
+      })
+      if (!keep) return
+      base = { ...draft, status: stored.status, timeline: [...newer, ...draft.timeline].sort((a, b) => b.at.localeCompare(a.at)) }
+    }
+    const withLog: Quote = { ...base, timeline: [{ id: uid(), type: 'System', message: 'Quote saved', at: new Date().toISOString() }, ...base.timeline] }
     const saved = { ...withLog, updatedAt: new Date().toISOString() }
     saveQuote(saved)
     setDraft(saved)
@@ -144,9 +161,19 @@ export default function QuoteDetail() {
               onClick={async () => { if (await ask({ message: `Delete quote #${draft.id}? This cannot be undone.`, confirmLabel: 'Delete quote', danger: true })) { deleteQuote(draft.id); nav('/quotes') } }}
             >Delete</button>
           )}
-          <button className="primary" disabled={!dirty} onClick={save}>Save</button>
+          <button className="primary" disabled={!dirty} onClick={() => void save()}>Save</button>
         </div>
       </div>
+
+      {newer.length > 0 && stored && (
+        <div className="card presend row between wrap" role="status">
+          <div>
+            <b>This quote changed while you were editing.</b>
+            <div className="muted">{newer[0].message}{stored.status !== draft.status ? ` · status is now ${STATUS_LABEL[stored.status]}` : ''}</div>
+          </div>
+          <button onClick={loadLatest}>Load latest (discard my edits)</button>
+        </div>
+      )}
 
       <PreSendCheck issues={quoteIssues(db, draft)} />
       <QuoteLinkPanel quote={draft} />

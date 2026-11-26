@@ -84,6 +84,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [remote, userId, reload])
 
+  // remote mode: changes made outside this tab (a customer accepting a quote online, a card payment recorded by
+  // Stripe, a colleague saving) while the tab stays open. Every 30 s, and when the window gets focus, ask the
+  // database whether anything is newer than what we hold; only then reload everything.
+  useEffect(() => {
+    if (!remote || !userId || !supabase) return
+    const sb = supabase
+    const newest = (xs: (string | undefined)[]) => xs.reduce<string>((m, x) => (x && x > m ? x : m), '1970-01-01T00:00:00Z')
+    let busy = false
+    const check = async () => {
+      if (busy || document.visibilityState !== 'visible') return
+      busy = true
+      try {
+        const db = dbRef.current
+        const q = newest(db.quotes.map((x) => x.updatedAt))
+        const l = newest(db.invoices.flatMap((i) => (i.log ?? []).map((e) => e.at)))
+        const [a, b] = await Promise.all([
+          sb.from('quotes').select('id').gt('updated_at', q).limit(1),
+          sb.from('invoice_log').select('id').gt('created_at', l).limit(1),
+        ])
+        if ((a.data?.length ?? 0) > 0 || (b.data?.length ?? 0) > 0) await reload()
+      } finally { busy = false }
+    }
+    const timer = window.setInterval(() => void check(), 30_000)
+    const onFocus = () => void check()
+    window.addEventListener('focus', onFocus)
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', onFocus) }
+  }, [remote, userId, reload])
+
   const companyId = useCallback(async () => {
     if (companyIdRef.current) return companyIdRef.current
     if (!supabase) return null
