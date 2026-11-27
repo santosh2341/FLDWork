@@ -362,7 +362,7 @@ export default function QuoteDetail() {
             <tbody>
               {(draft.attachments ?? []).map((a) => (
                 <tr key={a.id}>
-                  <td><a href={a.dataUrl} download={a.name}>{a.name}</a></td>
+                  <td><AttachmentLink a={a} /></td>
                   <td>{Math.max(1, Math.round(a.size / 1024))} KB</td>
                   <td>{dmy(new Date(a.addedAt).toLocaleDateString('en-CA'))}</td>
                   <td>
@@ -382,4 +382,22 @@ export default function QuoteDetail() {
       )}
     </>
   )
+}
+
+// A quote attachment: new uploads already hold their file; saved ones fetch it from the database when clicked.
+function AttachmentLink({ a }: { a: QuoteAttachment }) {
+  const { attachmentData } = useStore()
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  if (a.dataUrl) return <a href={a.dataUrl} download={a.name}>{a.name}</a>
+  const open = async () => {
+    setBusy(true); setErr('')
+    const url = await attachmentData(a.id)
+    setBusy(false)
+    if (!url) return setErr('Could not load this file. Try again.')
+    const link = document.createElement('a')
+    link.href = url; link.download = a.name
+    document.body.appendChild(link); link.click(); link.remove()
+  }
+  return <><button type="button" className="link-btn" disabled={busy} onClick={() => void open()}>{busy ? 'Opening…' : a.name}</button>{err && <span className="error"> {err}</span>}</>
 }

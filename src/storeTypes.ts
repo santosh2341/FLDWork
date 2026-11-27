@@ -30,6 +30,7 @@ export interface Actions {
   addJobPhoto: (jobId: number, file: File, author: string) => Promise<string | null> // resolves to an error message, or null
   deleteJobPhoto: (id: string) => void
   photoUrls: (photos: { id: string; path?: string; dataUrl?: string }[]) => Promise<Record<string, string>>
+  attachmentData: (id: string) => Promise<string | null> // a quote attachment's file (data URL), fetched when opened
   addAsset: (a: Omit<Asset, 'id' | 'services'>) => void
   updateAsset: (a: Asset) => void
   deleteAsset: (id: string) => void

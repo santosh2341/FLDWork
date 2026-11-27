@@ -192,6 +192,12 @@ export function makeRemoteActions({ getDb, setDb, sb, companyId, reload, fail }:
         return sb.from('job_photos').delete().eq('id', id)
       })
     },
+    // load_all leaves attachment files out (037); fetch one when it is opened
+    attachmentData: async (id) => {
+      const { data, error } = await sb.from('quote_attachments').select('data_url').eq('id', id).maybeSingle()
+      if (error) { fail(error.message); return null }
+      return (data?.data_url as string | null) ?? null
+    },
     photoUrls: async (photos) => {
       const paths = photos.filter((p) => p.path).map((p) => p.path as string)
       if (paths.length === 0) return {}

@@ -6,8 +6,8 @@ import type { Db } from '../types'
 type SellItem = { description: string; quantity: number; unitSell: number; kind: string }
 // A quote attachment the office ticked "Customer can see"
 export type SharedFile = { id: string; name: string; size: number; type: string; dataUrl: string }
-const shared = (list?: { id: string; name: string; size: number; type: string; dataUrl: string; customerVisible?: boolean }[]): SharedFile[] =>
-  (list ?? []).filter((a) => a.customerVisible === true && a.dataUrl).map((a) => ({ id: a.id, name: a.name, size: a.size, type: a.type, dataUrl: a.dataUrl }))
+const shared = (list?: { id: string; name: string; size: number; type: string; dataUrl?: string; customerVisible?: boolean }[]): SharedFile[] =>
+  (list ?? []).filter((a) => a.customerVisible === true && a.dataUrl).map((a) => ({ id: a.id, name: a.name, size: a.size, type: a.type, dataUrl: a.dataUrl as string }))
 export interface PortalData {
   state: 'ok' | 'not_found' | 'revoked' | 'expired'
   company?: { name: string; abn: string; licence: string; phone: string; email: string; website: string; address: string }

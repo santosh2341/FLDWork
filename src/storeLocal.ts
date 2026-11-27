@@ -104,6 +104,7 @@ export function makeLocalActions(db: Db, setDb: Dispatch<SetStateAction<Db>>): A
       }
     },
     deleteJobPhoto: (id) => setDb((d) => ({ ...d, jobPhotos: d.jobPhotos.filter((p) => p.id !== id) })),
+    attachmentData: async (id) => db.quotes.flatMap((q) => q.attachments ?? []).find((a) => a.id === id)?.dataUrl || null,
     photoUrls: async (photos) => Object.fromEntries(photos.filter((p) => p.dataUrl).map((p) => [p.id, p.dataUrl as string])),
     addAsset: (a) => setDb((d) => ({ ...d, assets: [...d.assets, { ...a, id: uid(), services: [] }] })),
     updateAsset: (a) => setDb((d) => ({ ...d, assets: d.assets.map((x) => (x.id === a.id ? a : x)) })),
