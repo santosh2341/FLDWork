@@ -59,34 +59,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('storage', onStorage)
   }, [remote])
 
+  // One reload at a time. Every save calls reload(), and the whole company's data (~2 MB) comes back each time, so
+  // overlapping calls used to download it several times at once and redraw the app for each. Now a call made while a
+  // reload is running waits for it and asks for exactly one more pass afterwards (so it still sees its own change).
+  const inflight = useRef<Promise<void> | null>(null)
+  const again = useRef(false)
+  const lastLoad = useRef(0)
   const reload = useCallback(async () => {
-    try {
-      const r = await loadRemote()
-      dbRef.current = r.db // so actions that run right after a reload see the new data before React re-renders
-      setDb(r.db)
-      setProfile(r.profile)
-    } catch (e) {
-      setNotice(errMsg(e))
-    } finally {
-      setLoading(false)
+    if (inflight.current) { again.current = true; return inflight.current }
+    const run = async () => {
+      do {
+        again.current = false
+        try {
+          const r = await loadRemote()
+          dbRef.current = r.db // so actions that run right after a reload see the new data before React re-renders
+          lastLoad.current = Date.now()
+          setDb(r.db)
+          setProfile(r.profile)
+        } catch (e) {
+          setNotice(errMsg(e))
+        } finally {
+          setLoading(false)
+        }
+      } while (again.current)
     }
+    inflight.current = run().finally(() => { inflight.current = null })
+    return inflight.current
   }, [])
 
-  // remote mode: load on sign-in, and again whenever the tab regains focus (picks up other people's changes)
+  // remote mode: load on sign-in
   useEffect(() => {
     if (!remote || !userId) return
     // oxlint-disable-next-line react/set-state-in-effect -- reload() sets state only after awaiting the network
     void reload()
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') void reload()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-    return () => document.removeEventListener('visibilitychange', onVisible)
   }, [remote, userId, reload])
 
   // remote mode: changes made outside this tab (a customer accepting a quote online, a card payment recorded by
-  // Stripe, a colleague saving) while the tab stays open. Every 30 s, and when the window gets focus, ask the
-  // database whether anything is newer than what we hold; only then reload everything.
+  // Stripe, a colleague saving). Every 30 s, and when the tab or window comes back into view, ask the database
+  // whether any quote or invoice is newer than what we hold, and reload only then. Coming back after more than
+  // 10 minutes away reloads anyway, to pick up colleagues' other changes (schedule, jobs). Returning to the tab used to
+  // reload everything every time, which made the app stall each time you switched back from email or another tab.
   useEffect(() => {
     if (!remote || !userId || !supabase) return
     const sb = supabase
@@ -107,9 +119,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       } finally { busy = false }
     }
     const timer = window.setInterval(() => void check(), 30_000)
-    const onFocus = () => void check()
-    window.addEventListener('focus', onFocus)
-    return () => { window.clearInterval(timer); window.removeEventListener('focus', onFocus) }
+    let lastCheck = 0
+    const onBack = () => {
+      if (document.visibilityState !== 'visible') return
+      if (Date.now() - lastLoad.current > 600_000) { void reload(); return }
+      if (Date.now() - lastCheck < 3000) return // focus and visibilitychange fire together
+      lastCheck = Date.now()
+      void check()
+    }
+    window.addEventListener('focus', onBack)
+    document.addEventListener('visibilitychange', onBack)
+    return () => { window.clearInterval(timer); window.removeEventListener('focus', onBack); document.removeEventListener('visibilitychange', onBack) }
   }, [remote, userId, reload])
 
   const companyId = useCallback(async () => {

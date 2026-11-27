@@ -19,7 +19,17 @@ export interface Costing {
 }
 
 // Formulas follow the guide, section 9.5.
+// Cached per quote object: lists, tabs and reports ask for the same quote's totals many times per screen.
+// Quotes are never changed in place (every edit makes a new object), so a stale result cannot be returned.
+const costingCache = new WeakMap<Quote, Costing>()
 export function computeCosting(q: Quote): Costing {
+  const hit = costingCache.get(q)
+  if (hit) return hit
+  const c = computeCostingUncached(q)
+  costingCache.set(q, c)
+  return c
+}
+function computeCostingUncached(q: Quote): Costing {
   let materialsCost = 0
   let resourcesCost = 0
   let materialsSell = 0
